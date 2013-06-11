@@ -4,11 +4,11 @@ CONFIG -= qt
 
 SOURCES += \
 	src/main.cpp \
-	src/solver/NaverStokesGPU.cpp \
-	src/solver/NaverStokesCPU.cpp
+    src/solver/NavierStokesCPU.cpp \
+    src/solver/NavierStokesGPU.cpp
 
 HEADERS += \
 	src/solver/NavierStokesSolver.h \
-	src/solver/NaverStokesGPU.h \
-	src/solver/NaverStokesCPU.h
+    src/solver/NavierStokesCPU.h \
+    src/solver/NavierStokesGPU.h
 

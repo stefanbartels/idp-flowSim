@@ -3,13 +3,13 @@
 //**    includes
 //********************************************************************
 
-#include "NaverStokesCPU.h"
+#include "NavierStokesCPU.h"
 
 //********************************************************************
 //**    implementation
 //********************************************************************
 
-NaverStokesCPU::NaverStokesCPU()
+NavierStokesCPU::NavierStokesCPU()
 {
 
 }

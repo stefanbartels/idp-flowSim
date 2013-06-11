@@ -3,13 +3,13 @@
 //**    includes
 //********************************************************************
 
-#include "NaverStokesGPU.h"
+#include "NavierStokesGPU.h"
 
 //********************************************************************
 //**    implementation
 //********************************************************************
 
-NaverStokesGPU::NaverStokesGPU()
+NavierStokesGPU::NavierStokesGPU()
 {
 
 }

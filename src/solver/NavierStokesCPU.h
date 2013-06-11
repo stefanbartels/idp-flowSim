@@ -1,5 +1,5 @@
-#ifndef NAVERSTOKESGPU_H
-#define NAVERSTOKESGPU_H
+#ifndef NAVIERSTOKESCPU_H
+#define NAVIERSTOKESCPU_H
 
 //********************************************************************
 //**    includes
@@ -10,14 +10,14 @@
 
 //====================================================================
 /*! \class NavierStokesCpu
-    \brief Class for solving of Navier Stokes on GPU
+    \brief Class for solving of Navier Stokes on CPU
 */
 //====================================================================
 
-class NaverStokesGPU : public NavierStokesSolver
+class NavierStokesCPU : public NavierStokesSolver
 {
     public:
-        NaverStokesGPU();
+		NavierStokesCPU();
 };
 
-#endif // NAVERSTOKESGPU_H
+#endif // NAVIERSTOKESCPU_H
