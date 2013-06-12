@@ -10,7 +10,8 @@
 
 class NavierStokesSolver
 {
-
+	public:
+		virtual void doSimulationStep ( ) = 0;
 };
 
 #endif // NAVIERSTOKESSOLVER_H

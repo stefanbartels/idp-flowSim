@@ -33,8 +33,14 @@ class NavierStokesCPU : public NavierStokesSolver
 		double	delx,		//! length delta x of on cell in x-direction
 				dely;		//! length delta y of on cell in y-direction
 
+		// time stepping data
+		double	t0,			//! start time
+				t,			//! current time value
+				delt,		//! time step size
+				tau;		//! safety factor for time step size control
+
 		// pressure-iteration data
-		int		itermax,	//! maximal number of pressure iterations per time step
+		int		it_max,	//! maximal number of pressure iterations per time step
 				it;			//! SOR iteration counter
 
 		double	residual,	//! norm od pressure equation residual
@@ -78,15 +84,95 @@ class NavierStokesCPU : public NavierStokesSolver
 
     public:
 		// -------------------------------------------------
-		//	constructor/destructor
+		//	constructor / destructor
 		// -------------------------------------------------
-		//! @name constructor/destructor
+			//! @name constructor / destructor
 			//! @{
 
 		NavierStokesCPU();
 
 			//! @}
-		
+
+		// -------------------------------------------------
+		//	initialisation
+		// -------------------------------------------------
+			//! @name initialisation
+			//! @{
+
+			//! \brief initialises the arrays U, V and P
+
+		void	init ( );
+
+			//! @}
+
+		// -------------------------------------------------
+		//	execution
+		// -------------------------------------------------
+			//! @name execution
+			//! @{
+
+		void doSimulationStep ( );
+
+			//! @}
+
+	protected:
+		// -------------------------------------------------
+		//	boundaries
+		// -------------------------------------------------
+			//! @name boundaries
+			//! @{
+
+			//!  \brief sets the boundary values for U and V depending on wN, wS, wW and wE
+
+		void	setBoundaryConditions ( );
+
+			//! \brief  TODO
+
+		void	setSpecificBoundaryConditions ( );
+
+		// -------------------------------------------------
+		//	simulation
+		// -------------------------------------------------
+			//! @name simulation
+			//! @{
+
+			//! \brief calculates the stepsize for next time step
+
+		void	computeDeltaT ( );
+
+			//! \brief computes F and G
+
+		void	computeFG ( );
+
+			//! \brief computes the right-hand side of the pressure equation
+
+		void	computeRightHandSide ( );
+
+			//! \brief SOR iteration for pressure Poisson equation
+			//! stores the residual in member variable residual
+			//! \returns number of SOR iterations
+
+		int		SORPoisson ( );
+
+			//! \brief calculates new velocities
+
+		void	adaptUV ( );
+
+			//! @}
+
+
+		// -------------------------------------------------
+		//	helper functions
+		// -------------------------------------------------
+			//! @name helper functions
+			//! @{
+
+		//! \todo doublecheck for correctness
+		double**	allocMatrix ( int width, int height );
+
+		void		initMatrix ( double** matrix, int width, int height, double value );
+
+		void		freeMatrix ( double** matrix );
 };
 
 #endif // NAVIERSTOKESCPU_H
