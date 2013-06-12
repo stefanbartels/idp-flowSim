@@ -18,12 +18,11 @@ int main()
 	// declare variables
 
 	double	t0,		//! start time
-			t;		//! elapsed time
+			t,		//! current time value
+			delt,	//! time step size
+			tau;	//! safety factor for time step size control
 
-	int		n,		//! iteration number
-			it,		//! SOR iteration number
-			it_max;	//! max. number of SOR iterations
-
+	int		n;		//! iteration number
 
 	// read parameters
 
@@ -41,15 +40,15 @@ int main()
 			// compute F(n) and G(n)
 			// compute right hand side of pressure equation
 			// do SOR loop
-			for ( it = 0; it < it_max; ++it ) // TODO: complete exit condition
-			{
+			//for ( it = 0; it < it_max; ++it ) // TODO: complete exit condition
+			//{
 				// do SOR step
 				// compute residual
-			}
+			//}
 			// compute U(n+1) and V(n+1)
 
 		// update visualisation
-
+			// do fancy stuff with opengl
 
 		++n;
 	}
