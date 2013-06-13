@@ -5,7 +5,7 @@
 #include <iostream>
 #include <time.h>
 
-#include "solver/NavierStokesCPU.h"
+#include "solver/navierStokesCPU.h"
 
 //********************************************************************
 //**    implementation

@@ -4,7 +4,14 @@
 //********************************************************************
 
 #include <stdlib.h>
-#include "NavierStokesCPU.h"
+#include "navierStokesCPU.h"
+
+
+// todo: use enum instead of defines?
+#define NO_SLIP		1
+#define FREE_SLIP	2
+#define OUTFLOW 	3
+#define PERIODIC	4
 
 //********************************************************************
 //**    implementation
@@ -27,8 +34,20 @@ NavierStokesCPU::NavierStokesCPU()
 //============================================================================
 void NavierStokesCPU::init(  )
 {
-	// create matrices U, V, P, RHS, F, G
-	// init matrices
+	// allocate memory for matrices U, V, P, RHS, F, G
+
+	_U   = allocMatrix ( _nx + 1, _ny + 1 );
+	_V   = allocMatrix ( _nx + 1, _ny + 1 );
+	_P   = allocMatrix ( _nx + 1, _ny + 1 );
+	_RHS = allocMatrix ( _nx + 1, _ny + 1 );
+	_F   = allocMatrix ( _nx + 1, _ny + 1 );
+	_G   = allocMatrix ( _nx + 1, _ny + 1 );
+
+	// initialise matrices U, V and P with given initial values
+
+	initMatrix ( _U, _nx + 1, _ny + 1, _ui );
+	initMatrix ( _V, _nx + 1, _ny + 1, _vi );
+	initMatrix ( _P, _nx + 1, _ny + 1, _pi );
 }
 
 
@@ -53,7 +72,7 @@ void NavierStokesCPU::doSimulationStep ( )
 	computeRightHandSide();
 
 	// do SOR loop
-	for ( it = 0; it < it_max; ++it ) // TODO: complete exit condition
+	for ( int it = 0; it < _it_max; ++it ) // TODO: complete exit condition
 	{
 		// do SOR step (includes residual computation)
 		SORPoisson();
@@ -72,10 +91,12 @@ void NavierStokesCPU::doSimulationStep ( )
 //============================================================================
 void NavierStokesCPU::setBoundaryConditions ( )
 {
+	// todo
 }
 
 void NavierStokesCPU::setSpecificBoundaryConditions ( )
 {
+	// todo
 }
 
 
@@ -86,23 +107,66 @@ void NavierStokesCPU::setSpecificBoundaryConditions ( )
 //============================================================================
 void NavierStokesCPU::computeDeltaT ( )
 {
+	/*
+	 * Formula 3.50:
+	 *
+	 * delta_t = tau * min(
+	 *   Re/2 * ( 1/delta_x² + 1/delta_y² ),
+	 *   delta_x / |u_max|,
+	 *   delta_y / |v_max|
+	 * )
+	 *
+	 * u_max and v_max are the maximum velocities in U and V
+	 */
+
+	double u_max = 0, v_max = 0;
+	double opt_a, opt_x, opt_y, min;
+
+	// get u_max and v_max: iterate over arrays U and V (same size => one loop)
+	for ( int y = 0; y < _ny; ++y )
+	{
+		for ( int x = 0; x < _nx; ++x )
+		{
+			if( abs( _U[y][x] ) > u_max )
+				u_max = _U[y][x];
+			if( abs( _V[y][x] ) > v_max )
+				v_max = _V[y][x];
+		}
+	}
+
+	// compute the three options for the min-function
+	opt_a = ( _re/2 ) * ( 1/(_dx*_dx) + 1/(_dy*_dy) );
+	opt_x = _dx / abs( u_max );
+	opt_y = _dx / abs( u_max );
+
+	// get smallest value
+	min = opt_a < opt_x ? opt_a : opt_x;
+	min = min   < opt_y ? min   : opt_y;
+
+	// compute delta t
+	_dt = _tau * min;
 }
 
 void NavierStokesCPU::computeFG ( )
 {
+	// todo
 }
 
 void NavierStokesCPU::computeRightHandSide ( )
 {
+	// todo
 }
 
 int NavierStokesCPU::SORPoisson ( )
 {
+	// todo
+
 	return 0;
 }
 
 void NavierStokesCPU::adaptUV ( )
 {
+	// todo
 }
 
 

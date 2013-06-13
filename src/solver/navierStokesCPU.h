@@ -5,7 +5,7 @@
 //**    includes
 //********************************************************************
 
-#include "NavierStokesSolver.h"
+#include "navierStokesSolver.h"
 
 
 //====================================================================
@@ -24,43 +24,43 @@ class NavierStokesCPU : public NavierStokesSolver
 			//! @{
 
 		// geometry data
-		double	nx,			//! domain size in x-direction
-				ny;			//! domain size in y-direction
+		double	_xlength,	//! domain size in x-direction
+				_ylength;	//! domain size in y-direction
 
-		int		imax,		//! number of interior cells in x-direction
-				jmax;		//! number of interior cells in y-direction
+		int		_nx,		//! number of interior cells in x-direction
+				_ny;		//! number of interior cells in y-direction
 
-		double	delx,		//! length delta x of on cell in x-direction
-				dely;		//! length delta y of on cell in y-direction
+		double	_dx,		//! length delta x of on cell in x-direction
+				_dy;		//! length delta y of on cell in y-direction
 
 		// time stepping data
-		double	t0,			//! start time
-				t,			//! current time value
-				delt,		//! time step size
-				tau;		//! safety factor for time step size control
+		double	_t0,		//! start time
+				_t,			//! current time value
+				_dt,		//! time step size
+				_tau;		//! safety factor for time step size control
 
 		// pressure-iteration data
-		int		it_max,	//! maximal number of pressure iterations per time step
-				it;			//! SOR iteration counter
+		int		_it_max;	//! maximal number of pressure iterations per time step
+				//_it;		//! SOR iteration counter (-> local variable)
 
-		double	residual,	//! norm od pressure equation residual
-				epsilon,	//! stopping tolerance eps for pressure iteration
-				omega,		//! relaxation parameter for SOR iteration
-				gamma;		//! upwind differencing factor
+		double	_residual,	//! norm od pressure equation residual
+				_epsilon,	//! stopping tolerance eps for pressure iteration
+				_omega,		//! relaxation parameter for SOR iteration
+				_gamma;		//! upwind differencing factor
 
 		// problem dependent quantities
-		double	re,			//! Reynolds number Re
-				gx,			//! body force gx (e.g. gravity)
-				gy;			//! body force gy (e.g. gravity)
+		double	_re,		//! Reynolds number Re
+				_gx,		//! body force gx (e.g. gravity)
+				_gy;		//! body force gy (e.g. gravity)
 
-		double	ui,			//! initial velocity in x-direction
-				vi,			//! initial velocity in y-direction
-				pi;			//! initial pressure
+		double	_ui,		//! initial velocity in x-direction
+				_vi,		//! initial velocity in y-direction
+				_pi;		//! initial pressure
 
-		int		wN,			//! boundary condition along nothern boundary
-				wS,			//! boundary condition along southern boundary
-				wW,			//! boundary condition along western boundary
-				wE;			//! boundary condition along eastern boundary
+		int		_wN,		//! boundary condition along nothern boundary
+				_wS,		//! boundary condition along southern boundary
+				_wW,		//! boundary condition along western boundary
+				_wE;		//! boundary condition along eastern boundary
 
 							/*
 							 * boundary conditions:
@@ -70,15 +70,15 @@ class NavierStokesCPU : public NavierStokesSolver
 							 * 4 = periodic
 							 */
 
-		char	problem;	//! flow-specific quantities, depending on problem type
+		char	_problem;	//! flow-specific quantities, depending on problem type
 
 		// arrays
-		double	**U,		//! velocity in x-direction
-				**V,		//! velocity in y-direction
-				**P,		//! pressure
-				**RHS,		//! right-hand side for pressure iteration
-				**F,
-				**G;
+		double	**_U,		//! velocity in x-direction
+				**_V,		//! velocity in y-direction
+				**_P,		//! pressure
+				**_RHS,		//! right-hand side for pressure iteration
+				**_F,
+				**_G;
 
 			//! @}
 
@@ -137,6 +137,7 @@ class NavierStokesCPU : public NavierStokesSolver
 			//! @{
 
 			//! \brief calculates the stepsize for next time step
+			//! According to formula 3.50
 
 		void	computeDeltaT ( );
 
