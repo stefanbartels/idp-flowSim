@@ -171,7 +171,7 @@ class NavierStokesCPU : public NavierStokesSolver
 		//! \todo doublecheck for correctness
 		double**	allocMatrix ( int width, int height );
 
-		void		initMatrix ( double** matrix, int width, int height, double value );
+		void		setMatrix ( double** matrix, int xStart, int xStop, int yStart, int yStop, double value );
 
 		void		freeMatrix ( double** matrix );
 };

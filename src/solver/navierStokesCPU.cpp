@@ -36,18 +36,18 @@ void NavierStokesCPU::init(  )
 {
 	// allocate memory for matrices U, V, P, RHS, F, G
 
-	_U   = allocMatrix ( _nx + 1, _ny + 1 );
-	_V   = allocMatrix ( _nx + 1, _ny + 1 );
-	_P   = allocMatrix ( _nx + 1, _ny + 1 );
-	_RHS = allocMatrix ( _nx + 1, _ny + 1 );
-	_F   = allocMatrix ( _nx + 1, _ny + 1 );
-	_G   = allocMatrix ( _nx + 1, _ny + 1 );
+	_U   = allocMatrix ( _nx + 2, _ny + 2 );
+	_V   = allocMatrix ( _nx + 2, _ny + 2 );
+	_P   = allocMatrix ( _nx + 2, _ny + 2 );
+	_RHS = allocMatrix ( _nx + 2, _ny + 2 );
+	_F   = allocMatrix ( _nx + 2, _ny + 2 );
+	_G   = allocMatrix ( _nx + 2, _ny + 2 );
 
 	// initialise matrices U, V and P with given initial values
 
-	initMatrix ( _U, _nx + 1, _ny + 1, _ui );
-	initMatrix ( _V, _nx + 1, _ny + 1, _vi );
-	initMatrix ( _P, _nx + 1, _ny + 1, _pi );
+	setMatrix ( _U, 1, _nx + 1, 1, _ny + 1, _ui );
+	setMatrix ( _V, 1, _nx + 1, 1, _ny + 1, _vi );
+	setMatrix ( _P, 1, _nx + 1, 1, _ny + 1, _pi );
 }
 
 
@@ -91,7 +91,114 @@ void NavierStokesCPU::doSimulationStep ( )
 //============================================================================
 void NavierStokesCPU::setBoundaryConditions ( )
 {
-	// todo
+	// todo: is it correct to skip corners?
+
+	int nx1 = _nx + 1;
+	int ny1 = _ny + 1;
+
+	//set northern boundary depending on wN
+	switch( _wN )
+	{
+		case NO_SLIP:
+			for( int x = 1; x < nx1; ++x )
+			{
+				_U[0][x] = -_U[1][x];
+				_V[0][x] = 0.0;
+			}
+			break;
+		case FREE_SLIP:
+			for( int x = 1; x < nx1; ++x )
+			{
+				_U[0][x] = _U[1][x];
+				_V[0][x] = 0.0;
+			}
+			break;
+		case OUTFLOW:
+			for( int x = 1; x < nx1; ++x )
+			{
+				_U[0][x] = _U[1][x];
+				_V[0][x] = _V[1][x];
+			}
+			break;
+	}
+
+	//set southern boundary depending on wS
+	switch( _wS )
+	{
+		case NO_SLIP:
+			for( int x = 1; x < nx1; ++x )
+			{
+				_U[ny1][x] = -_U[_ny][x];
+				_V[_ny][x] = 0.0;
+			}
+			break;
+		case FREE_SLIP:
+			for( int x = 1; x < nx1; ++x )
+			{
+				_U[ny1][x] = _U[_ny][x];
+				_V[_ny][x] = 0.0;
+			}
+			break;
+		case OUTFLOW:
+			for( int x = 1; x < nx1; ++x )
+			{
+				_U[ny1][x] = _U[_ny][x];
+				_V[_ny][x] = _V[_ny-1][x];
+			}
+			break;
+	}
+
+	//set western boundary depending on wW
+	switch( _wW )
+	{
+		case NO_SLIP:
+			for( int y = 1; y < ny1; ++y )
+			{
+				_U[y][0] = 0.0;
+				_V[y][0] = -_V[y][1];
+			}
+			break;
+		case FREE_SLIP:
+			for( int y = 1; y < ny1; ++y )
+			{
+				_U[y][0] = 0.0;
+				_V[y][0] = _V[y][1];
+			}
+			break;
+		case OUTFLOW:
+			for( int y = 1; y < ny1; ++y )
+			{
+				_U[y][0] = _U[y][1];
+				_V[y][0] = _V[y][1];
+			}
+			break;
+	}
+
+	//set eastern boundary depending on wE
+	switch( _wE )
+	{
+		case NO_SLIP:
+			for( int y = 1; y < ny1; ++y )
+			{
+				_U[y][_nx] = 0.0;
+				_V[y][nx1] = -_U[y][_nx];
+			}
+			break;
+		case FREE_SLIP:
+			for( int y = 1; y < ny1; ++y )
+			{
+				_U[y][_nx] = 0.0;
+				_V[y][nx1] = _U[y][_nx];
+			}
+			break;
+		case OUTFLOW:
+			for( int y = 1; y < ny1; ++y )
+			{
+				_U[y][_nx] = _U[y][_nx-1];
+				_V[y][nx1] = _V[y][_nx];
+			}
+			break;
+	}
 }
 
 void NavierStokesCPU::setSpecificBoundaryConditions ( )
@@ -123,9 +230,10 @@ void NavierStokesCPU::computeDeltaT ( )
 	double opt_a, opt_x, opt_y, min;
 
 	// get u_max and v_max: iterate over arrays U and V (same size => one loop)
-	for ( int y = 0; y < _ny; ++y )
+	// todo: 0 - nx+1 or 1 - nx?
+	for ( int y = 0; y < _ny + 2; ++y )
 	{
-		for ( int x = 0; x < _nx; ++x )
+		for ( int x = 0; x < _nx + 2; ++x )
 		{
 			if( abs( _U[y][x] ) > u_max )
 				u_max = _U[y][x];
@@ -199,16 +307,22 @@ double** NavierStokesCPU::allocMatrix (
 }
 
 //============================================================================
-void NavierStokesCPU::initMatrix (
+void NavierStokesCPU::setMatrix (
 		double**	matrix,
-		int			width,
-		int			height,
+		int			xStart,
+		int			xStop,
+		int			yStart,
+		int			yStop,
 		double		value
 	)
 {
-	for ( int y = 0; y <= height; ++y )
+	// faster than comparing using <=
+	++xStop;
+	++yStop;
+
+	for ( int y = yStart; y < yStop; ++y )
 	{
-		for( int x = 0; x <= width; ++x )
+		for( int x = xStart; x < xStop; ++x )
 		{
 			matrix[y][x] = value;
 		}
