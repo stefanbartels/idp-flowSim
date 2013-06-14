@@ -75,7 +75,7 @@ void NavierStokesCPU::doSimulationStep ( )
 	for ( int it = 0; it < _it_max; ++it ) // TODO: complete exit condition
 	{
 		// do SOR step (includes residual computation)
-		SORPoisson();
+		_residual =  SORPoisson();
 
 	}
 
@@ -328,9 +328,54 @@ void NavierStokesCPU::computeRightHandSide ( )
 //============================================================================
 int NavierStokesCPU::SORPoisson ( )
 {
-	// todo
+	// SOR step according to formula 3.44
 
-	return 0.0;
+	int nx1 = _nx + 1;
+	int ny1 = _ny + 1;
+
+	// gauss seidel is writing back the results back to the original array immediately
+	// so a mixture of values from timestep n and n+1 is used
+
+	// the epsilon-parameters in formula 3.44 are set to 1.0 according to page 38
+	double constant_expr = _omega / ( 2.0 / (_dx * _dx) + 2.0 / (_dy * _dy) );
+
+	for ( int y = 1; y < ny1; ++y )
+	{
+		for ( int x = 1; x < nx1; ++x )
+		{
+			_P[y][x] =
+				( 1 - _omega ) * _P[y][x] + constant_expr *
+				(
+					( _P[y][x-1] + _P[y][x+1] ) / (_dx * _dx)
+					+
+					( _P[y-1][x] + _P[y+1][x] ) / (_dy * _dy)
+					-
+					_RHS[y][x]
+				);
+		}
+	}
+
+	// compute residual, using L²-Norm (according to formula 3.45 and 3.46)
+
+	double tmp;
+	double sum = 0.0;
+
+	for ( int y = 1; y < ny1; ++y )
+	{
+		for ( int x = 1; x < nx1; ++x )
+		{
+			tmp =
+				( ( _P[y][x+1] - _P[y][x] ) - ( _P[y][x] - _P[y][x-1] ) ) / (_dx * _dx) +
+				( ( _P[y+1][x] - _P[y][x] ) - ( _P[y][x] - _P[y-1][x] ) ) / (_dy * _dy) -
+				_RHS[y][x];
+
+			sum += tmp * tmp;
+		}
+	}
+
+	// compute L²-Norm and return residual
+
+	return sqrt( sum / ( _nx * _ny ) );
 }
 
 //============================================================================
