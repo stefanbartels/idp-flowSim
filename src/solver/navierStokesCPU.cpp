@@ -340,6 +340,9 @@ int NavierStokesCPU::SORPoisson ( )
 	// the epsilon-parameters in formula 3.44 are set to 1.0 according to page 38
 	double constant_expr = _omega / ( 2.0 / (_dx * _dx) + 2.0 / (_dy * _dy) );
 
+	double dx2 = _dx * _dx;
+	double dy2 = _dy * _dy;
+
 	for ( int y = 1; y < ny1; ++y )
 	{
 		for ( int x = 1; x < nx1; ++x )
@@ -347,9 +350,9 @@ int NavierStokesCPU::SORPoisson ( )
 			_P[y][x] =
 				( 1 - _omega ) * _P[y][x] + constant_expr *
 				(
-					( _P[y][x-1] + _P[y][x+1] ) / (_dx * _dx)
+					( _P[y][x-1] + _P[y][x+1] ) / dx2
 					+
-					( _P[y-1][x] + _P[y+1][x] ) / (_dy * _dy)
+					( _P[y-1][x] + _P[y+1][x] ) / dy2
 					-
 					_RHS[y][x]
 				);
@@ -366,8 +369,8 @@ int NavierStokesCPU::SORPoisson ( )
 		for ( int x = 1; x < nx1; ++x )
 		{
 			tmp =
-				( ( _P[y][x+1] - _P[y][x] ) - ( _P[y][x] - _P[y][x-1] ) ) / (_dx * _dx) +
-				( ( _P[y+1][x] - _P[y][x] ) - ( _P[y][x] - _P[y-1][x] ) ) / (_dy * _dy) -
+				( ( _P[y][x+1] - _P[y][x] ) - ( _P[y][x] - _P[y][x-1] ) ) / dx2 +
+				( ( _P[y+1][x] - _P[y][x] ) - ( _P[y][x] - _P[y-1][x] ) ) / dy2 -
 				_RHS[y][x];
 
 			sum += tmp * tmp;
@@ -382,7 +385,31 @@ int NavierStokesCPU::SORPoisson ( )
 //============================================================================
 void NavierStokesCPU::adaptUV ( )
 {
-	// todo
+	// update u and v according to 3.34 and 3.35
+
+	int nx1 = _nx + 1;
+	int ny1 = _ny + 1;
+
+	double dt_dx = _dt / _dx;
+	double dt_dy = _dt / _dy;
+
+	// update u. two nested loops because of different limits
+	for ( int y = 1; y < ny1; ++y )
+	{
+		for ( int x = 1; x < _nx; ++x )
+		{
+			_U[y][x] = _F[y][x] - dt_dx * ( _P[y][x+1] - _P[y][x] );
+		}
+	}
+
+	// update v
+	for ( int y = 1; y < _ny; ++y )
+	{
+		for ( int x = 1; x < nx1; ++x )
+		{
+			_V[y][x] = _G[y][x] - dt_dy * ( _P[y+1][x] - _P[y][x] );
+		}
+	}
 }
 
 
