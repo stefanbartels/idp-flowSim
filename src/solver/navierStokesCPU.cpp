@@ -255,15 +255,20 @@ void NavierStokesCPU::computeDeltaT ( )
 	_dt = _tau * min;
 }
 
+//============================================================================
 void NavierStokesCPU::computeFG ( )
 {
 	// todo: take obstacles into account
 
 	double alpha = 0.0; // todo: select alpha
 
-	for ( int y = 1; y <= _ny; ++y )
+	// faster than comparing using <=
+	int nx1 = _nx + 1;
+	int ny1 = _ny + 1;
+
+	for ( int y = 1; y < ny1; ++y )
 	{
-		for ( int x = 1; x <= _nx; ++x )
+		for ( int x = 1; x < nx1; ++x )
 		{
 			// compute F according to formula 3.36
 
@@ -298,11 +303,29 @@ void NavierStokesCPU::computeFG ( )
 
 }
 
+//============================================================================
 void NavierStokesCPU::computeRightHandSide ( )
 {
-	// todo
+	// compute right-hand side of poisson equation according to formula 3.38
+
+	// faster than comparing using <=
+	int nx1 = _nx + 1;
+	int ny1 = _ny + 1;
+
+	for ( int y = 1; y < ny1; ++y )
+	{
+		for ( int x = 1; x < nx1; ++x )
+		{
+			_RHS[y][x] = ( 1 / _dt ) *
+				(
+					( _F[y][x] - _F[y][x-1] ) / _dx +
+					( _G[y][x] - _G[y-1][x] ) / _dy
+				);
+		}
+	}
 }
 
+//============================================================================
 int NavierStokesCPU::SORPoisson ( )
 {
 	// todo
@@ -310,6 +333,7 @@ int NavierStokesCPU::SORPoisson ( )
 	return 0.0;
 }
 
+//============================================================================
 void NavierStokesCPU::adaptUV ( )
 {
 	// todo
@@ -328,16 +352,19 @@ void NavierStokesCPU::adaptUV ( )
 //	F & G helper functions
 // -------------------------------------------------
 
+//============================================================================
 inline double NavierStokesCPU::d2m_dx2 ( double** M, int x, int y )
 {
 	return ( M[y][x-1] - 2.0 * M[y][x] + M[y][x+1] ) / ( _dx * _dx );
 }
 
+//============================================================================
 inline double NavierStokesCPU::d2m_dy2 ( double** M, int x, int y )
 {
 	return ( M[y-1][x] - 2.0 * M[y][x] + M[y+1][x] ) / ( _dy * _dy );
 }
 
+//============================================================================
 inline double NavierStokesCPU::du2_dx  ( int x, int y, double alpha )
 {
 	// todo: factor out  _dx and /2.0
@@ -362,6 +389,7 @@ inline double NavierStokesCPU::du2_dx  ( int x, int y, double alpha )
 		);
 }
 
+//============================================================================
 inline double NavierStokesCPU::dv2_dy  ( int x, int y, double alpha )
 {
 	// todo: factor out _dy and /2.0
@@ -386,6 +414,7 @@ inline double NavierStokesCPU::dv2_dy  ( int x, int y, double alpha )
 		);
 }
 
+//============================================================================
 inline double NavierStokesCPU::duv_dy  ( int x, int y, double alpha )
 {
 	// todo: factor out _dy and /2.0
@@ -410,6 +439,7 @@ inline double NavierStokesCPU::duv_dy  ( int x, int y, double alpha )
 		);
 }
 
+//============================================================================
 inline double NavierStokesCPU::duv_dx  ( int x, int y, double alpha )
 {
 	// todo: factor out _dx and /2.0
