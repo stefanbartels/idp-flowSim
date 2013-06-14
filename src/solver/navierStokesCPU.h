@@ -43,8 +43,7 @@ class NavierStokesCPU : public NavierStokesSolver
 		int		_it_max;	//! maximal number of pressure iterations per time step
 				//_it;		//! SOR iteration counter (-> local variable)
 
-		double	_residual,	//! norm od pressure equation residual
-				_epsilon,	//! stopping tolerance eps for pressure iteration
+		double	_epsilon,	//! stopping tolerance eps for pressure iteration
 				_omega,		//! relaxation parameter for SOR iteration
 				_gamma;		//! upwind differencing factor
 
@@ -182,8 +181,8 @@ class NavierStokesCPU : public NavierStokesSolver
 		inline double du2_dx  ( int x, int y, double alpha );
 		inline double dv2_dy  ( int x, int y, double alpha );
 
-		inline double duv_dy  ( int x, int y, double alpha );
 		inline double duv_dx  ( int x, int y, double alpha );
+		inline double duv_dy  ( int x, int y, double alpha );
 
 			//! @}
 

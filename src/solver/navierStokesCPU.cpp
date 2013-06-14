@@ -72,12 +72,13 @@ void NavierStokesCPU::doSimulationStep ( )
 	// compute right hand side of pressure equation
 	computeRightHandSide();
 
-	// do SOR loop
-	for ( int it = 0; it < _it_max; ++it ) // TODO: complete exit condition
+	// poisson overrelaxation loop
+	double residual = 0.0;
+
+	for ( int it = 0; it < _it_max && residual > _epsilon; ++it )
 	{
 		// do SOR step (includes residual computation)
-		_residual =  SORPoisson();
-
+		residual =  SORPoisson();
 	}
 
 	// compute U(n+1) and V(n+1)
@@ -230,11 +231,15 @@ void NavierStokesCPU::computeDeltaT ( )
 	double u_max = 0, v_max = 0;
 	double opt_a, opt_x, opt_y, min;
 
+	// faster than comparing using <=
+	int nx1 = _nx + 1;
+	int ny1 = _ny + 1;
+
 	// get u_max and v_max: iterate over arrays U and V (same size => one loop)
 	// todo: 0 - nx+1 or 1 - nx?
-	for ( int y = 0; y < _ny + 2; ++y )
+	for ( int y = 1; y < ny1; ++y )
 	{
-		for ( int x = 0; x < _nx + 2; ++x )
+		for ( int x = 1; x < nx1; ++x )
 		{
 			if( abs( _U[y][x] ) > u_max )
 				u_max = _U[y][x];
@@ -261,7 +266,7 @@ void NavierStokesCPU::computeFG ( )
 {
 	// todo: take obstacles into account
 
-	double alpha = 0.0; // todo: select alpha
+	double alpha = 1.0; // todo: select alpha
 
 	// faster than comparing using <=
 	int nx1 = _nx + 1;
@@ -440,26 +445,25 @@ inline double NavierStokesCPU::d2m_dy2 ( double** M, int x, int y )
 //============================================================================
 inline double NavierStokesCPU::du2_dx  ( int x, int y, double alpha )
 {
-	// todo: factor out  _dx and /2.0
-
 	return
-		( 1.0 / _dx ) *
 		(
-			( ( _U[y][x] + _U[y][x+1] ) / 2.0 ) *
-			( ( _U[y][x] + _U[y][x+1] ) / 2.0 )
-			-
-			( ( _U[y][x-1] + _U[y][x] ) / 2.0 ) *
-			( ( _U[y][x-1] + _U[y][x] ) / 2.0 )
-		)
-		+
-		alpha * ( 1 / _dx ) *
-		(
-			( abs( _U[y][x] + _U[y][x+1] ) / 2.0 ) *
-			(    ( _U[y][x] - _U[y][x+1] ) / 2.0 )
-			-
-			( abs( _U[y][x-1] + _U[y][x] ) / 2.0 ) *
-			(    ( _U[y][x-1] - _U[y][x] ) / 2.0 )
-		);
+			(
+				( _U[y][x] + _U[y][x+1] ) *
+				( _U[y][x] + _U[y][x+1] )
+				-
+				( _U[y][x-1] + _U[y][x] ) *
+				( _U[y][x-1] + _U[y][x] )
+			)
+			+
+			alpha *
+			(
+				abs( _U[y][x] + _U[y][x+1] ) *
+				   ( _U[y][x] - _U[y][x+1] )
+				-
+				abs( _U[y][x-1] + _U[y][x] ) *
+				   ( _U[y][x-1] - _U[y][x] )
+			)
+		) / ( 4.0 * _dx);
 }
 
 //============================================================================
@@ -468,77 +472,73 @@ inline double NavierStokesCPU::dv2_dy  ( int x, int y, double alpha )
 	// todo: factor out _dy and /2.0
 
 	return
-		( 1.0 / _dy ) *
 		(
-			( ( _V[y][x] + _V[y+1][x] ) / 2.0 ) *
-			( ( _V[y][x] + _V[y+1][x] ) / 2.0 )
-			-
-			( ( _V[y-1][x] + _V[y][x] ) / 2.0 ) *
-			( ( _V[y-1][x] + _V[y][x] ) / 2.0 )
-		)
-		+
-		alpha * ( 1 / _dy ) *
-		(
-			( abs( _V[y][x] + _V[y+1][x] ) / 2.0 ) *
-			(    ( _V[y][x] - _V[y+1][x] ) / 2.0 )
-			-
-			( abs( _V[y-1][x] + _V[y][x] ) / 2.0 ) *
-			(    ( _V[y-1][x] - _V[y][x] ) / 2.0 )
-		);
-}
-
-//============================================================================
-inline double NavierStokesCPU::duv_dy  ( int x, int y, double alpha )
-{
-	// todo: factor out _dy and /2.0
-
-	return
-		( 1.0 / _dy ) *
-		(
-			( ( _V[y][x] + _V[y][x+1] ) / 2.0 ) *
-			( ( _U[y][x] + _U[y+1][x] ) / 2.0 )
-			-
-			( ( _V[y-1][x] + _V[y-1][x+1] ) / 2.0 ) *
-			( ( _U[y-1][x] + _U[y][x] )     / 2.0 )
-		)
-		+
-		( alpha / _dy ) *
-		(
-				( abs( _V[y][x] + _V[y][x+1] ) / 2.0 ) *
-				(    ( _U[y][x] - _U[y+1][x] ) / 2.0 )
+			(
+				( _V[y][x] + _V[y+1][x] ) *
+				( _V[y][x] + _V[y+1][x] )
 				-
-				( abs( _V[y-1][x] + _V[y-1][x+1] ) / 2.0 ) *
-				(    ( _U[y-1][x] - _U[y][x] )     / 2.0 )
-		);
+				( _V[y-1][x] + _V[y][x] ) *
+				( _V[y-1][x] + _V[y][x] )
+			)
+			+
+			alpha *
+			(
+				abs( _V[y][x] + _V[y+1][x] ) *
+				   ( _V[y][x] - _V[y+1][x] )
+				-
+				abs( _V[y-1][x] + _V[y][x] ) *
+				   ( _V[y-1][x] - _V[y][x] )
+			)
+		) / ( 4.0 * _dy );
 }
 
 //============================================================================
 inline double NavierStokesCPU::duv_dx  ( int x, int y, double alpha )
 {
-	// todo: factor out _dx and /2.0
-
 	return
-		( 1.0 / _dx ) *
 		(
-			( ( _U[y][x] + _U[y+1][x] ) / 2.0 ) *
-			( ( _V[y][x] + _V[y][x+1] ) / 2.0 )
-			-
-			( ( _U[y][x-1] + _U[y+1][x-1] ) / 2.0 ) *
-			( ( _V[y][x-1] + _V[y][x] )     / 2.0 )
-		)
-		+
-		( alpha / _dx ) *
-		(
-				( abs( _U[y][x] + _U[y+1][x] ) / 2.0 ) *
-				(    ( _V[y][x] - _V[y][x+1] ) / 2.0 )
+			(
+				( _U[y][x] + _U[y+1][x] ) *
+				( _V[y][x] + _V[y][x+1] )
 				-
-				( abs( _U[y][x-1] + _U[y+1][x-1] ) / 2.0 ) *
-				(    ( _V[y][x-1] - _V[y][x] )     / 2.0 )
-		);
+				( _U[y][x-1] + _U[y+1][x-1] ) *
+				( _V[y][x-1] + _V[y][x] )
+			)
+			+
+			alpha *
+			(
+					abs( _U[y][x] + _U[y+1][x] ) *
+					   ( _V[y][x] - _V[y][x+1] )
+					-
+					abs( _U[y][x-1] + _U[y+1][x-1] ) *
+					   ( _V[y][x-1] - _V[y][x] )
+			)
+		) / ( 4.0 * _dx );
 }
 
-
-
+//============================================================================
+inline double NavierStokesCPU::duv_dy  ( int x, int y, double alpha )
+{
+	return
+		(
+			(
+				( _V[y][x] + _V[y][x+1] ) *
+				( _U[y][x] + _U[y+1][x] )
+				-
+				( _V[y-1][x] + _V[y-1][x+1] ) *
+				( _U[y-1][x] + _U[y][x] )
+			)
+			+
+			alpha *
+			(
+				abs( _V[y][x] + _V[y][x+1] ) *
+				   ( _U[y][x] - _U[y+1][x] )
+				-
+				abs( _V[y-1][x] + _V[y-1][x+1] ) *
+				   ( _U[y-1][x] - _U[y][x] )
+			)
+		) / ( 4.0 * _dy );
+}
 
 
 
