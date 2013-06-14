@@ -111,7 +111,7 @@ class NavierStokesCPU : public NavierStokesSolver
 			//! @name execution
 			//! @{
 
-		void doSimulationStep ( );
+		void	doSimulationStep ( );
 
 			//! @}
 
@@ -142,6 +142,7 @@ class NavierStokesCPU : public NavierStokesSolver
 		void	computeDeltaT ( );
 
 			//! \brief computes F and G
+			//! \todo take obstacles into account
 
 		void	computeFG ( );
 
@@ -162,6 +163,37 @@ class NavierStokesCPU : public NavierStokesSolver
 			//! @}
 
 
+
+
+
+
+
+
+
+		// -------------------------------------------------
+		//	F & G helper functions
+		// -------------------------------------------------
+			//! @name helper functions
+			//! @{
+
+		inline double d2m_dx2 ( double** M, int x, int y );
+		inline double d2m_dy2 ( double** M, int x, int y );
+
+		inline double du2_dx  ( int x, int y, double alpha );
+		inline double dv2_dy  ( int x, int y, double alpha );
+
+		inline double duv_dy  ( int x, int y, double alpha );
+		inline double duv_dx  ( int x, int y, double alpha );
+
+			//! @}
+
+
+
+
+
+
+
+
 		// -------------------------------------------------
 		//	helper functions
 		// -------------------------------------------------
@@ -169,11 +201,23 @@ class NavierStokesCPU : public NavierStokesSolver
 			//! @{
 
 		//! \todo doublecheck for correctness
-		double**	allocMatrix ( int width, int height );
+		double**	allocMatrix (
+				int width,
+				int height
+			);
 
-		void		setMatrix ( double** matrix, int xStart, int xStop, int yStart, int yStop, double value );
+		void		setMatrix (
+				double** matrix,
+				int xStart,
+				int xStop,
+				int yStart,
+				int yStop,
+				double value
+			);
 
-		void		freeMatrix ( double** matrix );
+		void		freeMatrix (
+				double** matrix
+			);
 };
 
 #endif // NAVIERSTOKESCPU_H

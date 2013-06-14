@@ -63,7 +63,7 @@ void NavierStokesCPU::doSimulationStep ( )
 
 	// set boundary values for u and v
 	setBoundaryConditions();
-	// setSpecificBoundaryConditions();
+	// setSpecificBoundaryConditions(); // todo
 
 	// compute F(n) and G(n)
 	computeFG();
@@ -243,7 +243,7 @@ void NavierStokesCPU::computeDeltaT ( )
 	}
 
 	// compute the three options for the min-function
-	opt_a = ( _re/2 ) * ( 1/(_dx*_dx) + 1/(_dy*_dy) );
+	opt_a = ( _re / 2.0 ) * ( 1.0 / (_dx*_dx) + 1.0 / (_dy*_dy) );
 	opt_x = _dx / abs( u_max );
 	opt_y = _dx / abs( u_max );
 
@@ -257,7 +257,45 @@ void NavierStokesCPU::computeDeltaT ( )
 
 void NavierStokesCPU::computeFG ( )
 {
-	// todo
+	// todo: take obstacles into account
+
+	double alpha = 0.0; // todo: select alpha
+
+	for ( int y = 1; y <= _ny; ++y )
+	{
+		for ( int x = 1; x <= _nx; ++x )
+		{
+			// compute F according to formula 3.36
+
+			_F[y][x] =
+				_U[y][x] + _dt *
+				(
+					(
+						d2m_dx2 ( _U, x, y ) +
+						d2m_dy2 ( _U, x, y )
+					) / _re
+					- du2_dx ( x, y, alpha )
+					- duv_dy ( x, y, alpha )
+					+ _gx
+				);
+
+
+			// compute G according to formula 3.37
+
+			_G[y][x] =
+				_V[y][x] + _dt *
+				(
+					(
+						d2m_dx2 ( _V, x, y ) +
+						d2m_dy2 ( _V, x, y )
+					) / _re
+					- dv2_dy ( x, y, alpha )
+					- duv_dx ( x, y, alpha )
+					+ _gy
+				);
+		}
+	}
+
 }
 
 void NavierStokesCPU::computeRightHandSide ( )
@@ -269,13 +307,136 @@ int NavierStokesCPU::SORPoisson ( )
 {
 	// todo
 
-	return 0;
+	return 0.0;
 }
 
 void NavierStokesCPU::adaptUV ( )
 {
 	// todo
 }
+
+
+
+
+
+
+
+
+
+
+// -------------------------------------------------
+//	F & G helper functions
+// -------------------------------------------------
+
+inline double NavierStokesCPU::d2m_dx2 ( double** M, int x, int y )
+{
+	return ( M[y][x-1] - 2.0 * M[y][x] + M[y][x+1] ) / ( _dx * _dx );
+}
+
+inline double NavierStokesCPU::d2m_dy2 ( double** M, int x, int y )
+{
+	return ( M[y-1][x] - 2.0 * M[y][x] + M[y+1][x] ) / ( _dy * _dy );
+}
+
+inline double NavierStokesCPU::du2_dx  ( int x, int y, double alpha )
+{
+	// todo: factor out  _dx and /2.0
+
+	return
+		( 1.0 / _dx ) *
+		(
+			( ( _U[y][x] + _U[y][x+1] ) / 2.0 ) *
+			( ( _U[y][x] + _U[y][x+1] ) / 2.0 )
+			-
+			( ( _U[y][x-1] + _U[y][x] ) / 2.0 ) *
+			( ( _U[y][x-1] + _U[y][x] ) / 2.0 )
+		)
+		+
+		alpha * ( 1 / _dx ) *
+		(
+			( abs( _U[y][x] + _U[y][x+1] ) / 2.0 ) *
+			(    ( _U[y][x] - _U[y][x+1] ) / 2.0 )
+			-
+			( abs( _U[y][x-1] + _U[y][x] ) / 2.0 ) *
+			(    ( _U[y][x-1] - _U[y][x] ) / 2.0 )
+		);
+}
+
+inline double NavierStokesCPU::dv2_dy  ( int x, int y, double alpha )
+{
+	// todo: factor out _dy and /2.0
+
+	return
+		( 1.0 / _dy ) *
+		(
+			( ( _V[y][x] + _V[y+1][x] ) / 2.0 ) *
+			( ( _V[y][x] + _V[y+1][x] ) / 2.0 )
+			-
+			( ( _V[y-1][x] + _V[y][x] ) / 2.0 ) *
+			( ( _V[y-1][x] + _V[y][x] ) / 2.0 )
+		)
+		+
+		alpha * ( 1 / _dy ) *
+		(
+			( abs( _V[y][x] + _V[y+1][x] ) / 2.0 ) *
+			(    ( _V[y][x] - _V[y+1][x] ) / 2.0 )
+			-
+			( abs( _V[y-1][x] + _V[y][x] ) / 2.0 ) *
+			(    ( _V[y-1][x] - _V[y][x] ) / 2.0 )
+		);
+}
+
+inline double NavierStokesCPU::duv_dy  ( int x, int y, double alpha )
+{
+	// todo: factor out _dy and /2.0
+
+	return
+		( 1.0 / _dy ) *
+		(
+			( ( _V[y][x] + _V[y][x+1] ) / 2.0 ) *
+			( ( _U[y][x] + _U[y+1][x] ) / 2.0 )
+			-
+			( ( _V[y-1][x] + _V[y-1][x+1] ) / 2.0 ) *
+			( ( _U[y-1][x] + _U[y][x] )     / 2.0 )
+		)
+		+
+		( alpha / _dy ) *
+		(
+				( abs( _V[y][x] + _V[y][x+1] ) / 2.0 ) *
+				(    ( _U[y][x] - _U[y+1][x] ) / 2.0 )
+				-
+				( abs( _V[y-1][x] + _V[y-1][x+1] ) / 2.0 ) *
+				(    ( _U[y-1][x] - _U[y][x] )     / 2.0 )
+		);
+}
+
+inline double NavierStokesCPU::duv_dx  ( int x, int y, double alpha )
+{
+	// todo: factor out _dx and /2.0
+
+	return
+		( 1.0 / _dx ) *
+		(
+			( ( _U[y][x] + _U[y+1][x] ) / 2.0 ) *
+			( ( _V[y][x] + _V[y][x+1] ) / 2.0 )
+			-
+			( ( _U[y][x-1] + _U[y+1][x-1] ) / 2.0 ) *
+			( ( _V[y][x-1] + _V[y][x] )     / 2.0 )
+		)
+		+
+		( alpha / _dx ) *
+		(
+				( abs( _U[y][x] + _U[y+1][x] ) / 2.0 ) *
+				(    ( _V[y][x] - _V[y][x+1] ) / 2.0 )
+				-
+				( abs( _U[y][x-1] + _U[y+1][x-1] ) / 2.0 ) *
+				(    ( _V[y][x-1] - _V[y][x] )     / 2.0 )
+		);
+}
+
+
+
+
 
 
 // -------------------------------------------------
