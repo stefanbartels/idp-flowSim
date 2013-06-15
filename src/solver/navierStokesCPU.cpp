@@ -6,11 +6,12 @@
 #include <stdlib.h>
 #include <math.h>
 #include "navierStokesCPU.h"
-
+#include <iostream>
+using namespace std;
 
 // todo: use enum instead of defines?
-#define NO_SLIP		1
-#define FREE_SLIP	2
+#define FREE_SLIP	1
+#define NO_SLIP		2
 #define OUTFLOW 	3
 #define PERIODIC	4
 
@@ -23,14 +24,10 @@
 // -------------------------------------------------
 
 //============================================================================
-NavierStokesCPU::NavierStokesCPU()
+NavierStokesCPU::NavierStokesCPU ( )
 {
 
 }
-
-// -------------------------------------------------
-//	initialisation
-// -------------------------------------------------
 
 //============================================================================
 void NavierStokesCPU::init(  )
@@ -59,16 +56,21 @@ void NavierStokesCPU::init(  )
 //============================================================================
 void NavierStokesCPU::doSimulationStep ( )
 {
+cout << "computing Δt\n";
+
 	// get delta_t
 	computeDeltaT();
 
+cout << "setting boundary values\n";
 	// set boundary values for u and v
 	setBoundaryConditions();
 	// setSpecificBoundaryConditions(); // todo
 
+cout << "computing F and G\n";
 	// compute F(n) and G(n)
 	computeFG();
 
+cout << "computing RHS\n";
 	// compute right hand side of pressure equation
 	computeRightHandSide();
 
@@ -77,10 +79,12 @@ void NavierStokesCPU::doSimulationStep ( )
 
 	for ( int it = 0; it < _it_max && residual > _epsilon; ++it )
 	{
+		cout << "SOR " << it << "\n";
 		// do SOR step (includes residual computation)
 		residual =  SORPoisson();
 	}
 
+cout << "computing U and V\n";
 	// compute U(n+1) and V(n+1)
 	adaptUV();
 }
@@ -216,27 +220,17 @@ void NavierStokesCPU::setSpecificBoundaryConditions ( )
 //============================================================================
 void NavierStokesCPU::computeDeltaT ( )
 {
-	/*
-	 * Formula 3.50:
-	 *
-	 * delta_t = tau * min(
-	 *   Re/2 * ( 1/delta_x² + 1/delta_y² ),
-	 *   delta_x / |u_max|,
-	 *   delta_y / |v_max|
-	 * )
-	 *
-	 * u_max and v_max are the maximum velocities in U and V
-	 */
+	// compute delta t according to formula 3.50
 
 	double u_max = 0, v_max = 0;
 	double opt_a, opt_x, opt_y, min;
+
+	// get u_max and v_max: iterate over arrays U and V (same size => one loop)
 
 	// faster than comparing using <=
 	int nx1 = _nx + 1;
 	int ny1 = _ny + 1;
 
-	// get u_max and v_max: iterate over arrays U and V (same size => one loop)
-	// todo: 0 - nx+1 or 1 - nx?
 	for ( int y = 1; y < ny1; ++y )
 	{
 		for ( int x = 1; x < nx1; ++x )
@@ -469,8 +463,6 @@ inline double NavierStokesCPU::du2_dx  ( int x, int y, double alpha )
 //============================================================================
 inline double NavierStokesCPU::dv2_dy  ( int x, int y, double alpha )
 {
-	// todo: factor out _dy and /2.0
-
 	return
 		(
 			(

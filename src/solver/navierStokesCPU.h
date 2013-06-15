@@ -7,7 +7,6 @@
 
 #include "navierStokesSolver.h"
 
-
 //====================================================================
 /*! \class NavierStokesCpu
     \brief Class for solving of Navier Stokes on CPU
@@ -23,55 +22,7 @@ class NavierStokesCPU : public NavierStokesSolver
 			//! @name member variables
 			//! @{
 
-		// geometry data
-		double	_xlength,	//! domain size in x-direction
-				_ylength;	//! domain size in y-direction
-
-		int		_nx,		//! number of interior cells in x-direction
-				_ny;		//! number of interior cells in y-direction
-
-		double	_dx,		//! length delta x of on cell in x-direction
-				_dy;		//! length delta y of on cell in y-direction
-
-		// time stepping data
-		double	_t0,		//! start time
-				_t,			//! current time value
-				_dt,		//! time step size
-				_tau;		//! safety factor for time step size control
-
-		// pressure-iteration data
-		int		_it_max;	//! maximal number of pressure iterations per time step
-				//_it;		//! SOR iteration counter (-> local variable)
-
-		double	_epsilon,	//! stopping tolerance eps for pressure iteration
-				_omega,		//! relaxation parameter for SOR iteration
-				_gamma;		//! upwind differencing factor
-
-		// problem dependent quantities
-		double	_re,		//! Reynolds number Re
-				_gx,		//! body force gx (e.g. gravity)
-				_gy;		//! body force gy (e.g. gravity)
-
-		double	_ui,		//! initial velocity in x-direction
-				_vi,		//! initial velocity in y-direction
-				_pi;		//! initial pressure
-
-		int		_wN,		//! boundary condition along nothern boundary
-				_wS,		//! boundary condition along southern boundary
-				_wW,		//! boundary condition along western boundary
-				_wE;		//! boundary condition along eastern boundary
-
-							/*
-							 * boundary conditions:
-							 * 1 = free-slip
-							 * 2 = no-slip
-							 * 3 = outflow
-							 * 4 = periodic
-							 */
-
-		char	_problem;	//! flow-specific quantities, depending on problem type
-
-		// arrays
+		// CPU arrays
 		double	**_U,		//! velocity in x-direction
 				**_V,		//! velocity in y-direction
 				**_P,		//! pressure
@@ -88,7 +39,7 @@ class NavierStokesCPU : public NavierStokesSolver
 			//! @name constructor / destructor
 			//! @{
 
-		NavierStokesCPU();
+		NavierStokesCPU ( );
 
 			//! @}
 
