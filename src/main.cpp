@@ -5,8 +5,6 @@
 #include <iostream>
 #include <time.h>
 #include <string>
-#include <fstream>
-#include <stdio.h>
 
 #include "solver/navierStokesCPU.h"
 #include "inputParser.h"
@@ -17,22 +15,44 @@
 
 using namespace std;
 
-int main()
+int main ( int argc, char* argv[] )
 {
-	cout << "starting programm\n";
-
 	//-----------------------
 	// read parameters
 	//-----------------------
 
+	// set default problem parameters
 	ProblemParameters parameters;
-	if ( !InputParser::readParameters ( &parameters, "inputFile.dat" ) )
+	InputParser::setStandardParameters ( &parameters );
+
+	char* parameterFileName;
+
+	// parse command line arguments
+	// only one until now: parameter file name
+
+	// parameter file
+	if ( argc > 1 )
 	{
-		fprintf( stderr, "Error while reading parameter file.\n" );
-		return 1;
+		parameterFileName = argv[1];
+
+		cout << "\nProblem parameter file: " << parameterFileName;
+
+		if ( !InputParser::readParameters ( &parameters, parameterFileName ) )
+		{
+			cerr << "\nError reading parameter file. Exiting...";
+			return 1;
+		}
+	}
+	else
+	{
+		cerr << "\nNo parameter file specified. Using default parameters.";
 	}
 
+	// todo: read obstacle map
+
+	// print parameter set to console
 	InputParser::printParameters ( &parameters );
+
 
 	//-----------------------
 	// create gui, solver and viewer objects and pass parameters
@@ -56,20 +76,22 @@ int main()
 
 	while ( n < 10 )
 	{
-		cout << "doing frame " << n << "\n";
+		cout << "\ndoing frame " << n;
 		// do simulation step
 		solver->doSimulationStep( );
 
 		// update visualisation
 			// do fancy stuff with opengl
 
-		cout << "done with frame " << n << "\n";
+		cout << "\ndone with frame " << n;
 		++n;
 	}
 
 	//-----------------------
 	// cleanup
 	//-----------------------
+
+	// todo
 
     return 0;
 }

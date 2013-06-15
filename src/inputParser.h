@@ -3,6 +3,10 @@
 
 #include <string>
 
+#define FREE_SLIP	1
+#define NO_SLIP		2
+#define OUTFLOW 	3
+#define PERIODIC	4
 
 struct ProblemParameters
 {
@@ -55,12 +59,16 @@ class InputParser
 {
 	public:
 
-		static bool readParameters (
-				ProblemParameters*	parameters,
-				std::string			fileName
+		static void setStandardParameters (
+				ProblemParameters*	parameters
 			);
 
-		static bool printParameters (
+		static bool readParameters (
+				ProblemParameters*	parameters,
+				char*				fileName
+			);
+
+		static void printParameters (
 				ProblemParameters*	parameters
 			);
 };

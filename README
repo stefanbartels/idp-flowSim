@@ -1,0 +1,5 @@
+Use:
+
+NavierStokesGPU [input file]
+
+See moving-lid.txt for example input file
