@@ -16,7 +16,7 @@
 
 class NavierStokesGPU : public NavierStokesSolver
 {
-    public:
+	public:
 		NavierStokesGPU();
 };
 

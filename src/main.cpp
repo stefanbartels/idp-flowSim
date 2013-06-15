@@ -93,5 +93,7 @@ int main ( int argc, char* argv[] )
 
 	// todo
 
+	delete solver;
+
     return 0;
 }

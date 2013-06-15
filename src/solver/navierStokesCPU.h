@@ -41,6 +41,8 @@ class NavierStokesCPU : public NavierStokesSolver
 
 		NavierStokesCPU ( );
 
+		~NavierStokesCPU ( );
+
 			//! @}
 
 		// -------------------------------------------------

@@ -30,6 +30,17 @@ NavierStokesCPU::NavierStokesCPU ( )
 }
 
 //============================================================================
+NavierStokesCPU::~NavierStokesCPU()
+{
+	freeMatrix( _U );
+	freeMatrix( _V );
+	freeMatrix( _P );
+	freeMatrix( _RHS );
+	freeMatrix( _F );
+	freeMatrix( _G );
+}
+
+//============================================================================
 void NavierStokesCPU::init(  )
 {
 	// allocate memory for matrices U, V, P, RHS, F, G
@@ -64,7 +75,8 @@ cout << "computing Δt\n";
 cout << "setting boundary values\n";
 	// set boundary values for u and v
 	setBoundaryConditions();
-	// setSpecificBoundaryConditions(); // todo
+
+	setSpecificBoundaryConditions();
 
 cout << "computing F and G\n";
 	// compute F(n) and G(n)
@@ -209,7 +221,17 @@ void NavierStokesCPU::setBoundaryConditions ( )
 
 void NavierStokesCPU::setSpecificBoundaryConditions ( )
 {
-	// todo
+	// todo: find sophisticated way to specifiy this in the input file
+
+	if ( _problem == "moving_lid" )
+	{
+		const double lid_velocity = 1.0;
+
+		for ( int x = 1; x < _nx + 1; ++x )
+		{
+			_U[0][x] = 2.0 * lid_velocity - _U[1][x];
+		}
+	}
 }
 
 
@@ -260,7 +282,7 @@ void NavierStokesCPU::computeFG ( )
 {
 	// todo: take obstacles into account
 
-	double alpha = 1.0; // todo: select alpha
+	double alpha = 0.9; // todo: select alpha
 
 	// faster than comparing using <=
 	int nx1 = _nx + 1;
