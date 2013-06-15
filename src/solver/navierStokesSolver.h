@@ -134,6 +134,19 @@ class NavierStokesSolver
 
 		//! @}
 
+	// -------------------------------------------------
+	//	data access
+	// -------------------------------------------------
+		//! @name data access
+		//! @{
+
+	virtual double** getU_CPU ( ) = 0;
+
+	virtual double** getV_CPU ( ) = 0;
+
+	virtual double** getP_CPU ( ) = 0;
+
+		//! @}
 };
 
 #endif // NAVIERSTOKESSOLVER_H

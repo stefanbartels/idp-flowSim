@@ -67,6 +67,21 @@ class NavierStokesCPU : public NavierStokesSolver
 
 			//! @}
 
+
+		// -------------------------------------------------
+		//	data access
+		// -------------------------------------------------
+			//! @name data access
+			//! @{
+
+		double** getU_CPU ( );
+
+		double** getV_CPU ( );
+
+		double** getP_CPU ( );
+
+			//! @}
+
 	protected:
 		// -------------------------------------------------
 		//	boundaries
@@ -81,6 +96,8 @@ class NavierStokesCPU : public NavierStokesSolver
 			//! \brief  TODO
 
 		void	setSpecificBoundaryConditions ( );
+
+			//! @}
 
 		// -------------------------------------------------
 		//	simulation
