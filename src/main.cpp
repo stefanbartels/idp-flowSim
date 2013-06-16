@@ -13,6 +13,7 @@
 #include <sstream>
 #include <fstream>
 
+
 //********************************************************************
 //**    implementation
 //********************************************************************
@@ -24,43 +25,54 @@ using namespace std;
 // temporary code for image writing
 void writePGM ( double* A, int nx, int ny, int it )
 {
-	stringstream img_name;
-	img_name << "it_" << it << ".pgm";
+	char img_name[32];
+	sprintf( img_name, "output/it_%05d.pgm", it );
 
-	ofstream fimg ( img_name.str().c_str() );
+	ofstream fimg ( img_name );
 
 	if ( !fimg.is_open() )
 	{
-		cerr << "\nFailed to open image file " << img_name.str();
+		cerr << "\nFailed to open image file " << img_name;
 		return;
 	}
 
 	// copy array
 
-	double T[nx*ny];
-	double max = 0.0;
+	int size = (nx+2)*(ny+2);
 
-	for ( int i = 0; i < nx*ny; ++i )
+	double T[size];
+	double max = 0.0, min = 0.0;
+
+	for ( int i = 0; i < size; ++i )
 	{
 		T[i] = A[i];
 		if ( T[i] > max )
 			max = T[i];
+		if ( T[i] < min )
+			min = T[i];
 	}
 
-	// convert array to int array and normalize to 0 - 255
-	int I[nx*ny];
-	double factor = 255.0 / max;
+	cerr << "\nmax value is " << max;
 
-	for ( int i = 0; i < nx*ny; ++i )
+	// convert array to int array and normalize to 0 - 255
+	unsigned char C[size];
+	double factor = 0.0;
+
+	if ( max - min != 0.0 )
+		factor = 255 / ( max - min );
+
+	cerr << "\nfactor is " << factor;
+
+	for ( int i = 0; i < size; ++i )
 	{
-		I[i] = (int)( T[i] * factor );
+		C[i] = (char)( (T[i] - min ) * factor );
 	}
 
 
 	// pgm header
-	fimg << "P5\n" << nx << " " << ny << " 255\n";
+	fimg << "P5\n" << ( nx + 2 ) << " " << ( ny + 2 ) << " 255\n";
 
-	fimg.write( (char *)I, nx * ny * sizeof( char ));
+	fimg.write( (char *)C, size * sizeof( unsigned char ));
 
 	fimg.close();
 
@@ -129,7 +141,7 @@ int main ( int argc, char* argv[] )
 
 	int n = 0;
 
-	while ( n < 10 )
+	while ( n < 1000 )
 	{
 		cout << "\ndoing frame " << n;
 		// do simulation step

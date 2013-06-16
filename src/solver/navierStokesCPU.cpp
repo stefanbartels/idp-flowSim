@@ -5,6 +5,7 @@
 
 #include <stdlib.h>
 #include <math.h>
+#include <cmath>
 #include "navierStokesCPU.h"
 #include <iostream>
 using namespace std;
@@ -18,6 +19,75 @@ using namespace std;
 //********************************************************************
 //**    implementation
 //********************************************************************
+
+
+
+
+
+void printArray ( double** A, int nx, int ny, string name )
+{
+	cout << "\n" << name;
+
+	for ( int y = 0; y < ny; ++y )
+	{
+		cout << "\n";
+
+		for ( int x = 0; x < nx; ++x )
+		{
+			cout << A[y][x] << " ";
+		}
+	}
+}
+
+/* // TEMP
+#include <sstream>
+#include <fstream>
+void writePGM ( double* A, int nx, int ny, int it )
+{
+	stringstream img_name;
+	img_name << "it_" << it << ".pgm";
+
+	ofstream fimg ( img_name.str().c_str() );
+
+	if ( !fimg.is_open() )
+	{
+		cerr << "\nFailed to open image file " << img_name.str();
+		return;
+	}
+
+	// copy array
+
+	double T[nx*ny];
+	double max = 0.0;
+
+	for ( int i = 0; i < nx*ny; ++i )
+	{
+		T[i] = A[i];
+		if ( T[i] > max )
+			max = T[i];
+	}
+
+	// convert array to int array and normalize to 0 - 255
+	int I[nx*ny];
+	double factor = 255.0 / max;
+
+	for ( int i = 0; i < nx*ny; ++i )
+	{
+		I[i] = (int)( T[i] * factor );
+	}
+
+
+	// pgm header
+	fimg << "P5\n" << nx << " " << ny << " 255\n";
+
+	fimg.write( (char *)I, nx * ny * sizeof( char ));
+
+	fimg.close();
+
+	//delete[] T;
+	//delete[] I;
+}
+// /TEMP */
 
 // -------------------------------------------------
 //	constructor / destructor
@@ -52,11 +122,23 @@ void NavierStokesCPU::init(  )
 	_F   = allocMatrix ( _nx + 2, _ny + 2 );
 	_G   = allocMatrix ( _nx + 2, _ny + 2 );
 
-	// initialise matrices U, V and P with given initial values
+	// initialise matrices with 0.0
 
-	setMatrix ( _U, 1, _nx + 1, 1, _ny + 1, _ui );
-	setMatrix ( _V, 1, _nx + 1, 1, _ny + 1, _vi );
-	setMatrix ( _P, 1, _nx + 1, 1, _ny + 1, _pi );
+	setMatrix ( _U, 0, _nx + 1, 0, _ny + 1, 0.0 );
+	setMatrix ( _V, 0, _nx + 1, 0, _ny + 1, 0.0 );
+	setMatrix ( _P, 0, _nx + 1, 0, _ny + 1, 0.0 );
+
+	setMatrix ( _RHS, 0, _nx + 1, 0, _ny + 1, 0.0 );
+	setMatrix ( _F,	  0, _nx + 1, 0, _ny + 1, 0.0 );
+	setMatrix ( _G,   0, _nx + 1, 0, _ny + 1, 0.0 );
+
+	// initialise interior cells of U, V and P with given initial values
+
+	setMatrix ( _U, 1, _nx, 1, _ny, _ui );
+	setMatrix ( _V, 1, _nx, 1, _ny, _vi );
+	setMatrix ( _P, 1, _nx, 1, _ny, _pi );
+
+	//writePGM ( *_P, _nx, _ny, 0 );
 }
 
 
@@ -67,38 +149,39 @@ void NavierStokesCPU::init(  )
 //============================================================================
 void NavierStokesCPU::doSimulationStep ( )
 {
-cout << "computing Δt\n";
-
 	// get delta_t
 	computeDeltaT();
 
-cout << "setting boundary values\n";
+
 	// set boundary values for u and v
 	setBoundaryConditions();
 
 	setSpecificBoundaryConditions();
 
-cout << "computing F and G\n";
 	// compute F(n) and G(n)
 	computeFG();
 
-cout << "computing RHS\n";
 	// compute right hand side of pressure equation
 	computeRightHandSide();
 
 	// poisson overrelaxation loop
-	double residual = 0.0;
+	double residual = INFINITY;
 
-	for ( int it = 0; it < _it_max && residual > _epsilon; ++it )
+	for ( int it = 0; it < _it_max && abs(residual) > _epsilon; ++it )
 	{
-		cout << "SOR " << it << "\n";
 		// do SOR step (includes residual computation)
 		residual =  SORPoisson();
 	}
 
-cout << "computing U and V\n";
 	// compute U(n+1) and V(n+1)
-adaptUV();
+	adaptUV();
+
+	/*printArray ( _U, _nx+2, _ny+2, "U" );
+	printArray ( _V, _nx+2, _ny+2, "V" );
+	printArray ( _P, _nx+2, _ny+2, "P" );
+	printArray ( _RHS, _nx+2, _ny+2, "RHS" );
+	printArray ( _F, _nx+2, _ny+2, "F" );
+	printArray ( _G, _nx+2, _ny+2, "G" );*/
 }
 
 
@@ -248,11 +331,11 @@ void NavierStokesCPU::setSpecificBoundaryConditions ( )
 
 	if ( _problem == "moving_lid" )
 	{
-		const double lid_velocity = 1.0;
+		//const double lid_velocity = 1.0;
 
 		for ( int x = 1; x < _nx + 1; ++x )
 		{
-			_U[0][x] = 2.0 * lid_velocity - _U[1][x];
+			_U[0][x] = 2.0 - _U[1][x];
 		}
 	}
 }
@@ -267,7 +350,7 @@ void NavierStokesCPU::computeDeltaT ( )
 {
 	// compute delta t according to formula 3.50
 
-	double u_max = 0, v_max = 0;
+	double u_max = 0.0, v_max = 0.0;
 	double opt_a, opt_x, opt_y, min;
 
 	// get u_max and v_max: iterate over arrays U and V (same size => one loop)
@@ -286,6 +369,8 @@ void NavierStokesCPU::computeDeltaT ( )
 				v_max = _V[y][x];
 		}
 	}
+
+	cout << "\n_ u_max = " << u_max << ", v_max = " << v_max;
 
 	// compute the three options for the min-function
 	opt_a = ( _re / 2.0 ) * ( 1.0 / (_dx*_dx) + 1.0 / (_dy*_dy) );
@@ -311,12 +396,11 @@ void NavierStokesCPU::computeFG ( )
 	int nx1 = _nx + 1;
 	int ny1 = _ny + 1;
 
+	// compute F according to formula 3.36
 	for ( int y = 1; y < ny1; ++y )
 	{
-		for ( int x = 1; x < nx1; ++x )
+		for ( int x = 1; x < _nx; ++x )
 		{
-			// compute F according to formula 3.36
-
 			_F[y][x] =
 				_U[y][x] + _dt *
 				(
@@ -328,10 +412,14 @@ void NavierStokesCPU::computeFG ( )
 					- duv_dy ( x, y, alpha )
 					+ _gx
 				);
+		}
+	}
 
-
-			// compute G according to formula 3.37
-
+	// compute G according to formula 3.37
+	for ( int y = 1; y < _ny; ++y )
+	{
+		for ( int x = 1; x < nx1; ++x )
+		{
 			_G[y][x] =
 				_V[y][x] + _dt *
 				(
