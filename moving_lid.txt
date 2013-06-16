@@ -7,8 +7,8 @@ xlength		1.0
 ylength		1.0
 
 # grid size (number of grid cells)
-grid_x		126
-grid_y		126
+grid_x		130
+grid_y		130
 
 #=================================
 # time stepping data
