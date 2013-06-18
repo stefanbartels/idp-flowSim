@@ -364,18 +364,18 @@ void NavierStokesCPU::computeDeltaT ( )
 		for ( int x = 1; x < nx1; ++x )
 		{
 			if( abs( _U[y][x] ) > u_max )
-				u_max = _U[y][x];
+				u_max = abs( _U[y][x] );
 			if( abs( _V[y][x] ) > v_max )
-				v_max = _V[y][x];
+				v_max = abs( _V[y][x] );
 		}
 	}
 
 	cout << "\n_ u_max = " << u_max << ", v_max = " << v_max;
 
 	// compute the three options for the min-function
-	opt_a = ( _re / 2.0 ) * ( 1.0 / (_dx*_dx) + 1.0 / (_dy*_dy) );
+	opt_a = ( _re / 2.0 ) * ( 1.0 / (_dx * _dx) + 1.0 / (_dy * _dy) );
 	opt_x = _dx / abs( u_max );
-	opt_y = _dx / abs( u_max );
+	opt_y = _dy / abs( u_max );
 
 	// get smallest value
 	min = opt_a < opt_x ? opt_a : opt_x;

@@ -21,7 +21,6 @@
 using namespace std;
 
 
-
 // temporary code for image writing
 void writePGM ( double* A, int nx, int ny, int it )
 {
