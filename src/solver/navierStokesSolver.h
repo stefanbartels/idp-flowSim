@@ -4,6 +4,28 @@
 #include <string>
 #include "../inputParser.h"
 
+/*
+ * obstacle map data values
+ * ----------------------------------------------------
+ * | 0 | 0 | 0 | center | east | west | south | north |
+ * ----------------------------------------------------
+ *
+ * 1 = fluid cell
+ * 0 = obstacle cell
+ */
+#define C_F		0x10	// 000 10000
+#define C_B		0x00	// 000 00000
+
+#define B_N		0x01	// 000 00001
+#define B_S		0x02	// 000 00010
+#define B_W		0x04	// 000 00100
+#define B_E		0x08	// 000 01000
+
+#define B_NW	0x05	// 000 00101
+#define B_NE	0x09	// 000 01001
+#define B_SW	0x06	// 000 00110
+#define B_SE	0x0A	// 000 01010
+
 //====================================================================
 /*! \class NavierStokesSolver
     \brief Interface for Navier Stokes Solver implementations
@@ -77,8 +99,8 @@ class NavierStokesSolver
 		//! @name initialisation
 		//! @{
 
-	//! \brief defines the problem parameters
-	//! \param problem parameter set
+		//! \brief defines the problem parameters
+		//! \param problem parameter set
 
 	void setParameters
 		(
@@ -122,6 +144,31 @@ class NavierStokesSolver
 		//! \brief initialises the arrays U, V and P
 
 	virtual void init ( ) = 0;
+
+
+	/*
+		//! \brief defines the arbitrary geometry
+		//! \param obstacle map
+		//!
+		//! the map must contain 1 for fluid cells and 0 for boundary cells
+		//! using the following pattern for each cell:
+		//!	----------------------------------------------------
+		//! | 0 | 0 | 0 | center | east | west | south | north |
+		//! ----------------------------------------------------
+
+		// todo: take bool array and create obstacle map inside?
+		//		 less efficient but maybe cleaner
+		//		 bool array may also be faster for visualisation
+		//		 -> done: setObstacleMap
+
+	virtual void setGeometryMap ( unsigned char** map ) = 0;
+	*/
+
+		//! \brief defines the arbitrary geometry
+		//! \param obstacle map
+		//! true stands for fluid cells and false for boundary cells
+
+	virtual void setObstacleMap ( bool** map ) = 0;
 
 		//! @}
 	// -------------------------------------------------

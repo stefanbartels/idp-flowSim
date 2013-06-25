@@ -2,4 +2,4 @@ Use:
 
 NavierStokesGPU [input file]
 
-See moving-lid.txt for example input file
+See karman_vortex.txt for example input file

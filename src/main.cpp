@@ -48,7 +48,15 @@ int main ( int argc, char* argv[] )
 		cerr << "\nNo parameter file specified. Using default parameters.";
 	}
 
-	// todo: read obstacle map
+	// read obstacle map
+
+	bool** obstacleMap = 0;
+
+	if ( !InputParser::readObstacleMap( &obstacleMap, parameters.nx, parameters.ny, parameters.obstacleFile ) )
+	{
+		cerr << "\nError reading obstacle map. Exiting...";
+		return 1;
+	}
 
 	// print parameter set to console
 	InputParser::printParameters ( &parameters );
@@ -60,6 +68,7 @@ int main ( int argc, char* argv[] )
 
 	NavierStokesSolver* solver = new NavierStokesCPU();
 	solver->setParameters ( &parameters );
+	solver->setObstacleMap( obstacleMap );
 
 	Viewer* viewer = new SimplePGMWriter();
 

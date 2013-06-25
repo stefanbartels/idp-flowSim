@@ -1,0 +1,85 @@
+#=================================
+# geometry data
+#=================================
+
+# domain size
+xlength		22.0
+ylength		4.1
+
+# grid size (number of grid cells)
+grid_x		220
+grid_y		41
+
+#=================================
+# time stepping data
+#=================================
+
+# time step size
+delta_t		0.0028
+
+# safety factor for time step size control
+tau			0.5
+
+#=================================
+# pressure-iteration data
+#=================================
+
+# max. number of pressure iterations per time step
+it_max		100
+
+# stopping tolerance eps for pressure iteration
+epsilon		0.01
+
+# relaxation parameter for SOR iteration
+omega		1.7
+
+# upwind differencing factor
+gamma		0.9
+
+#=================================
+# problem dependent quantities
+#=================================
+
+# Reynolds number
+re			100
+
+# body force gx (e.g. gravity)
+gravity_x	0.0
+# body force gy (e.g. gravity)
+gravity_y	0.0
+
+
+# initial velocity in x-direction
+ui			1.0
+# initial velocity in y-direction
+vi			0.0
+# initial pressure
+pi			0.0
+
+#=================================
+# boundary conditions
+#=================================
+# 1: FREE_SLIP
+# 2: NO_SLIP
+# 3: OUTFLOW
+
+# northern boundary
+boundary_N		2
+
+# southern boundary
+boundary_S		2
+
+# western boundary
+boundary_W		3
+
+# eastern boundary
+boundary_E		3
+
+
+
+# problem type
+problem		left_inflow
+
+# obstacle map file
+map		karman_vortex.pgm
+

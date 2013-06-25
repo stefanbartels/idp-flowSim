@@ -8,6 +8,8 @@
 #include <cmath>
 #include "navierStokesCPU.h"
 
+#include <iostream>
+
 using namespace std;
 
 // todo: use enum instead of defines?
@@ -39,10 +41,17 @@ NavierStokesCPU::~NavierStokesCPU()
 	freeMatrix( _RHS );
 	freeMatrix( _F );
 	freeMatrix( _G );
+
+	delete [] _FLAG[0];
+	delete [] _FLAG;
 }
 
+// -------------------------------------------------
+//	initialization
+// -------------------------------------------------
+
 //============================================================================
-void NavierStokesCPU::init(  )
+void NavierStokesCPU::init ( )
 {
 	// allocate memory for matrices U, V, P, RHS, F, G
 
@@ -54,6 +63,7 @@ void NavierStokesCPU::init(  )
 	_G   = allocMatrix ( _nx + 2, _ny + 2 );
 
 	// initialise matrices with 0.0
+	// todo: might not be neccessary
 
 	setMatrix ( _U, 0, _nx + 1, 0, _ny + 1, 0.0 );
 	setMatrix ( _V, 0, _nx + 1, 0, _ny + 1, 0.0 );
@@ -68,10 +78,134 @@ void NavierStokesCPU::init(  )
 	setMatrix ( _U, 1, _nx, 1, _ny, _ui );
 	setMatrix ( _V, 1, _nx, 1, _ny, _vi );
 	setMatrix ( _P, 1, _nx, 1, _ny, _pi );
-
-	//writePGM ( *_P, _nx, _ny, 0 );
 }
 
+//============================================================================
+void NavierStokesCPU::setObstacleMap
+	(
+		bool** map
+	)
+{
+	int nx1 = _nx + 1;
+	int ny1 = _ny + 1;
+	int nx2 = _nx + 2;
+	int ny2 = _ny + 2;
+
+	//-----------------------
+	// allocate memory for flag array
+	//-----------------------
+
+	_FLAG = (unsigned char**)malloc( ny2 * sizeof( unsigned char* ) );
+
+	// the actual data array. allocation for all rows at once to get continuous memory
+	unsigned char* data = (unsigned char*)malloc( nx2 * ny2 * sizeof( unsigned char ) );
+
+	_FLAG[0] = data;
+	for( int i = 1; i < ny2; ++i )
+	{
+		_FLAG[i] = data + i * nx2;
+	}
+
+
+	//-----------------------
+	// create geometry map
+	//-----------------------
+
+	/*
+	 * obstacle map data values
+	 * ----------------------------------------------------
+	 * | 0 | 0 | 0 | center | east | west | south | north |
+	 * ----------------------------------------------------
+	 *
+	 * 1 = fluid cell
+	 * 0 = obstacle cell
+	 *
+	 * C_F		0x10	000 10000
+	 * C_B		0x00	000 00000
+
+	 * B_N		0x01	000 00001
+	 * B_S		0x02	000 00010
+	 * B_W		0x04	000 00100
+	 * B_E		0x08	000 01000
+
+	 * B_NW		0x05	000 00101
+	 * B_NE		0x09	000 01001
+	 * B_SW		0x06	000 00110
+	 * B_SE		0x0A	000 01010
+	 *
+	 */
+
+	/*
+	 * The obstacle map given as parameter has thie size nx*ny,
+	 * while the flag array has size (nx+2)*(ny+2)
+	 *
+	 * Domain boundary cells are treated like interior boundary cells.
+	 */
+
+	// compute interior cells
+	for ( int y = 1; y < ny1; ++y )
+	{
+		for ( int x = 1; x < nx1; ++x )
+		{
+			if( map[y][x] )
+			{
+				// cell is a fluid cell
+				// neighbour cells do not matter
+				_FLAG[y][x] = C_F;
+			}
+			else
+			{
+				// cell is a boundary cell
+				// look for surrounding cells to get correct flag
+
+				_FLAG[y][x] = C_B
+						+ B_N * map[y-1][x]
+						+ B_S * map[y+1][x]
+						+ B_W * map[y][x-1]
+						+ B_E * map[y][x+1];
+			}
+		}
+	}
+
+	// compute boundary cells
+	for( int x = 1; x < nx1; ++x )
+	{
+		// northern boundary
+		_FLAG[0][x]	= C_B
+					+ B_N
+					+ B_S * map[1][x]
+					+ B_W
+					+ B_E;
+
+		// southern boundary
+		_FLAG[ny1][x] = C_B
+					  + B_N * map[_ny][x]
+					  + B_S
+					  + B_W
+					  + B_E;
+	}
+
+	for( int y = 1; y < ny1; ++y )
+	{
+		// western boundary
+		_FLAG[y][0]	= C_B
+					+ B_N
+					+ B_S
+					+ B_W
+					+ B_E * map[y][1];
+
+		// eastern boundary
+		_FLAG[y][nx1] = C_B
+					  + B_N
+					  + B_S
+					  + B_W * map[y][_nx]
+					  + B_E;
+	}
+
+	// edge cells (not neccessary, but uninitialised cells are ugly)
+	_FLAG[0][0] = _FLAG[0][nx1] = _FLAG[ny1][0] = _FLAG[ny1][nx1] = 0x0F;
+
+}
 
 // -------------------------------------------------
 //	execution
@@ -259,6 +393,13 @@ void NavierStokesCPU::setSpecificBoundaryConditions ( )
 		for ( int x = 1; x < _nx + 1; ++x )
 		{
 			_U[0][x] = 2.0 - _U[1][x];
+		}
+	}
+	else if ( _problem == "left_inflow" )
+	{
+		for ( int y = 1; y < _ny + 1; ++y )
+		{
+			_U[y][0] = 1.0;
 		}
 	}
 }
@@ -601,16 +742,13 @@ double** NavierStokesCPU::allocMatrix (
 	// array of pointers to rows
 	double** rows = (double**)malloc( height * sizeof( double* ) );
 
-	if ( height )
-	{
-		// the actual data array. allocation for all rows at once to get continuous memory
-		double* matrix = (double*)malloc( width * height * sizeof( double ) );
+	// the actual data array. allocation for all rows at once to get continuous memory
+	double* matrix = (double*)malloc( width * height * sizeof( double ) );
 
-		rows[0] = matrix;
-		for ( int i = 1; i < height; ++i )
-		{
-			rows[i] = matrix + i * width;
-		}
+	rows[0] = matrix;
+	for ( int i = 1; i < height; ++i )
+	{
+		rows[i] = matrix + i * width;
 	}
 
 	return rows;
