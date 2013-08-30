@@ -10,7 +10,7 @@ SimplePGMWriter::SimplePGMWriter()
 }
 
 
-// temporary code for image writing
+//============================================================================
 void SimplePGMWriter::renderFrame (
 		double** U,
 		double** V,

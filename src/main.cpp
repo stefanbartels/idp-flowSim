@@ -6,6 +6,7 @@
 
 #include "solver/navierStokesCPU.h"
 #include "viewer/SimplePGMWriter.h"
+#include "viewer/VTKWriter.h"
 #include "inputParser.h"
 
 
@@ -74,7 +75,7 @@ int main ( int argc, char* argv[] )
 		return 1;
 	}
 
-	Viewer* viewer = new SimplePGMWriter();
+	Viewer* viewer = new VTKWriter();
 
 	// todo: link gui, solver, viewer
 
