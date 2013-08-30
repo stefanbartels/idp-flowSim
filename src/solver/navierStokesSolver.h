@@ -28,7 +28,15 @@
 
 //====================================================================
 /*! \class NavierStokesSolver
-    \brief Interface for Navier Stokes Solver implementations
+	\brief Interface for Navier Stokes Solver implementations
+
+	\todo Warning/Error if not properly initialised or change of
+		  initialisation procedure. Until now the following methods
+		  have to be called in this order:
+		   - setParameters
+		   - setObstacleMap
+		   - init
+		  => ugly
 */
 //====================================================================
 
@@ -165,10 +173,12 @@ class NavierStokesSolver
 	*/
 
 		//! \brief defines the arbitrary geometry
-		//! \param obstacle map
+		//! \param obstacle map (null means no map is given)
+		//! \returns true, if the obstacle map was valid, false else
 		//! true stands for fluid cells and false for boundary cells
+		//! valid maps have no obstacle cell between two fluid cells
 
-	virtual void setObstacleMap ( bool** map ) = 0;
+	virtual bool setObstacleMap ( bool** map ) = 0;
 
 		//! @}
 	// -------------------------------------------------

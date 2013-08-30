@@ -61,7 +61,7 @@ class NavierStokesCPU : public NavierStokesSolver
 			//! \param obstacle map (domain size)
 			//! an additional boundary will be applied
 
-		void	setObstacleMap ( bool** map );
+		bool	setObstacleMap ( bool** map );
 
 			//! @}
 

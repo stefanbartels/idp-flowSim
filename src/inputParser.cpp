@@ -275,6 +275,41 @@ bool InputParser::readParameters
 	return true;
 }
 
+
+
+
+
+
+
+//============================================================================
+bool** allocateObstacleMap
+	(
+		int width,
+		int height
+	)
+{
+	// the domain boundaries are treated as obstacles as well,
+	// so the map must be slightly larger than the image
+
+	// array of pointers to rows
+	bool** map = (bool**)malloc( (height+2) * sizeof( bool* ) );
+
+	// the actual data array. allocation for all rows at once to get continuous memory
+	bool* matrix = (bool*)malloc( (width+2) * (height+2) * sizeof( bool ) );
+
+	map[0] = matrix;
+	for ( int i = 1; i < (height+2); ++i )
+	{
+		map[i] = matrix + i * (width+2);
+	}
+
+	return map;
+}
+
+
+
+
+
 //============================================================================
 bool InputParser::readObstacleMap
 	(
@@ -290,6 +325,49 @@ bool InputParser::readObstacleMap
 	int pgm_width, pgm_height;
 
 	bool binary, moreThanOneByte;
+
+	bool** map;
+
+	int nx1 = width  + 1,
+		ny1 = height + 1;
+
+	//-----------------------
+	// create empty map if no image is given
+	//-----------------------
+
+	if( fileName.compare("") == 0 )
+	{
+		cerr << "\nCreating empty map...";
+
+		map = allocateObstacleMap( width, height );
+
+		// initialise empty obstacle map
+		for( int y = 1; y < ny1; ++y )
+		for( int x = 1; x < nx1; ++x )
+		{
+			map[y][x] = true;
+		}
+
+		// set boundaries to obstacles
+
+		for( int x = 0; x < width+2; ++x )
+		{
+			map[0][x]   = false;
+			map[ny1][x] = false;
+		}
+
+		// 1 - height, because edges have already been set by previous loop
+		for( int y = 1; y < height+1; ++y )
+		{
+			map[y][0]   = false;
+			map[y][nx1] = false;
+		}
+
+		// pass array back
+		*obstacleMap = map;
+
+		return true;
+	}
 
 
 	//-----------------------
@@ -367,31 +445,16 @@ bool InputParser::readObstacleMap
 	// create obstacle array
 	//-----------------------
 
-	// the domain boundaries are treated as obstacles as well,
-	// so the map must be slightly larger than the image
-
-	// array of pointers to rows
-	bool** map = (bool**)malloc( (height+2) * sizeof( bool* ) );
-
-	// the actual data array. allocation for all rows at once to get continuous memory
-	bool* matrix = (bool*)malloc( (width+2) * (height+2) * sizeof( bool ) );
-
-	map[0] = matrix;
-	for ( int i = 1; i < (height+2); ++i )
-	{
-		map[i] = matrix + i * (width+2);
-	}
+	map = allocateObstacleMap( width, height );
 
 	//-----------------------
 	// parse image data
 	//-----------------------
 
-	int nx1 = width  + 1,
-		ny1 = height + 1;
-
 	// interior cells
 	if( binary )
 	{
+		// binary PGM file with two bytes per pixel
 		if( moreThanOneByte )
 		{
 			unsigned char byte1,byte2;
@@ -408,7 +471,7 @@ bool InputParser::readObstacleMap
 				map[y][x] = ( (byte2 << 8) + byte1 ) != 0;
 			}
 		}
-		else
+		else // binary PGM file with one byte per pixel
 		{
 			unsigned char byte;
 
@@ -420,7 +483,7 @@ bool InputParser::readObstacleMap
 			}
 		}
 	}
-	else
+	else // ASCII PGM file
 	{
 		for( int y = 1; y < ny1; ++y )
 		for( int x = 1; x < nx1; ++x )

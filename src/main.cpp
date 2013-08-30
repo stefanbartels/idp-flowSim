@@ -39,7 +39,7 @@ int main ( int argc, char* argv[] )
 
 		if ( !InputParser::readParameters ( &parameters, parameterFileName ) )
 		{
-			cerr << "\nError reading parameter file. Exiting...";
+			cerr << "\nError reading parameter file.\nExiting...";
 			return 1;
 		}
 	}
@@ -54,7 +54,7 @@ int main ( int argc, char* argv[] )
 
 	if ( !InputParser::readObstacleMap( &obstacleMap, parameters.nx, parameters.ny, parameters.obstacleFile ) )
 	{
-		cerr << "\nError reading obstacle map. Exiting...";
+		cerr << "\nError reading obstacle map.\nExiting...";
 		return 1;
 	}
 
@@ -68,7 +68,11 @@ int main ( int argc, char* argv[] )
 
 	NavierStokesSolver* solver = new NavierStokesCPU();
 	solver->setParameters ( &parameters );
-	solver->setObstacleMap( obstacleMap );
+	if( !solver->setObstacleMap( obstacleMap ) )
+	{
+		cerr << "\nObstacle map invalid. Make sure there are no boundary cells between two fluid cells!\nExiting...";
+		return 1;
+	}
 
 	Viewer* viewer = new SimplePGMWriter();
 
