@@ -39,7 +39,9 @@ void InputParser::setStandardParameters(ProblemParameters *parameters)
 	parameters->wW				= 2;
 	parameters->wE				= 2;
 	parameters->problem			= "moving_lid";
-	parameters->obstacleFile	= "";
+    parameters->obstacleFile	= "";
+    //parameters->obstacleFile	= "karman_vortex.pgm";
+
 }
 
 //============================================================================
