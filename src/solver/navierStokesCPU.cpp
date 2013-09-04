@@ -133,10 +133,6 @@ bool NavierStokesCPU::setObstacleMap
 	 * B_SW		0x06	000 00110
 	 * B_SE		0x0A	000 01010
 	 *
-	 * NB! The array indizes are counted from top to bottom for the y axis
-	 * In the book the indizes are counted the otherwise round.
-	 * A northern boundary cell is therefore a southern boundary cell in fact!
-	 *
 	 */
 
 	// Domain boundary cells are treated like interior boundary cells.
@@ -157,14 +153,14 @@ bool NavierStokesCPU::setObstacleMap
 			{
 				// cell is a boundary cell
 
-				// check for invalid boundary cell
+				// check for invalid boundary cell (between two fluid cells)
 				if( ( map[y-1][x] && map[y+1][x] ) || ( map[y][x-1] && map[y][x+1] ) )
 					return false;
 
 				// look for surrounding cells to get correct flag
 				_FLAG[y][x] = C_B
-						+ B_N * map[y+1][x]		// map[y-1][x]
-						+ B_S * map[y-1][x]		// map[y+1][x]
+						+ B_N * map[y+1][x]
+						+ B_S * map[y-1][x]
 						+ B_W * map[y][x-1]
 						+ B_E * map[y][x+1];
 			}
@@ -174,17 +170,17 @@ bool NavierStokesCPU::setObstacleMap
 	// compute boundary cells
 	for( int x = 1; x < nx1; ++x )
 	{
-		// northern boundary
+		// southern boundary
 		_FLAG[0][x]	= C_B
-					+ B_N
-					+ B_S * map[0][x]
+					+ B_N * map[1][x]
+					+ B_S
 					+ B_W
 					+ B_E;
 
-		// southern boundary
+		// northern boundary
 		_FLAG[ny1][x] = C_B
-					  + B_N * map[_ny][x]
-					  + B_S
+					  + B_N
+					  + B_S * map[_ny][x]
 					  + B_W
 					  + B_E;
 	}
@@ -281,10 +277,10 @@ void NavierStokesCPU::setBoundaryConditions ( )
 	int ny1 = _ny + 1;
 
 	//-----------------------
-	// northern boundary
+	// southern boundary
 	//-----------------------
 
-	switch( _wN )
+	switch( _wS )
 	{
 		case NO_SLIP:
 			for( int x = 1; x < nx1; ++x )
@@ -311,10 +307,10 @@ void NavierStokesCPU::setBoundaryConditions ( )
 
 
 	//-----------------------
-	// southern boundary
+	// northern boundary
 	//-----------------------
 
-	switch( _wS )
+	switch( _wN )
 	{
 		case NO_SLIP:
 			for( int x = 1; x < nx1; ++x )
@@ -432,9 +428,6 @@ void NavierStokesCPU::setBoundaryConditions ( )
 
 	// loop over interior cells
 
-	// todo: check for correctness: indices different from book,
-	// as they count from the lower left cell
-
 	for( int y = 1; y < ny1; ++y )
 	{
 		for( int x = 1; x < nx1; ++x )
@@ -459,14 +452,14 @@ void NavierStokesCPU::setBoundaryConditions ( )
 
 				case B_W: // fluid in the west
 					_U[y][x-1] = 0.0;
-					_V[y-1][x] = -_V[y+1][x-1];
-					_V[y][x]   = -_V[y+1][x-1];
+					_V[y-1][x] = -_V[y-1][x-1];
+					_V[y][x]   = -_V[y][x-1];
 					break;
 
 				case B_E: // fluid in the east
-					_U[y][x-1] = 0.0;
-					_V[y-1][x] = -_V[y+1][x+1];
-					_V[y][x]   = -_V[y+1][x+1];
+					_U[y][x] = 0.0;
+					_V[y-1][x] = -_V[y-1][x+1];
+					_V[y][x]   = -_V[y][x+1];
 					break;
 
 
@@ -474,32 +467,32 @@ void NavierStokesCPU::setBoundaryConditions ( )
 					_U[y][x]   = -_U[y+1][x];
 					_U[y][x-1] = 0.0;
 
-					_V[y][x]   = -_V[y][x-1];
-					_V[y-1][x] = 0.0;
+					_V[y][x]   = 0.0;
+					_V[y-1][x] = -_V[y-1][x+1];
 					break;
 
 				case B_NE: // fluid in the north and east
 					_U[y][x]   = 0.0;
 					_U[y][x-1] = -_U[y+1][x-1];
 
-					_V[y][x]   = -_V[y][x+1];
-					_V[y-1][x] = 0.0;
+					_V[y][x]   = 0.0;
+					_V[y-1][x] = -_V[y-1][x+1];
 					break;
 
 				case B_SW: // fluid	in the south and west
 					_U[y][x]   = -_U[y-1][x];
 					_U[y][x-1] = 0.0;
 
-					_V[y][x]   = 0.0;
-					_V[y-1][x] = -_V[y+1][x-1];
+					_V[y][x]   = -_V[y][x-1];
+					_V[y-1][x] = 0.0;
 					break;
 
 				case B_SE: // fluid	in the south and east
 					_U[y][x]   = 0.0;
 					_U[y][x-1] = -_U[y-1][x-1];
 
-					_V[y][x]   = 0.0;
-					_V[y-1][x] = -_V[y+1][x+1];
+					_V[y][x]   = -_V[y][x+1];
+					_V[y-1][x] = 0.0;
 					break;
 			}
 		}
@@ -515,7 +508,6 @@ void NavierStokesCPU::setSpecificBoundaryConditions ( )
 	if ( _problem == "moving_lid" )
 	{
 		//const double lid_velocity = 1.0;
-
 		for ( int x = 1; x < _nx + 1; ++x )
 		{
 			_U[0][x] = 2.0 - _U[1][x];
@@ -585,6 +577,8 @@ void NavierStokesCPU::computeFG ( )
 	int nx1 = _nx + 1;
 	int ny1 = _ny + 1;
 
+	// todo: combine loops
+
 	// compute F according to formula 3.36
 	for( int y = 1; y < ny1; ++y )
 	{
@@ -605,9 +599,13 @@ void NavierStokesCPU::computeFG ( )
 						+ _gx
 					);
 			}
+			else
+			{
+				// according to formula 3.42
+				_F[y][x]   = _U[y][x];
+			}
 		}
 	}
-
 
 	// compute G according to formula 3.37
 	for( int y = 1; y < _ny; ++y )
@@ -629,11 +627,17 @@ void NavierStokesCPU::computeFG ( )
 						+ _gy
 					);
 			}
+			else
+			{
+				// according to formula 3.42
+				_G[y][x]   = _V[y][x];
+			}
 		}
 	}
 
 
 	// boundary values for arbitrary geometries
+	// todo: neccessary?
 	for ( int y = 1; y < ny1; ++y )
 	{
 		for ( int x = 1; x < nx1; ++x )
@@ -644,7 +648,7 @@ void NavierStokesCPU::computeFG ( )
 					_G[y][x]   = _V[y][x];
 					break;
 				case B_S:
-					_G[y-1][x] = _V[y-1][x];	// y-1 in the book
+					_G[y-1][x] = _V[y-1][x];
 					break;
 				case B_W:
 					_F[y][x-1] = _U[y][x-1];
@@ -662,15 +666,16 @@ void NavierStokesCPU::computeFG ( )
 					break;
 				case B_SW:
 					_F[y][x-1] = _U[y][x-1];
-					_G[y-1][x] = _V[y-1][x];	// y-1 in the book
+					_G[y-1][x] = _V[y-1][x];
 					break;
 				case B_SE:
 					_F[y][x]   = _U[y][x];
-					_G[y-1][x] = _V[y-1][x];	// y-1 in the book
+					_G[y-1][x] = _V[y-1][x];
 					break;
 			}
 		}
 	}
+
 
 
 	// setting boundary values for f according to formula 3.42
@@ -686,6 +691,7 @@ void NavierStokesCPU::computeFG ( )
 		_G[0][x]   = _V[0][x];
 		_G[_ny][x] = _V[_ny][x];
 	}
+
 }
 
 //============================================================================
@@ -755,10 +761,10 @@ int NavierStokesCPU::SORPoisson ( )
 				switch ( _FLAG[y][x] )
 				{
 					case B_N:
-						_P[y][x] = _P[y+1][x];	// y+1 in the book
+						_P[y][x] = _P[y+1][x];
 						break;
 					case B_S:
-						_P[y][x] = _P[y-1][x];	// y-1 in the book
+						_P[y][x] = _P[y-1][x];
 						break;
 					case B_W:
 						_P[y][x] = _P[y][x-1];
@@ -767,16 +773,16 @@ int NavierStokesCPU::SORPoisson ( )
 						_P[y][x] = _P[y][x+1];
 						break;
 					case B_NW:
-						_P[y][x] = (_P[y-1][x] + _P[y][x+1]) / 2;	// y-1 in the book
+						_P[y][x] = (_P[y-1][x] + _P[y][x+1]) / 2;
 						break;
 					case B_NE:
-						_P[y][x] = (_P[y+1][x] + _P[y][x+1]) / 2;	// y+1 in the book
+						_P[y][x] = (_P[y+1][x] + _P[y][x+1]) / 2;
 						break;
 					case B_SW:
-						_P[y][x] = (_P[y-1][x] + _P[y][x-1]) / 2;	// y-1 in the book
+						_P[y][x] = (_P[y-1][x] + _P[y][x-1]) / 2;
 						break;
 					case B_SE:
-						_P[y][x] = (_P[y+1][x] + _P[y][x-1]) / 2;	// y+1 in the book
+						_P[y][x] = (_P[y+1][x] + _P[y][x-1]) / 2;
 						break;
 				}
 			}
@@ -788,7 +794,8 @@ int NavierStokesCPU::SORPoisson ( )
 	//-----------------------
 
 	// according to formula 3.41
-
+	// 3.48 instead? (=> before SOR step)
+	/* // todo
 	for ( int x = 1; x < nx1; ++x )
 	{
 		_P[0][x]   = _P[1][x];
@@ -800,7 +807,7 @@ int NavierStokesCPU::SORPoisson ( )
 		_P[y][0]   = _P[y][1];
 		_P[y][nx1] = _P[y][_nx];
 	}
-
+	*/
 
 	//-----------------------
 	// residual
