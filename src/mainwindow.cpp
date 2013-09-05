@@ -7,7 +7,8 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
-    ui->setupUi(this);
+	ui->setupUi(this);
+	sim = new fluidSimulation(ui->viewer);
 }
 
 MainWindow::~MainWindow()
@@ -17,7 +18,6 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_goButton_clicked()
 {
-    fluidSimulation* sim = new fluidSimulation();
     sim->runSimulation();
 }
 

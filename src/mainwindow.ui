@@ -40,7 +40,7 @@
      <string>Go</string>
     </property>
    </widget>
-   <widget class="SimpleQTViewer" name="widget" native="true">
+   <widget class="SimpleQTViewer" name="viewer" native="true">
     <property name="geometry">
      <rect>
       <x>10</x>

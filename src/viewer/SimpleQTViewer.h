@@ -3,6 +3,9 @@
 
 #include <QGLWidget>
 #include "Viewer.h"
+#include <QMutex>
+#include "../inputParser.h"
+
 
 class SimpleQTViewer : public QGLWidget, public Viewer
 {
@@ -14,7 +17,9 @@ protected:
     void paintGL();
 
 public:
-    explicit SimpleQTViewer(QWidget *parent = 0);
+	explicit SimpleQTViewer(QWidget *parent = 0);
+
+	void initializeParameters(ProblemParameters* parameters);
 
     void renderFrame (
             double** U,
@@ -30,8 +35,9 @@ signals:
 public slots:
 
 private:
-    int width, height;
     unsigned char* Cp;
+	ProblemParameters parameters;
+	QMutex mutex;
 
     
 };
