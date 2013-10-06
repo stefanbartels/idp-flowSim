@@ -14,8 +14,6 @@
 //**    implementation
 //********************************************************************
 
-using namespace std;
-
 int main ( int argc, char* argv[] )
 {
 	//-----------------------
@@ -36,17 +34,17 @@ int main ( int argc, char* argv[] )
 	{
 		parameterFileName = argv[1];
 
-		cout << "\nProblem parameter file: " << parameterFileName;
+		std::cout << "\nProblem parameter file: " << parameterFileName;
 
 		if ( !InputParser::readParameters ( &parameters, parameterFileName ) )
 		{
-			cerr << "\nError reading parameter file.\nExiting...";
+			std::cerr << "\nError reading parameter file.\nExiting...";
 			return 1;
 		}
 	}
 	else
 	{
-		cerr << "\nNo parameter file specified. Using default parameters.";
+		std::cerr << "\nNo parameter file specified. Using default parameters.";
 	}
 
 	// read obstacle map
@@ -55,7 +53,7 @@ int main ( int argc, char* argv[] )
 
 	if ( !InputParser::readObstacleMap( &obstacleMap, parameters.nx, parameters.ny, parameters.obstacleFile ) )
 	{
-		cerr << "\nError reading obstacle map.\nExiting...";
+		std::cerr << "\nError reading obstacle map.\nExiting...";
 		return 1;
 	}
 
@@ -71,7 +69,7 @@ int main ( int argc, char* argv[] )
 	solver->setParameters ( &parameters );
 	if( !solver->setObstacleMap( obstacleMap ) )
 	{
-		cerr << "\nObstacle map invalid. Make sure there are no boundary cells between two fluid cells!\nExiting...";
+		std::cerr << "\nObstacle map invalid. Make sure there are no boundary cells between two fluid cells!\nExiting...";
 		return 1;
 	}
 
@@ -92,7 +90,7 @@ int main ( int argc, char* argv[] )
 
 	while ( n < 1000 )
 	{
-		cout << "\ndoing frame " << n;
+		std::cout << "\ndoing frame " << n;
 		// do simulation step
 		solver->doSimulationStep( );
 
@@ -108,7 +106,7 @@ int main ( int argc, char* argv[] )
 				n
 			);
 
-		cout << "\ndone with frame " << n;
+		std::cout << "\ndone with frame " << n;
 		++n;
 	}
 

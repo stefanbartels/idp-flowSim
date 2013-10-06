@@ -2,6 +2,10 @@ TEMPLATE = app
 CONFIG += console
 CONFIG -= qt
 
+INCLUDEPATH += /usr/include/nvidia-current
+
+LIBS+= -lOpenCL
+
 SOURCES += \
 	src/main.cpp \
 	src/solver/navierStokesCPU.cpp \

@@ -149,7 +149,7 @@ class NavierStokesSolver
 		_problem = parameters->problem;
 	};
 
-		//! \brief initialises the arrays U, V and P
+		//! \brief allocates and initialises simulation memory
 
 	virtual void init ( ) = 0;
 
