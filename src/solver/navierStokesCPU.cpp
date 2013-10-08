@@ -35,12 +35,12 @@ NavierStokesCPU::NavierStokesCPU ( )
 //============================================================================
 NavierStokesCPU::~NavierStokesCPU()
 {
-	freeMatrix( _U );
-	freeMatrix( _V );
-	freeMatrix( _P );
-	freeMatrix( _RHS );
-	freeMatrix( _F );
-	freeMatrix( _G );
+	freeHostMatrix( _U );
+	freeHostMatrix( _V );
+	freeHostMatrix( _P );
+	freeHostMatrix( _RHS );
+	freeHostMatrix( _F );
+	freeHostMatrix( _G );
 
 	delete [] _FLAG[0];
 	delete [] _FLAG;
@@ -55,29 +55,29 @@ void NavierStokesCPU::init ( )
 {
 	// allocate memory for matrices U, V, P, RHS, F, G
 
-	_U   = allocMatrix ( _nx + 2, _ny + 2 );
-	_V   = allocMatrix ( _nx + 2, _ny + 2 );
-	_P   = allocMatrix ( _nx + 2, _ny + 2 );
-	_RHS = allocMatrix ( _nx + 2, _ny + 2 );
-	_F   = allocMatrix ( _nx + 2, _ny + 2 );
-	_G   = allocMatrix ( _nx + 2, _ny + 2 );
+	_U   = allocHostMatrix ( _nx + 2, _ny + 2 );
+	_V   = allocHostMatrix ( _nx + 2, _ny + 2 );
+	_P   = allocHostMatrix ( _nx + 2, _ny + 2 );
+	_RHS = allocHostMatrix ( _nx + 2, _ny + 2 );
+	_F   = allocHostMatrix ( _nx + 2, _ny + 2 );
+	_G   = allocHostMatrix ( _nx + 2, _ny + 2 );
 
 	// initialise matrices with 0.0
 	// todo: might not be neccessary
 
-	setMatrix ( _U, 0, _nx + 1, 0, _ny + 1, 0.0 );
-	setMatrix ( _V, 0, _nx + 1, 0, _ny + 1, 0.0 );
-	setMatrix ( _P, 0, _nx + 1, 0, _ny + 1, 0.0 );
+	setHostMatrix ( _U, 0, _nx + 1, 0, _ny + 1, 0.0 );
+	setHostMatrix ( _V, 0, _nx + 1, 0, _ny + 1, 0.0 );
+	setHostMatrix ( _P, 0, _nx + 1, 0, _ny + 1, 0.0 );
 
-	setMatrix ( _RHS, 0, _nx + 1, 0, _ny + 1, 0.0 );
-	setMatrix ( _F,	  0, _nx + 1, 0, _ny + 1, 0.0 );
-	setMatrix ( _G,   0, _nx + 1, 0, _ny + 1, 0.0 );
+	setHostMatrix ( _RHS, 0, _nx + 1, 0, _ny + 1, 0.0 );
+	setHostMatrix ( _F,	  0, _nx + 1, 0, _ny + 1, 0.0 );
+	setHostMatrix ( _G,   0, _nx + 1, 0, _ny + 1, 0.0 );
 
 	// initialise interior cells of U, V and P with given initial values
 
-	setMatrix ( _U, 1, _nx, 1, _ny, _ui );
-	setMatrix ( _V, 1, _nx, 1, _ny, _vi );
-	setMatrix ( _P, 1, _nx, 1, _ny, _pi );
+	setHostMatrix ( _U, 1, _nx, 1, _ny, _ui );
+	setHostMatrix ( _V, 1, _nx, 1, _ny, _vi );
+	setHostMatrix ( _P, 1, _nx, 1, _ny, _pi );
 }
 
 //============================================================================
@@ -997,64 +997,4 @@ inline double NavierStokesCPU::duv_dy  ( int x, int y, double alpha )
 				   ( _U[y-1][x] - _U[y][x] )
 			)
 		) / ( 4.0 * _dy );
-}
-
-
-
-// -------------------------------------------------
-//	helper functions
-// -------------------------------------------------
-
-//============================================================================
-double** NavierStokesCPU::allocMatrix (
-		int	width,
-		int	height
-	)
-{
-	// array of pointers to rows
-	double** rows = (double**)malloc( height * sizeof( double* ) );
-
-	// the actual data array. allocation for all rows at once to get continuous memory
-	double* matrix = (double*)malloc( width * height * sizeof( double ) );
-
-	rows[0] = matrix;
-	for ( int i = 1; i < height; ++i )
-	{
-		rows[i] = matrix + i * width;
-	}
-
-	return rows;
-}
-
-//============================================================================
-void NavierStokesCPU::setMatrix (
-		double**	matrix,
-		int			xStart,
-		int			xStop,
-		int			yStart,
-		int			yStop,
-		double		value
-	)
-{
-	// faster than comparing using <=
-	++xStop;
-	++yStop;
-
-	for ( int y = yStart; y < yStop; ++y )
-	{
-		for( int x = xStart; x < xStop; ++x )
-		{
-			matrix[y][x] = value;
-		}
-	}
-}
-
-//============================================================================
-void NavierStokesCPU::freeMatrix( double **matrix )
-{
-	// delete data array
-	delete [] matrix[0];
-
-	// delete row array
-	delete [] matrix;
 }

@@ -5,7 +5,7 @@
 //**    includes
 //********************************************************************
 
-#define __CL_ENABLE_EXCEPTIONS;
+#define __CL_ENABLE_EXCEPTIONS
 
 #include "navierStokesSolver.h"
 
@@ -38,6 +38,11 @@ class NavierStokesGPU : public NavierStokesSolver
 
 
 		int			_pitch;		//! pitch for GPU arrays
+
+		// host arrays for data exchange
+		double	**_U_host,
+				**_V_host,
+				**_P_host;
 
 		// OpenCL data
 		vector<cl::Platform>	_clPlatforms;
@@ -77,8 +82,39 @@ class NavierStokesGPU : public NavierStokesSolver
 
 		void	init ( );
 
+			//! \brief takes the obstacle map and creates geometry information for each cell
+			//! \param obstacle map (domain size)
+			//! an additional boundary will be applied
+
+		bool	setObstacleMap ( bool** map );
+
 			//! @}
 
+
+		// -------------------------------------------------
+		//	execution
+		// -------------------------------------------------
+			//! @name execution
+			//! @{
+
+		//void	doSimulationStep ( );
+
+			//! @}
+
+
+		// -------------------------------------------------
+		//	data access
+		// -------------------------------------------------
+			//! @name data access
+			//! @{
+
+		double** getU_CPU ( );
+
+		double** getV_CPU ( );
+
+		double** getP_CPU ( );
+
+			//! @}
 
 
 	protected:

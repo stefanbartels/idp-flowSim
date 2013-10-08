@@ -163,38 +163,6 @@ class NavierStokesCPU : public NavierStokesSolver
 		inline double duv_dy  ( int x, int y, double alpha );
 
 			//! @}
-
-
-
-
-
-
-
-
-		// -------------------------------------------------
-		//	helper functions
-		// -------------------------------------------------
-			//! @name helper functions
-			//! @{
-
-		//! \todo doublecheck for correctness
-		double**	allocMatrix (
-				int width,
-				int height
-			);
-
-		void		setMatrix (
-				double** matrix,
-				int xStart,
-				int xStop,
-				int yStart,
-				int yStop,
-				double value
-			);
-
-		void		freeMatrix (
-				double** matrix
-			);
 };
 
 #endif // NAVIERSTOKESCPU_H

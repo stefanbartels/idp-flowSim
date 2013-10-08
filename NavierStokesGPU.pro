@@ -13,7 +13,8 @@ SOURCES += \
     src/inputParser.cpp \
     src/viewer/Viewer.cpp \
     src/viewer/SimplePGMWriter.cpp \
-    src/viewer/VTKWriter.cpp
+    src/viewer/VTKWriter.cpp \
+    src/solver/navierStokesSolver.cpp
 
 HEADERS += \
 	src/solver/navierStokesSolver.h \

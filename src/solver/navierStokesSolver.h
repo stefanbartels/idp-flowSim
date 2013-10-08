@@ -113,41 +113,7 @@ class NavierStokesSolver
 	void setParameters
 		(
 			ProblemParameters*	parameters
-		)
-	{
-		_xlength = parameters->xlength;
-		_ylength = parameters->ylength;
-
-		_nx = parameters->nx;
-		_ny = parameters->ny;
-
-		_dx = _xlength / (double) _nx;
-		_dy = _ylength / (double) _ny;
-
-		_dt = parameters->dt;
-		_tau = parameters->tau;
-
-		_it_max = parameters->it_max;
-
-		_epsilon = parameters->epsilon;
-		_omega = parameters->omega;
-		_gamma = parameters->gamma;
-
-		_re = parameters->re;
-		_gx = parameters->gx;
-		_gy = parameters->gy;
-
-		_ui = parameters->ui;
-		_vi = parameters->vi;
-		_pi = parameters->pi;
-
-		_wN = parameters->wN;
-		_wS = parameters->wS;
-		_wW = parameters->wW;
-		_wE = parameters->wE;
-
-		_problem = parameters->problem;
-	};
+		);
 
 		//! \brief allocates and initialises simulation memory
 
@@ -204,6 +170,35 @@ class NavierStokesSolver
 	virtual double** getP_CPU ( ) = 0;
 
 		//! @}
+
+
+
+
+
+
+	// -------------------------------------------------
+	//	helper functions
+	// -------------------------------------------------
+		//! @name helper functions
+		//! @{
+
+	double**	allocHostMatrix (
+			int width,
+			int height
+		);
+
+	void		setHostMatrix (
+			double** matrix,
+			int xStart,
+			int xStop,
+			int yStart,
+			int yStop,
+			double value
+		);
+
+	void		freeHostMatrix (
+			double** matrix
+		);
 };
 
 #endif // NAVIERSTOKESSOLVER_H
