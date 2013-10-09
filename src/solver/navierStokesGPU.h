@@ -45,17 +45,17 @@ class NavierStokesGPU : public NavierStokesSolver
 				**_P_host;
 
 		// OpenCL data
-		vector<cl::Platform>	_clPlatforms;
-		vector<cl::Device>		_clDevices;
+		std::vector<cl::Platform>	_clPlatforms;
+		std::vector<cl::Device>		_clDevices;
 
-		cl::Context				_clContext;
-		cl::CommandQueue		_clQueue;
+		cl::Context					_clContext;
+		cl::CommandQueue			_clQueue;
 
-		cl::NDRange				_clRange;
+		cl::NDRange					_clRange;
 
 		// kernels
-		vector<cl::Kernel>		_clKernels;
-		cl::Program				_clProgram;
+		std::vector<cl::Kernel>		_clKernels;
+		cl::Program					_clProgram;
 
 			//! @}
 
@@ -97,7 +97,7 @@ class NavierStokesGPU : public NavierStokesSolver
 			//! @name execution
 			//! @{
 
-		//void	doSimulationStep ( );
+		void	doSimulationStep ( );
 
 			//! @}
 
@@ -118,6 +118,21 @@ class NavierStokesGPU : public NavierStokesSolver
 
 
 	protected:
+		// -------------------------------------------------
+		//	boundaries
+		// -------------------------------------------------
+			//! @name boundaries
+			//! @{
+
+			//!  \brief sets the boundary values for U and V depending on wN, wS, wW and wE
+
+		void	setBoundaryConditions ( );
+
+			//! \brief  TODO
+
+		void	setSpecificBoundaryConditions ( );
+
+			//! @}
 
 
 		// -------------------------------------------------
@@ -128,7 +143,14 @@ class NavierStokesGPU : public NavierStokesSolver
 
 			//! \brief loads and compiles all required kernels
 
-		void loadKernels ( );
+		void	loadKernels ( );
+
+			//! \brief loads the content of a cl source file to the source vector
+
+		void	loadSource (
+						cl::Program::Sources&	sources,
+						std::string				fileName
+					);
 
 			//! @}
 };

@@ -3,8 +3,6 @@
 #include <iostream>
 #include <fstream>
 
-using namespace std;
-
 SimplePGMWriter::SimplePGMWriter()
 {
 }
@@ -25,11 +23,11 @@ void SimplePGMWriter::renderFrame (
 	char img_name[32];
 	sprintf( img_name, "output/it_%05d.pgm", it );
 
-	ofstream fimg ( img_name );
+	std::ofstream fimg ( img_name );
 
 	if ( !fimg.is_open() )
 	{
-		cerr << "\nFailed to open image file " << img_name;
+		std::cerr << "\nFailed to open image file " << img_name;
 		return;
 	}
 
@@ -46,7 +44,7 @@ void SimplePGMWriter::renderFrame (
 			min = T[i];
 	}
 
-	cerr << "\nmax value is " << max;
+	std::cerr << "\nmax value is " << max;
 
 	// convert array to int array and normalize to 0 - 255
 	unsigned char C[size];
@@ -55,7 +53,7 @@ void SimplePGMWriter::renderFrame (
 	if ( max - min != 0.0 )
 		factor = 255 / ( max - min );
 
-	cerr << "\nfactor is " << factor;
+	std::cerr << "\nfactor is " << factor;
 
 	for ( int i = 0; i < size; ++i )
 	{

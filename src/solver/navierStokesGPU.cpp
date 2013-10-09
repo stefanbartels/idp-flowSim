@@ -7,7 +7,7 @@
 
 #include <fstream>
 #include <iostream>
-//#include <iterator>
+#include <math.h>
 
 // thread block dimensions
 #define BW 16
@@ -167,6 +167,7 @@ bool NavierStokesGPU::setObstacleMap
 
 	// flag array is computed on CPU and copied to device memory later
 	// todo: do it on GPU?
+	// todo: use constant memory
 
 	unsigned char ** flag;
 
@@ -275,6 +276,42 @@ bool NavierStokesGPU::setObstacleMap
 	return true;
 }
 
+
+// -------------------------------------------------
+//	execution
+// -------------------------------------------------
+
+//============================================================================
+void NavierStokesGPU::doSimulationStep()
+{
+	// get delta_t
+	//computeDeltaT();
+
+	// set boundary values for u and v
+	setBoundaryConditions();
+
+	setSpecificBoundaryConditions();
+
+	// compute F(n) and G(n)
+	//computeFG();
+
+	// compute right hand side of pressure equation
+	//computeRightHandSide();
+
+	// poisson overrelaxation loop
+	double residual = INFINITY;
+
+	for ( int it = 0; it < _it_max && abs(residual) > _epsilon; ++it )
+	{
+		// do SOR step (includes residual computation)
+		//residual =  SORPoisson();
+	}
+
+	// compute U(n+1) and V(n+1)
+	//adaptUV();
+}
+
+
 // -------------------------------------------------
 //	data access
 // -------------------------------------------------
@@ -326,20 +363,36 @@ double **NavierStokesGPU::getP_CPU ( )
 
 
 // -------------------------------------------------
+//	boundaries
+// -------------------------------------------------
+
+//============================================================================
+void NavierStokesGPU::setBoundaryConditions ( )
+{
+	// call kernel setBoundaryConditionsKernel
+	// call kernel setArbitraryBoundaryConditionsKernel
+}
+
+//============================================================================
+void NavierStokesGPU::setSpecificBoundaryConditions ( )
+{
+	// call kernel setSpecificBoundaryConditionsKernel (todo)
+}
+
+
+// -------------------------------------------------
 //	helper functions
 // -------------------------------------------------
 
 //============================================================================
 void NavierStokesGPU::loadKernels ( )
 {
-	// load opencl source
-	std::ifstream cl_file( "kernels/kernel.cl" );
-	string cl_string(
-				istreambuf_iterator<char>( cl_file ),
-				(istreambuf_iterator<char>())
-			);
+	// cl source codes
+	cl::Program::Sources source;
 
-	cl::Program::Sources source( 1, make_pair( cl_string.c_str(), cl_string.length() + 1 ) );
+	// load kernels from files
+	loadSource ( source, "kernels/auxiliary.cl" );
+	loadSource ( source, "kernels/boundaryConditions.cl" );
 
 	// create program
 	_clProgram = cl::Program( _clContext, source );
@@ -347,9 +400,35 @@ void NavierStokesGPU::loadKernels ( )
 	// compile opencl source
 	_clProgram.build( _clDevices );
 
-	// load kernels
-	_clKernels = vector<cl::Kernel> ( 2 );
 
+	//-----------------------
+	// load kernels
+	//-----------------------
+
+	_clKernels = std::vector<cl::Kernel> ( 5 );
+
+	// auxiliary kernels
 	_clKernels[0] = cl::Kernel( _clProgram, "setKernel" );
 	_clKernels[1] = cl::Kernel( _clProgram, "setBoundaryAndInteriorKernel" );
+
+	// boundary condition kernels
+	_clKernels[2] = cl::Kernel( _clProgram, "setBoundaryConditionsKernel" );
+	_clKernels[3] = cl::Kernel( _clProgram, "setArbitraryBoundaryConditionsKernel" );
+	_clKernels[4] = cl::Kernel( _clProgram, "setSpecificBoundaryConditionsKernel" );
+
+}
+
+//============================================================================
+void NavierStokesGPU::loadSource
+	(
+		cl::Program::Sources&	sources,
+		std::string				fileName
+	)
+{
+	// read file
+	std::ifstream cl_file( fileName.c_str() );
+	std::string cl_string( std::istreambuf_iterator<char>( cl_file ), (std::istreambuf_iterator<char>()) );
+
+	// add it to the source list
+	sources.push_back( std::make_pair( cl_string.c_str(), cl_string.length() + 1 ) );
 }

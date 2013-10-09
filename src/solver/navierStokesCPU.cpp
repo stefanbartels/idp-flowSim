@@ -10,8 +10,6 @@
 
 #include <iostream>
 
-using namespace std;
-
 // todo: use enum instead of defines?
 #define FREE_SLIP	1
 #define NO_SLIP		2

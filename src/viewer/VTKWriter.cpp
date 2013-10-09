@@ -4,8 +4,6 @@
 #include <fstream>
 #include <iomanip>
 
-using namespace std;
-
 VTKWriter::VTKWriter()
 {
 }
@@ -30,16 +28,16 @@ void VTKWriter::renderFrame
 	char img_name[32];
 	sprintf( img_name, "output/it_%05d.vtk", it );
 
-	ofstream vtk ( img_name );
+	std::ofstream vtk ( img_name );
 
 	if ( !vtk.is_open() )
 	{
-		cerr << "\nFailed to open vtk file \"" << img_name << "\" for writing!";
+		std::cerr << "\nFailed to open vtk file \"" << img_name << "\" for writing!";
 		return;
 	}
 
 	// set output flags
-	vtk << setprecision( 16 );
+	vtk << std::setprecision( 16 );
 
 	//-----------------------
 	// write vtk header
@@ -84,7 +82,7 @@ void VTKWriter::renderFrame
 	{
 		for( int x = 0; x < nx1; ++x )
 		{
-			vtk << fixed <<
+			vtk << std::fixed <<
 				   ( U[y][x] + U[y+1][x] ) * 0.5 // todo: check conversion to float
 				<< " " <<
 				   ( V[y][x] + V[y][x+1] ) * 0.5
@@ -106,7 +104,7 @@ void VTKWriter::renderFrame
 	{
 		for( int x = 1; x < nx1; ++x )
 		{
-			vtk << fixed << P[y][x] << "\n";
+			vtk << std::fixed << P[y][x] << "\n";
 		}
 	}
 

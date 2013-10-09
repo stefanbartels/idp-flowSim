@@ -9,8 +9,6 @@
 #include <cstdlib>
 #include <stdio.h>
 
-using namespace std;
-
 //********************************************************************
 //**    implementation
 //********************************************************************
@@ -50,17 +48,17 @@ bool InputParser::readParameters
 	)
 {
 	// open input file
-	ifstream file( fileName );
+	std::ifstream file( fileName );
 
 	if ( file.fail() || !file.is_open() )
 	{
-		cerr << "\nCould not open parameter file \"" << fileName << "\"";
+		std::cerr << "\nCould not open parameter file \"" << fileName << "\"";
 		return false;
 	}
 
-	string	buffer;
-	int		i_buffer;
-	double	d_buffer;
+	std::string	buffer;
+	int			i_buffer;
+	double		d_buffer;
 
 	int line = 0;
 	int numReadValues = 0;
@@ -217,21 +215,21 @@ bool InputParser::readParameters
 		}
 		else if ( buffer == "problem" )
 		{
-			string s_buffer;
+			std::string s_buffer;
 			file >> s_buffer;
 			parameters->problem = s_buffer;
 			++numReadValues;
 		}
 		else if ( buffer == "map" )
 		{
-			string s_buffer;
+			std::string s_buffer;
 			file >> s_buffer;
 			parameters->obstacleFile = s_buffer;
 			++numReadValues;
 		}
 		else // unknown parameter
 		{
-			cerr << "\nUnknown parameter \"" << buffer << "\".\nPlease check yout input file!";
+			std::cerr << "\nUnknown parameter \"" << buffer << "\".\nPlease check yout input file!";
 			file.close();
 			return false;
 		}
@@ -247,13 +245,13 @@ bool InputParser::readParameters
 
 	if ( !file.eof() )
 	{
-		cerr << "\nAborted parameter parsing after line " << line << ".";
+		std::cerr << "\nAborted parameter parsing after line " << line << ".";
 		// return false;
 	}
 
 	if ( file.bad() )
 	{
-		cerr << "\nParameter file corrupted.";
+		std::cerr << "\nParameter file corrupted.";
 		return false;
 	}
 
@@ -262,13 +260,13 @@ bool InputParser::readParameters
 	// no values found? => no valid parameter file
 	if ( numReadValues == 0 )
 	{
-		cerr << "\nNo valid parameter file.";
+		std::cerr << "\nNo valid parameter file.";
 		return false;
 	}
 	// not all values given? =>	using standard values for missing parameters
 	else if ( numReadValues < 22 )
 	{
-		cerr << "\nUsing standard values for missing parameters.\nPlease check yout input file!";
+		std::cerr << "\nUsing standard values for missing parameters.\nPlease check yout input file!";
 	}
 
 	// done
@@ -313,13 +311,13 @@ bool** allocateObstacleMap
 //============================================================================
 bool InputParser::readObstacleMap
 	(
-		bool***	obstacleMap,
-		int		width,
-		int		height,
-		string	fileName
+		bool***		obstacleMap,
+		int			width,
+		int			height,
+		std::string	fileName
 	)
 {
-	string buffer;
+	std::string buffer;
 	int i_buffer;
 
 	int pgm_width, pgm_height;
@@ -337,7 +335,7 @@ bool InputParser::readObstacleMap
 
 	if( fileName.compare("") == 0 )
 	{
-		cerr << "\nCreating empty map...";
+		std::cerr << "\nCreating empty map...";
 
 		map = allocateObstacleMap( width, height );
 
@@ -374,11 +372,11 @@ bool InputParser::readObstacleMap
 	// open obstacle map file
 	//-----------------------
 
-	ifstream file( fileName.c_str() );
+	std::ifstream file( fileName.c_str() );
 
 	if ( file.fail() || !file.is_open() )
 	{
-		cerr << "\nCould not open obstacle map file \"" << fileName << "\"";
+		std::cerr << "\nCould not open obstacle map file \"" << fileName << "\"";
 		return false;
 	}
 
@@ -400,7 +398,7 @@ bool InputParser::readObstacleMap
 	}
 	else
 	{
-		cerr << "\nObstacle map is no compatible PGM image! Supported types: P2 and P5";
+		std::cerr << "\nObstacle map is no compatible PGM image! Supported types: P2 and P5";
 		file.close();
 		return false;
 	}
@@ -426,7 +424,7 @@ bool InputParser::readObstacleMap
 
 	if( pgm_width != width || pgm_height != height )
 	{
-		cerr << "\nObstacle map does not fit domain size!\nDomain size: " << width << "x" << height <<
+		std::cerr << "\nObstacle map does not fit domain size!\nDomain size: " << width << "x" << height <<
 				"\nPGM size: " << pgm_width << "x" << pgm_height;
 		file.close();
 		return false;
@@ -524,35 +522,35 @@ void InputParser::printParameters
 		ProblemParameters *parameters
 	)
 {
-	cout << "\n====================\nParameter set:";
+	std::cout << "\n====================\nParameter set:";
 
-	cout << "\nDomain size:\t" << parameters->xlength << " x " << parameters->ylength;
-	cout << "\nGrid size:\t" << parameters->nx << " x " << parameters->ny;
+	std::cout << "\nDomain size:\t" << parameters->xlength << " x " << parameters->ylength;
+	std::cout << "\nGrid size:\t" << parameters->nx << " x " << parameters->ny;
 
-	cout << "\nTime step Δt:\t" << parameters->dt;
-	cout << "\nSafety factor τ:\t" << parameters->tau;
+	std::cout << "\nTime step Δt:\t" << parameters->dt;
+	std::cout << "\nSafety factor τ:\t" << parameters->tau;
 
-	cout << "\nMax. SOR iterations:\t" << parameters->it_max;
+	std::cout << "\nMax. SOR iterations:\t" << parameters->it_max;
 
-	cout << "\nε:\t" << parameters->epsilon;
-	cout << "\nω:\t" << parameters->omega;
-	cout << "\nγ:\t" << parameters->gamma;
+	std::cout << "\nε:\t" << parameters->epsilon;
+	std::cout << "\nω:\t" << parameters->omega;
+	std::cout << "\nγ:\t" << parameters->gamma;
 
-	cout << "\nReynolds number:\t" << parameters->re;
-	cout << "\nGravity X:\t" << parameters->gx;
-	cout << "\nGravity Y:\t" << parameters->gy;
+	std::cout << "\nReynolds number:\t" << parameters->re;
+	std::cout << "\nGravity X:\t" << parameters->gx;
+	std::cout << "\nGravity Y:\t" << parameters->gy;
 
-	cout << "\nInitial horizontal velocity:\t" << parameters->ui;
-	cout << "\nInitial vertical velocity:\t" << parameters->vi;
-	cout << "\nInitial pressure:\t" << parameters->pi;
+	std::cout << "\nInitial horizontal velocity:\t" << parameters->ui;
+	std::cout << "\nInitial vertical velocity:\t" << parameters->vi;
+	std::cout << "\nInitial pressure:\t" << parameters->pi;
 
-	cout << "\nNorthern boundary:\t" << parameters->wN;
-	cout << "\nSouthern boundary:\t" << parameters->wS;
-	cout << "\nWestern boundary:\t" << parameters->wW;
-	cout << "\nEastern boundary:\t" << parameters->wE;
-	cout << "\n(1: free slip, 2: no slip, 3: outflow, 4: periodic)";
+	std::cout << "\nNorthern boundary:\t" << parameters->wN;
+	std::cout << "\nSouthern boundary:\t" << parameters->wS;
+	std::cout << "\nWestern boundary:\t" << parameters->wW;
+	std::cout << "\nEastern boundary:\t" << parameters->wE;
+	std::cout << "\n(1: free slip, 2: no slip, 3: outflow, 4: periodic)";
 
-	cout << "\nProblem:\t" << parameters->problem;
-	cout << "\nObstacle map:\t" << parameters->obstacleFile;
-	cout << "\n====================";
+	std::cout << "\nProblem:\t" << parameters->problem;
+	std::cout << "\nObstacle map:\t" << parameters->obstacleFile;
+	std::cout << "\n====================";
 }

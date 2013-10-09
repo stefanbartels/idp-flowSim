@@ -8,8 +8,6 @@
 #define OUTFLOW 	3
 #define PERIODIC	4
 
-using namespace std;
-
 struct ProblemParameters
 {
 	// geometry data
@@ -44,9 +42,9 @@ struct ProblemParameters
 				wW,				//! boundary condition along western boundary
 				wE;				//! boundary condition along eastern boundary
 
-	string		problem;		//! problem type
+	std::string	problem;		//! problem type
 
-	string		obstacleFile;	//! obstacle map file name
+	std::string	obstacleFile;	//! obstacle map file name
 };
 
 
@@ -73,10 +71,10 @@ class InputParser
 			);
 
 		static bool readObstacleMap (
-				bool***	obstacleMap,
-				int		width,
-				int		height,
-				string	fileName
+				bool***		obstacleMap,
+				int			width,
+				int			height,
+				std::string	fileName
 			);
 
 		static void printParameters (
