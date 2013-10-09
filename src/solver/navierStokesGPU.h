@@ -152,6 +152,10 @@ class NavierStokesGPU : public NavierStokesSolver
 						std::string				fileName
 					);
 
+			//! \brief sets kernel arguments for frequently called kernels
+
+		void	setKernelArguments ( );
+
 			//! @}
 };
 

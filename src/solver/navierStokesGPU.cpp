@@ -146,6 +146,10 @@ void NavierStokesGPU::init ( )
 	_V_host = allocHostMatrix ( _nx + 2, _ny + 2 );
 	_P_host = allocHostMatrix ( _nx + 2, _ny + 2 );
 
+
+	// set kernel arguments for frequently called kernels
+	setKernelArguments();
+
 	// wait for completion
 	_clQueue.finish();
 }
@@ -369,8 +373,13 @@ double **NavierStokesGPU::getP_CPU ( )
 //============================================================================
 void NavierStokesGPU::setBoundaryConditions ( )
 {
+	// kernel arguments are set in setKernelArguments()
+
 	// call kernel setBoundaryConditionsKernel
+	_clQueue.enqueueNDRangeKernel ( _clKernels[2], cl::NullRange, _clRange, cl::NullRange );
+
 	// call kernel setArbitraryBoundaryConditionsKernel
+	_clQueue.enqueueNDRangeKernel ( _clKernels[3], cl::NullRange, _clRange, cl::NullRange );
 }
 
 //============================================================================
@@ -431,4 +440,34 @@ void NavierStokesGPU::loadSource
 
 	// add it to the source list
 	sources.push_back( std::make_pair( cl_string.c_str(), cl_string.length() + 1 ) );
+}
+
+//============================================================================
+void NavierStokesGPU::setKernelArguments ( )
+{
+	// domain size including boundaries
+	int nx = _nx+2;
+	int ny = _ny+2;
+
+	// set kernel arguments for setBoundaryConditionsKernel
+	_clKernels[2].setArg( 0, _U_g );
+	_clKernels[2].setArg( 1, _V_g );
+	_clKernels[2].setArg( 2, sizeof(int), &_wN ); // northern boundary condition
+	_clKernels[2].setArg( 3, sizeof(int), &_wE ); // eastern boundary condition
+	_clKernels[2].setArg( 4, sizeof(int), &_wS ); // southern boundary condition
+	_clKernels[2].setArg( 5, sizeof(int), &_wW ); // western boundary condition
+	_clKernels[2].setArg( 6, sizeof(int), &nx );
+	_clKernels[2].setArg( 7, sizeof(int), &ny );
+	//_clKernels[2].setArg( 8, sizeof(int),   &_pitch );
+
+	// set kernel arguments for setArbitraryBoundaryConditionsKernel
+	_clKernels[3].setArg( 0, _U_g );
+	_clKernels[3].setArg( 1, _V_g );
+	_clKernels[3].setArg( 2, sizeof(int), &_wN ); // northern boundary condition
+	_clKernels[3].setArg( 3, sizeof(int), &_wE ); // eastern boundary condition
+	_clKernels[3].setArg( 4, sizeof(int), &_wS ); // southern boundary condition
+	_clKernels[3].setArg( 5, sizeof(int), &_wW ); // western boundary condition
+	_clKernels[3].setArg( 6, sizeof(int), &nx );
+	_clKernels[3].setArg( 7, sizeof(int), &ny );
+	//_clKernels[2].setArg( 8, sizeof(int),   &_pitch );
 }
