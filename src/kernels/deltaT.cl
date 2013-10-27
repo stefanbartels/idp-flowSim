@@ -65,12 +65,14 @@ __kernel void getUVMaximumKernel
 			{
       			temp  = u_s[idx_local];
 				temp2 = u_s[idx_local + offset];
-				u_s[ idx_local ] = (temp < temp2) ? temp : temp2;
+				u_s[ idx_local ] = (temp > temp2) ? temp : temp2;
 
       			temp  = v_s[idx_local];
 				temp2 = v_s[idx_local + offset];
-				v_s[ idx_local ] = (temp < temp2) ? temp : temp2;
+				v_s[ idx_local ] = (temp > temp2) ? temp : temp2;
 			}
+
+			offset = offset / 2;
 
 			barrier(CLK_LOCAL_MEM_FENCE);
 		}
