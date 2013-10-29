@@ -160,9 +160,9 @@ __kernel void setArbitraryBoundaryConditionsKernel
 	const unsigned int idx = y * nx + x;
 
 	if	(
-			x > 0 &&
-			x < nx-1 &&
-			y > 0 &&
+			x > 0		&&
+			x < nx-1	&&
+			y > 0		&&
 			y < ny-1
 		)
 	{
@@ -233,11 +233,9 @@ __kernel void setArbitraryBoundaryConditionsKernel
 // -------------------------------------------------
 
 //============================================================================
-__kernel void setSpecificBoundaryConditionsKernel
+__kernel void setMovingLidBoundaryConditionsKernel
 	(
-		__global float*	field_g,
-		float			boundaryValue,
-		float			interiorValue,
+		__global float*	u_g,
 		int				nx,
 		int				ny
 //		int				pitch
@@ -245,10 +243,37 @@ __kernel void setSpecificBoundaryConditionsKernel
 {
 	const unsigned int x   = get_global_id( 0 );
 	const unsigned int y   = get_global_id( 1 );
-	const unsigned int idx = y * pitch + x;
+	//const unsigned int idx = y * nx + x;
 
-	if( x < nx && y < ny )
+	if	(
+			y == 0	&&
+			x >	1	&&
+			x < nx
+		)
 	{
-		// todo
+		u_g[ x ] = 2.0 - u_g[ x + nx ];
+	}
+}
+
+//============================================================================
+__kernel void setLeftInflowBoundaryConditionsKernel
+	(
+		__global float*	u_g,
+		int				nx,
+		int				ny
+//		int				pitch
+	)
+{
+	const unsigned int x   = get_global_id( 0 );
+	const unsigned int y   = get_global_id( 1 );
+	//const unsigned int idx = y * nx + x;
+
+	if	(
+			x == 0	&&
+			y > 0	&&
+			y < ny
+		)
+	{
+		u_g[ y * nx ] = 1.0;
 	}
 }

@@ -25,6 +25,7 @@
 NavierStokesGPU::NavierStokesGPU ( )
 {
 	_pitch = 0;
+	_clWorkgroupSize = 0;
 
 	try
 	{
@@ -40,9 +41,6 @@ NavierStokesGPU::NavierStokesGPU ( )
 
 		// define thread range
 		_clRange = cl::NDRange( BW, BH );
-
-		// load and compile kernels
-		loadKernels();
 	}
 	catch( cl::Error e )
 	{
@@ -69,6 +67,8 @@ void NavierStokesGPU::init ( )
 	// todo
 	_pitch = _nx;
 
+	// load and compile kernels
+	loadKernels();
 
 	// allocate memory for matrices U, V, P, RHS, F, G
 
@@ -289,7 +289,7 @@ bool NavierStokesGPU::setObstacleMap
 void NavierStokesGPU::doSimulationStep()
 {
 	// get delta_t
-	//computeDeltaT();
+	computeDeltaT();
 
 	// set boundary values for u and v
 	setBoundaryConditions();
@@ -378,14 +378,66 @@ void NavierStokesGPU::setBoundaryConditions ( )
 	// call kernel setBoundaryConditionsKernel
 	_clQueue.enqueueNDRangeKernel ( _clKernels[2], cl::NullRange, _clRange, cl::NullRange );
 
+	// wait for completion
+	_clQueue.finish();
+
 	// call kernel setArbitraryBoundaryConditionsKernel
 	_clQueue.enqueueNDRangeKernel ( _clKernels[3], cl::NullRange, _clRange, cl::NullRange );
+
+	// wait for completion
+	_clQueue.finish();
 }
 
 //============================================================================
 void NavierStokesGPU::setSpecificBoundaryConditions ( )
 {
-	// call kernel setSpecificBoundaryConditionsKernel (todo)
+	// the problem specific kernel is determined during kernel compilation
+	_clQueue.enqueueNDRangeKernel ( _clKernels[4], cl::NullRange, _clRange, cl::NullRange );
+
+	// wait for completion
+	_clQueue.finish();
+}
+
+
+// -------------------------------------------------
+//	simulation
+// -------------------------------------------------
+
+//============================================================================
+void NavierStokesGPU::computeDeltaT ( )
+{
+	// allocate memory for UV maximum result
+	// todo: move to constructor?
+	cl::Buffer results_g ( _clContext, CL_MEM_WRITE_ONLY, sizeof(float) * 2 );
+
+	// call min/max reduction kernel
+	_clQueue.enqueueNDRangeKernel (
+				_clKernels[5],
+				cl::NullRange,
+				cl::NDRange( _clWorkgroupSize ),
+				cl::NDRange( _clWorkgroupSize )		// make sure that all GPU cores are in one workgroup for optimal reduction speed
+			);
+
+	// wait for completion
+	_clQueue.finish();
+
+	// retrieve reduction result
+	float results[2];
+	_clQueue.enqueueReadBuffer( results_g, CL_TRUE, 0, sizeof(float) * 2, results );
+
+	// compute the three options for the min-function
+	double opt_a, opt_x, opt_y, min;
+
+	opt_a = ( _re / 2.0 ) * ( 1.0 / (_dx * _dx) + 1.0 / (_dy * _dy) );
+	opt_x = _dx / abs( results[0] ); // results[0] = u_max
+	opt_y = _dy / abs( results[1] );// results[1] = v_max
+
+	// get smallest value
+	min = opt_a < opt_x ? opt_a : opt_x;
+	min = min   < opt_y ? min   : opt_y;
+
+	// compute delta t
+	_dt = _tau * min;
 }
 
 
@@ -402,6 +454,7 @@ void NavierStokesGPU::loadKernels ( )
 	// load kernels from files
 	loadSource ( source, "kernels/auxiliary.cl" );
 	loadSource ( source, "kernels/boundaryConditions.cl" );
+	loadSource ( source, "kernels/deltaT.cl" );
 
 	// create program
 	_clProgram = cl::Program( _clContext, source );
@@ -423,8 +476,24 @@ void NavierStokesGPU::loadKernels ( )
 	// boundary condition kernels
 	_clKernels[2] = cl::Kernel( _clProgram, "setBoundaryConditionsKernel" );
 	_clKernels[3] = cl::Kernel( _clProgram, "setArbitraryBoundaryConditionsKernel" );
-	_clKernels[4] = cl::Kernel( _clProgram, "setSpecificBoundaryConditionsKernel" );
 
+	if ( _problem == "moving_lid" )
+	{
+		_clKernels[4] = cl::Kernel( _clProgram, "setMovingLidBoundaryConditionsKernel" );
+	}
+	else if ( _problem == "left_inflow" )
+	{
+		_clKernels[4] = cl::Kernel( _clProgram, "setLeftInflowBoundaryConditionsKernel" );
+	}
+
+	// kernel to find maximum UV value for delta t computation
+	_clKernels[5] = cl::Kernel( _clProgram, "getUVMaximumKernel" );
+
+
+
+
+	// get work group size
+	_clWorkgroupSize = _clKernels[0].getWorkGroupInfo< CL_KERNEL_WORK_GROUP_SIZE >( _clDevices[0] );
 }
 
 //============================================================================
@@ -469,5 +538,20 @@ void NavierStokesGPU::setKernelArguments ( )
 	_clKernels[3].setArg( 5, sizeof(int), &_wW ); // western boundary condition
 	_clKernels[3].setArg( 6, sizeof(int), &nx );
 	_clKernels[3].setArg( 7, sizeof(int), &ny );
-	//_clKernels[2].setArg( 8, sizeof(int),   &_pitch );
+	//_clKernels[3].setArg( 8, sizeof(int),   &_pitch );
+
+	// set kernel arguments for the problem specific boundary condition kernel
+	_clKernels[4].setArg( 0, _U_g );
+	_clKernels[4].setArg( 1, sizeof(int), &nx );
+	_clKernels[4].setArg( 2, sizeof(int), &ny );
+	//_clKernels[4].setArg( 3, sizeof(int),   &_pitch );
+
+	// kernel arguments for delta t computation (UV maximum)
+	_clKernels[5].setArg( 0, _U_g );
+	_clKernels[5].setArg( 1, _V_g );
+	// argument 2: result buffer, { float u_max, float v_max }
+	_clKernels[5].setArg( 3, sizeof(cl_float) * _clWorkgroupSize, NULL); // dynamically allocated local shared memory for U
+	_clKernels[5].setArg( 4, sizeof(cl_float) * _clWorkgroupSize, NULL); // dynamically allocated local shared memory for V
+	_clKernels[5].setArg( 5, sizeof(int), &nx );
+	_clKernels[5].setArg( 6, sizeof(int), &ny );
 }

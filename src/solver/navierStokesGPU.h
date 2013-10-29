@@ -57,6 +57,8 @@ class NavierStokesGPU : public NavierStokesSolver
 		std::vector<cl::Kernel>		_clKernels;
 		cl::Program					_clProgram;
 
+		int							_clWorkgroupSize;	//! maximum size of a work group
+
 			//! @}
 
 	public:
@@ -131,6 +133,19 @@ class NavierStokesGPU : public NavierStokesSolver
 			//! \brief  TODO
 
 		void	setSpecificBoundaryConditions ( );
+
+			//! @}
+
+		// -------------------------------------------------
+		//	simulation
+		// -------------------------------------------------
+			//! @name simulation
+			//! @{
+
+			//! \brief calculates the stepsize for next time step
+			//! According to formula 3.50
+
+		void	computeDeltaT ( );
 
 			//! @}
 
