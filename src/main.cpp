@@ -5,6 +5,7 @@
 #include <iostream>
 
 #include "solver/navierStokesCPU.h"
+#include "solver/navierStokesGPU.h"
 #include "viewer/SimplePGMWriter.h"
 #include "viewer/VTKWriter.h"
 #include "inputParser.h"
@@ -65,7 +66,14 @@ int main ( int argc, char* argv[] )
 	// create gui, solver and viewer objects and pass parameters
 	//-----------------------
 
-	NavierStokesSolver* solver = new NavierStokesCPU();
+	NavierStokesSolver* solver;
+
+	#if USE_GPU
+		solver = new NavierStokesGPU();
+	#else
+		solver = new NavierStokesCPU();
+	#endif
+
 	solver->setParameters ( &parameters );
 	if( !solver->setObstacleMap( obstacleMap ) )
 	{

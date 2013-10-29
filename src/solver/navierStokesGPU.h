@@ -12,6 +12,12 @@
 #include <CL/cl.hpp>
 #include <CL/opencl.h>
 
+#if REAL == double
+	#define CL_REAL cl_double
+#else
+	#define CL_REAL cl_float
+#endif
+
 //====================================================================
 /*! \class NavierStokesCpu
     \brief Class for solving of Navier Stokes on GPU
@@ -40,7 +46,7 @@ class NavierStokesGPU : public NavierStokesSolver
 		int			_pitch;		//! pitch for GPU arrays
 
 		// host arrays for data exchange
-		double	**_U_host,
+		REAL	**_U_host,
 				**_V_host,
 				**_P_host;
 
@@ -110,11 +116,11 @@ class NavierStokesGPU : public NavierStokesSolver
 			//! @name data access
 			//! @{
 
-		double** getU_CPU ( );
+		REAL** getU_CPU ( );
 
-		double** getV_CPU ( );
+		REAL** getV_CPU ( );
 
-		double** getP_CPU ( );
+		REAL** getP_CPU ( );
 
 			//! @}
 
@@ -147,13 +153,17 @@ class NavierStokesGPU : public NavierStokesSolver
 
 		void	computeDeltaT ( );
 
+			//! \brief computes F and G
+
+		void	computeFG ( );
+
 			//! @}
 
 
 		// -------------------------------------------------
-		//	helper functions
+		//	auxiliary functions
 		// -------------------------------------------------
-			//! @name helper functions
+			//! @name auxiliary functions
 			//! @{
 
 			//! \brief loads and compiles all required kernels

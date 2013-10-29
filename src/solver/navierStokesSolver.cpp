@@ -27,8 +27,8 @@ void NavierStokesSolver::setParameters
 	_nx = parameters->nx;
 	_ny = parameters->ny;
 
-	_dx = _xlength / (double) _nx;
-	_dy = _ylength / (double) _ny;
+	_dx = _xlength / (REAL) _nx;
+	_dy = _ylength / (REAL) _ny;
 
 	_dt = parameters->dt;
 	_tau = parameters->tau;
@@ -61,17 +61,17 @@ void NavierStokesSolver::setParameters
 // -------------------------------------------------
 
 //============================================================================
-double** NavierStokesSolver::allocHostMatrix
+REAL** NavierStokesSolver::allocHostMatrix
 	(
 		int	width,
 		int	height
 	)
 {
 	// array of pointers to rows
-	double** rows = (double**)malloc( height * sizeof( double* ) );
+	REAL** rows = (REAL**)malloc( height * sizeof( REAL* ) );
 
 	// the actual data array. allocation for all rows at once to get continuous memory
-	double* matrix = (double*)malloc( width * height * sizeof( double ) );
+	REAL* matrix = (REAL*)malloc( width * height * sizeof( REAL ) );
 
 	rows[0] = matrix;
 	for ( int i = 1; i < height; ++i )
@@ -85,12 +85,12 @@ double** NavierStokesSolver::allocHostMatrix
 //============================================================================
 void NavierStokesSolver::setHostMatrix
 	(
-		double**	matrix,
-		int			xStart,
-		int			xStop,
-		int			yStart,
-		int			yStop,
-		double		value
+		REAL**	matrix,
+		int		xStart,
+		int		xStop,
+		int		yStart,
+		int		yStop,
+		REAL	value
 	)
 {
 	// faster than comparing using <=
@@ -109,12 +109,12 @@ void NavierStokesSolver::setHostMatrix
 //============================================================================
 void NavierStokesSolver::freeHostMatrix
 	(
-		double **matrix
+		REAL **matrix
 	)
 {
 	// delete data array
-	delete [] matrix[0];
+	free( matrix[0] );
 
 	// delete row array
-	delete [] matrix;
+	free( matrix );
 }

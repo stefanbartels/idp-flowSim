@@ -23,5 +23,6 @@ HEADERS += \
     src/inputParser.h \
     src/viewer/Viewer.h \
     src/viewer/SimplePGMWriter.h \
-    src/viewer/VTKWriter.h
+    src/viewer/VTKWriter.h \
+    src/Definitions.h
 

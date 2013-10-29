@@ -58,7 +58,7 @@ bool InputParser::readParameters
 
 	std::string	buffer;
 	int			i_buffer;
-	double		d_buffer;
+	REAL		d_buffer;
 
 	int line = 0;
 	int numReadValues = 0;
