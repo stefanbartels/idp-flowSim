@@ -9,10 +9,6 @@
 #include <iostream>
 #include <math.h>
 
-// thread block dimensions
-#define BW 16
-#define BH 16
-
 //********************************************************************
 //**    implementation
 //********************************************************************

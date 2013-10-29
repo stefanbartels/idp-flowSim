@@ -4,6 +4,10 @@
 // set to true to use OpenCL for the simulation
 #define USE_GPU true
 
+// thread block dimensions
+#define BW 16
+#define BH 16
+
 // defining data type, as double is not supported by all GPUs
 #if USE_GPU
 	#define REAL float
