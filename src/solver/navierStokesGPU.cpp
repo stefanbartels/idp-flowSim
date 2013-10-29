@@ -89,11 +89,11 @@ void NavierStokesGPU::init ( )
 	// todo: border might not be neccessary
 
 	// set kernel arguments for initialisation
-	float initialValue = 0.0;
+	REAL initialValue = 0.0;
 
 	_clKernels[1].setArg( 0, _U_g );
-	_clKernels[1].setArg( 1, sizeof(float), &initialValue ); // boundary value
-	_clKernels[1].setArg( 2, sizeof(float), &_ui ); // interior value
+	_clKernels[1].setArg( 1, sizeof(REAL), &initialValue ); // boundary value
+	_clKernels[1].setArg( 2, sizeof(REAL), &_ui ); // interior value
 	_clKernels[1].setArg( 3, sizeof(int),   &_nx );
 	_clKernels[1].setArg( 4, sizeof(int),   &_ny );
 	_clKernels[1].setArg( 5, sizeof(int),   &_pitch );
@@ -109,12 +109,12 @@ void NavierStokesGPU::init ( )
 
 	// update arguments for V
 	_clKernels[1].setArg( 0, _V_g );
-	_clKernels[1].setArg( 1, sizeof(float), &_vi ); // interior value
+	_clKernels[1].setArg( 1, sizeof(REAL), &_vi ); // interior value
 
 	_clQueue.enqueueNDRangeKernel ( _clKernels[1], cl::NullRange, _clRange, cl::NullRange );
 
 	_clKernels[1].setArg( 0, _P_g );
-	_clKernels[1].setArg( 1, sizeof(float), &_pi ); // interior value
+	_clKernels[1].setArg( 1, sizeof(REAL), &_pi ); // interior value
 
 	_clQueue.enqueueNDRangeKernel ( _clKernels[1], cl::NullRange, _clRange, cl::NullRange );
 
@@ -123,7 +123,7 @@ void NavierStokesGPU::init ( )
 	// todo: might not be neccessary
 
 	_clKernels[0].setArg( 0, _RHS_g );
-	_clKernels[0].setArg( 1, sizeof(float), &initialValue ); // boundary value
+	_clKernels[0].setArg( 1, sizeof(REAL), &initialValue ); // boundary value
 	_clKernels[0].setArg( 2, sizeof(int),   &_nx );
 	_clKernels[0].setArg( 3, sizeof(int),   &_ny );
 	_clKernels[0].setArg( 4, sizeof(int),   &_pitch );
@@ -297,13 +297,13 @@ void NavierStokesGPU::doSimulationStep()
 	setSpecificBoundaryConditions();
 
 	// compute F(n) and G(n)
-	//computeFG();
+	computeFG();
 
 	// compute right hand side of pressure equation
 	//computeRightHandSide();
 
 	// poisson overrelaxation loop
-	double residual = INFINITY;
+	REAL residual = INFINITY;
 
 	for ( int it = 0; it < _it_max && abs(residual) > _epsilon; ++it )
 	{
@@ -321,14 +321,14 @@ void NavierStokesGPU::doSimulationStep()
 // -------------------------------------------------
 
 //============================================================================
-double **NavierStokesGPU::getU_CPU ( )
+REAL **NavierStokesGPU::getU_CPU ( )
 {
 	// copy data from device to host
 	_clQueue.enqueueReadBuffer (
 				_U_g,		// device buffer
 				CL_TRUE,	// blocking
 				0,			// offset
-				sizeof(float) * (_nx + 2) * (_ny + 2), // size
+				sizeof(REAL) * (_nx + 2) * (_ny + 2), // size
 				_U_host		// host buffer
 			);
 
@@ -336,14 +336,14 @@ double **NavierStokesGPU::getU_CPU ( )
 }
 
 //============================================================================
-double **NavierStokesGPU::getV_CPU ( )
+REAL **NavierStokesGPU::getV_CPU ( )
 {
 	// copy data from device to host
 	_clQueue.enqueueReadBuffer (
 				_V_g,
 				CL_TRUE,
 				0,
-				sizeof(float) * (_nx + 2) * (_ny + 2),
+				sizeof(REAL) * (_nx + 2) * (_ny + 2),
 				_V_host
 			);
 
@@ -351,14 +351,14 @@ double **NavierStokesGPU::getV_CPU ( )
 }
 
 //============================================================================
-double **NavierStokesGPU::getP_CPU ( )
+REAL **NavierStokesGPU::getP_CPU ( )
 {
 	// copy data from device to host
 	_clQueue.enqueueReadBuffer (
 				_P_g,
 				CL_TRUE,
 				0,
-				sizeof(float) * (_nx + 2) * (_ny + 2),
+				sizeof(REAL) * (_nx + 2) * (_ny + 2),
 				_P_host
 			);
 
@@ -408,7 +408,7 @@ void NavierStokesGPU::computeDeltaT ( )
 {
 	// allocate memory for UV maximum result
 	// todo: move to constructor?
-	cl::Buffer results_g ( _clContext, CL_MEM_WRITE_ONLY, sizeof(float) * 2 );
+	cl::Buffer results_g ( _clContext, CL_MEM_WRITE_ONLY, sizeof(REAL) * 2 );
 
 	// call min/max reduction kernel
 	_clQueue.enqueueNDRangeKernel (
@@ -422,11 +422,11 @@ void NavierStokesGPU::computeDeltaT ( )
 	_clQueue.finish();
 
 	// retrieve reduction result
-	float results[2];
-	_clQueue.enqueueReadBuffer( results_g, CL_TRUE, 0, sizeof(float) * 2, results );
+	REAL results[2];
+	_clQueue.enqueueReadBuffer( results_g, CL_TRUE, 0, sizeof(REAL) * 2, results );
 
 	// compute the three options for the min-function
-	double opt_a, opt_x, opt_y, min;
+	REAL opt_a, opt_x, opt_y, min;
 
 	opt_a = ( _re / 2.0 ) * ( 1.0 / (_dx * _dx) + 1.0 / (_dy * _dy) );
 	opt_x = _dx / abs( results[0] ); // results[0] = u_max
@@ -440,9 +440,15 @@ void NavierStokesGPU::computeDeltaT ( )
 	_dt = _tau * min;
 }
 
+//============================================================================
+void NavierStokesGPU::computeFG ( )
+{
+
+}
+
 
 // -------------------------------------------------
-//	helper functions
+//	auxiliary functions
 // -------------------------------------------------
 
 //============================================================================
@@ -549,7 +555,7 @@ void NavierStokesGPU::setKernelArguments ( )
 	// kernel arguments for delta t computation (UV maximum)
 	_clKernels[5].setArg( 0, _U_g );
 	_clKernels[5].setArg( 1, _V_g );
-	// argument 2: result buffer, { float u_max, float v_max }
+	// argument 2: result buffer, { REAL u_max, REAL v_max }
 	_clKernels[5].setArg( 3, sizeof(cl_float) * _clWorkgroupSize, NULL); // dynamically allocated local shared memory for U
 	_clKernels[5].setArg( 4, sizeof(cl_float) * _clWorkgroupSize, NULL); // dynamically allocated local shared memory for V
 	_clKernels[5].setArg( 5, sizeof(int), &nx );

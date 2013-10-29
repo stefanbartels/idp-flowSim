@@ -23,7 +23,7 @@ class NavierStokesCPU : public NavierStokesSolver
 			//! @{
 
 		// CPU arrays
-		double	**_U,		//! velocity in x-direction
+		REAL	**_U,		//! velocity in x-direction
 				**_V,		//! velocity in y-direction
 				**_P,		//! pressure
 				**_RHS,		//! right-hand side for pressure iteration
@@ -82,11 +82,11 @@ class NavierStokesCPU : public NavierStokesSolver
 			//! @name data access
 			//! @{
 
-		double** getU_CPU ( );
+		REAL** getU_CPU ( );
 
-		double** getV_CPU ( );
+		REAL** getV_CPU ( );
 
-		double** getP_CPU ( );
+		REAL** getP_CPU ( );
 
 			//! @}
 
@@ -119,7 +119,6 @@ class NavierStokesCPU : public NavierStokesSolver
 		void	computeDeltaT ( );
 
 			//! \brief computes F and G
-			//! \todo take obstacles into account
 
 		void	computeFG ( );
 
@@ -148,19 +147,19 @@ class NavierStokesCPU : public NavierStokesSolver
 
 
 		// -------------------------------------------------
-		//	F & G helper functions
+		//	auxiliary functions for F & G
 		// -------------------------------------------------
-			//! @name helper functions
+			//! @name auxiliary functions
 			//! @{
 
-		inline double d2m_dx2 ( double** M, int x, int y );
-		inline double d2m_dy2 ( double** M, int x, int y );
+		inline REAL d2m_dx2 ( REAL** M, int x, int y );
+		inline REAL d2m_dy2 ( REAL** M, int x, int y );
 
-		inline double du2_dx  ( int x, int y, double alpha );
-		inline double dv2_dy  ( int x, int y, double alpha );
+		inline REAL du2_dx  ( int x, int y, REAL alpha );
+		inline REAL dv2_dy  ( int x, int y, REAL alpha );
 
-		inline double duv_dx  ( int x, int y, double alpha );
-		inline double duv_dy  ( int x, int y, double alpha );
+		inline REAL duv_dx  ( int x, int y, REAL alpha );
+		inline REAL duv_dy  ( int x, int y, REAL alpha );
 
 			//! @}
 };

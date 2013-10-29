@@ -10,15 +10,15 @@ SimplePGMWriter::SimplePGMWriter()
 
 //============================================================================
 void SimplePGMWriter::renderFrame (
-		double** U,
-		double** V,
-		double** P,
+		REAL** U,
+		REAL** V,
+		REAL** P,
 		int nx,
 		int ny,
 		int it
 	)
 {
-	double* T = *P;
+	REAL* T = *P;
 
 	char img_name[32];
 	sprintf( img_name, "output/it_%05d.pgm", it );
@@ -34,7 +34,7 @@ void SimplePGMWriter::renderFrame (
 	// find min/max for normalization
 
 	int size = (nx+2)*(ny+2);
-	double max = 0.0, min = 0.0;
+	REAL max = 0.0, min = 0.0;
 
 	for ( int i = 0; i < size; ++i )
 	{
@@ -48,7 +48,7 @@ void SimplePGMWriter::renderFrame (
 
 	// convert array to int array and normalize to 0 - 255
 	unsigned char C[size];
-	double factor = 0.0;
+	REAL factor = 0.0;
 
 	if ( max - min != 0.0 )
 		factor = 255 / ( max - min );

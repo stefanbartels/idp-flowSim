@@ -40,8 +40,8 @@ NavierStokesCPU::~NavierStokesCPU()
 	freeHostMatrix( _F );
 	freeHostMatrix( _G );
 
-	delete [] _FLAG[0];
-	delete [] _FLAG;
+	free( _FLAG[0] );
+	free( _FLAG );
 }
 
 // -------------------------------------------------
@@ -228,7 +228,7 @@ void NavierStokesCPU::doSimulationStep ( )
 	computeRightHandSide();
 
 	// poisson overrelaxation loop
-	double residual = INFINITY;
+	REAL residual = INFINITY;
 
 	for ( int it = 0; it < _it_max && abs(residual) > _epsilon; ++it )
 	{
@@ -246,19 +246,19 @@ void NavierStokesCPU::doSimulationStep ( )
 // -------------------------------------------------
 
 //============================================================================
-double** NavierStokesCPU::getU_CPU()
+REAL** NavierStokesCPU::getU_CPU()
 {
 	return _U;
 }
 
 //============================================================================
-double** NavierStokesCPU::getV_CPU()
+REAL** NavierStokesCPU::getV_CPU()
 {
 	return _V;
 }
 
 //============================================================================
-double** NavierStokesCPU::getP_CPU()
+REAL** NavierStokesCPU::getP_CPU()
 {
 	return _P;
 }
@@ -505,7 +505,7 @@ void NavierStokesCPU::setSpecificBoundaryConditions ( )
 
 	if ( _problem == "moving_lid" )
 	{
-		//const double lid_velocity = 1.0;
+		//const REAL lid_velocity = 1.0;
 		for ( int x = 1; x < _nx + 1; ++x )
 		{
 			_U[0][x] = 2.0 - _U[1][x];
@@ -530,8 +530,8 @@ void NavierStokesCPU::computeDeltaT ( )
 {
 	// compute delta t according to formula 3.50
 
-	double u_max = 0.0, v_max = 0.0;
-	double opt_a, opt_x, opt_y, min;
+	REAL u_max = 0.0, v_max = 0.0;
+	REAL opt_a, opt_x, opt_y, min;
 
 	// get u_max and v_max: iterate over arrays U and V (same size => one loop)
 
@@ -569,7 +569,7 @@ void NavierStokesCPU::computeFG ( )
 	// y coordinates in book are counted from lower left edge, in array from upper left edge
 	// => y-1 in the book becomes y+1 here
 
-	double alpha = 0.9; // todo: select alpha
+	REAL alpha = 0.9; // todo: select alpha
 
 	// faster than comparing using <=
 	int nx1 = _nx + 1;
@@ -725,10 +725,10 @@ int NavierStokesCPU::SORPoisson ( )
 	// so a mixture of values from timestep n and n+1 is used
 
 	// the epsilon-parameters in formula 3.44 are set to 1.0 according to page 38
-	double constant_expr = _omega / ( 2.0 / (_dx * _dx) + 2.0 / (_dy * _dy) );
+	REAL constant_expr = _omega / ( 2.0 / (_dx * _dx) + 2.0 / (_dy * _dy) );
 
-	double dx2 = _dx * _dx;
-	double dy2 = _dy * _dy;
+	REAL dx2 = _dx * _dx;
+	REAL dy2 = _dy * _dy;
 
 	//-----------------------
 	// SOR step
@@ -813,8 +813,8 @@ int NavierStokesCPU::SORPoisson ( )
 
 	// compute residual using L²-Norm (according to formula 3.45 and 3.46)
 
-	double tmp;
-	double sum = 0.0;
+	REAL tmp;
+	REAL sum = 0.0;
 	int numCells = 0;
 
 	for ( int y = 1; y < ny1; ++y )
@@ -848,8 +848,8 @@ void NavierStokesCPU::adaptUV ( )
 	int nx1 = _nx + 1;
 	int ny1 = _ny + 1;
 
-	double dt_dx = _dt / _dx;
-	double dt_dy = _dt / _dy;
+	REAL dt_dx = _dt / _dx;
+	REAL dt_dy = _dt / _dy;
 
 	// update u. two nested loops because of different limits
 	for ( int y = 1; y < ny1; ++y )
@@ -886,23 +886,23 @@ void NavierStokesCPU::adaptUV ( )
 
 
 // -------------------------------------------------
-//	F & G helper functions
+//	auxiliary functions for F & G
 // -------------------------------------------------
 
 //============================================================================
-inline double NavierStokesCPU::d2m_dx2 ( double** M, int x, int y )
+inline REAL NavierStokesCPU::d2m_dx2 ( REAL** M, int x, int y )
 {
 	return ( M[y][x-1] - 2.0 * M[y][x] + M[y][x+1] ) / ( _dx * _dx );
 }
 
 //============================================================================
-inline double NavierStokesCPU::d2m_dy2 ( double** M, int x, int y )
+inline REAL NavierStokesCPU::d2m_dy2 ( REAL** M, int x, int y )
 {
 	return ( M[y-1][x] - 2.0 * M[y][x] + M[y+1][x] ) / ( _dy * _dy );
 }
 
 //============================================================================
-inline double NavierStokesCPU::du2_dx  ( int x, int y, double alpha )
+inline REAL NavierStokesCPU::du2_dx  ( int x, int y, REAL alpha )
 {
 	return
 		(
@@ -926,7 +926,7 @@ inline double NavierStokesCPU::du2_dx  ( int x, int y, double alpha )
 }
 
 //============================================================================
-inline double NavierStokesCPU::dv2_dy  ( int x, int y, double alpha )
+inline REAL NavierStokesCPU::dv2_dy  ( int x, int y, REAL alpha )
 {
 	return
 		(
@@ -950,7 +950,7 @@ inline double NavierStokesCPU::dv2_dy  ( int x, int y, double alpha )
 }
 
 //============================================================================
-inline double NavierStokesCPU::duv_dx  ( int x, int y, double alpha )
+inline REAL NavierStokesCPU::duv_dx  ( int x, int y, REAL alpha )
 {
 	return
 		(
@@ -974,7 +974,7 @@ inline double NavierStokesCPU::duv_dx  ( int x, int y, double alpha )
 }
 
 //============================================================================
-inline double NavierStokesCPU::duv_dy  ( int x, int y, double alpha )
+inline REAL NavierStokesCPU::duv_dy  ( int x, int y, REAL alpha )
 {
 	return
 		(

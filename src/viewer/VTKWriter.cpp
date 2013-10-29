@@ -11,12 +11,12 @@ VTKWriter::VTKWriter()
 //============================================================================
 void VTKWriter::renderFrame
 	(
-		double **U,
-		double **V,
-		double **P,
-		int nx,
-		int ny,
-		int it
+		REAL	**U,
+		REAL	**V,
+		REAL	**P,
+		int		nx,
+		int		ny,
+		int		it
 	)
 {
 	// www.vtk.org/VTK/img/file-formats.pdf‎
