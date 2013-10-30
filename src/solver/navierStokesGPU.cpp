@@ -38,9 +38,10 @@ NavierStokesGPU::NavierStokesGPU ( )
 		// define thread range
 		_clRange = cl::NDRange( BW, BH );
 	}
-	catch( cl::Error e )
+	catch( cl::Error error )
 	{
-		//std::cerr << "ERROR: " << e.what() << "(" << e.err() << ")" << std::endl;
+		std::cerr << "CL ERROR: " << error.what() << "(" << error.err() << ")" << std::endl;
+		throw error;
 	}
 }
 
@@ -285,15 +286,15 @@ bool NavierStokesGPU::setObstacleMap
 void NavierStokesGPU::doSimulationStep()
 {
 	// get delta_t
-	computeDeltaT();
+//	computeDeltaT();
 
 	// set boundary values for u and v
-	setBoundaryConditions();
+//	setBoundaryConditions();
 
-	setSpecificBoundaryConditions();
+//	setSpecificBoundaryConditions();
 
 	// compute F(n) and G(n)
-	computeFG();
+//	computeFG();
 
 	// compute right hand side of pressure equation
 	//computeRightHandSide();
@@ -301,7 +302,7 @@ void NavierStokesGPU::doSimulationStep()
 	// poisson overrelaxation loop
 	REAL residual = INFINITY;
 
-	for ( int it = 0; it < _it_max && abs(residual) > _epsilon; ++it )
+//	for ( int it = 0; it < _it_max && abs(residual) > _epsilon; ++it )
 	{
 		// do SOR step (includes residual computation)
 		//residual =  SORPoisson();
@@ -450,6 +451,10 @@ void NavierStokesGPU::computeFG ( )
 //============================================================================
 void NavierStokesGPU::loadKernels ( )
 {
+	cl_int error;
+
+	std::cout << "Compiling kernels..." << std::endl;
+
 	// cl source codes
 	cl::Program::Sources source;
 
@@ -457,41 +462,75 @@ void NavierStokesGPU::loadKernels ( )
 	loadSource ( source, "kernels/auxiliary.cl" );
 	loadSource ( source, "kernels/boundaryConditions.cl" );
 	loadSource ( source, "kernels/deltaT.cl" );
+	loadSource ( source, "kernels/computeFG.cl" );
 
 	// create program
 	_clProgram = cl::Program( _clContext, source );
 
 	// compile opencl source
-	_clProgram.build( _clDevices );
+	try
+	{
+		error = _clProgram.build( _clDevices );
+	}
+	catch( cl::Error error )
+	{
+		// display kernel compile errors
 
+		if( error.err() == CL_BUILD_PROGRAM_FAILURE )
+		{
+			std::cerr << "Kernel build error:" << std::endl <<
+						 _clProgram.getBuildInfo<CL_PROGRAM_BUILD_LOG>( _clDevices[0] ) << std::endl;
+		}
+		else
+		{
+			std::cerr << "Kernel build error: " << error.err() << std::endl;
+		}
+		throw error;
+	}
+
+	std::cout << "Kernels compiled" << std::endl;
 
 	//-----------------------
 	// load kernels
 	//-----------------------
 
-	_clKernels = std::vector<cl::Kernel> ( 5 );
+	_clKernels = std::vector<cl::Kernel> ( 7 );
 
-	// auxiliary kernels
-	_clKernels[0] = cl::Kernel( _clProgram, "setKernel" );
-	_clKernels[1] = cl::Kernel( _clProgram, "setBoundaryAndInteriorKernel" );
-
-	// boundary condition kernels
-	_clKernels[2] = cl::Kernel( _clProgram, "setBoundaryConditionsKernel" );
-	_clKernels[3] = cl::Kernel( _clProgram, "setArbitraryBoundaryConditionsKernel" );
-
-	if ( _problem == "moving_lid" )
+	try
 	{
-		_clKernels[4] = cl::Kernel( _clProgram, "setMovingLidBoundaryConditionsKernel" );
+		std::cout << "Binding auxiliary kernels" << std::endl;
+		// auxiliary kernels
+		_clKernels[0] = cl::Kernel( _clProgram, "setKernel" );
+		_clKernels[1] = cl::Kernel( _clProgram, "setBoundaryAndInteriorKernel" );
+
+		std::cout << "Binding boundary condition kernels" << std::endl;
+		// boundary condition kernels
+		_clKernels[2] = cl::Kernel( _clProgram, "setBoundaryConditionsKernel" );
+		_clKernels[3] = cl::Kernel( _clProgram, "setArbitraryBoundaryConditionsKernel" );
+
+		std::cout << "Binding spec. boundary kernels" << std::endl;
+		if ( _problem == "moving_lid" )
+		{
+			_clKernels[4] = cl::Kernel( _clProgram, "setMovingLidBoundaryConditionsKernel" );
+		}
+		else if ( _problem == "left_inflow" )
+		{
+			_clKernels[4] = cl::Kernel( _clProgram, "setLeftInflowBoundaryConditionsKernel" );
+		}
+
+		std::cout << "Binding delta t kernels" << std::endl;
+		// kernel to find maximum UV value for delta t computation
+		_clKernels[5] = cl::Kernel( _clProgram, "getUVMaximumKernel" );
+
+		std::cout << "Binding F G computation kernels" << std::endl;
+		// kernels for F and G computation
+		_clKernels[6] = cl::Kernel( _clProgram, "computeF" );
 	}
-	else if ( _problem == "left_inflow" )
+	catch( cl::Error error )
 	{
-		_clKernels[4] = cl::Kernel( _clProgram, "setLeftInflowBoundaryConditionsKernel" );
+		std::cerr << "CL ERROR: " << error.what() << "(" << error.err() << ")" << std::endl;
+		throw error;
 	}
-
-	// kernel to find maximum UV value for delta t computation
-	_clKernels[5] = cl::Kernel( _clProgram, "getUVMaximumKernel" );
-
-
 
 
 	// get work group size
@@ -510,7 +549,7 @@ void NavierStokesGPU::loadSource
 	std::string cl_string( std::istreambuf_iterator<char>( cl_file ), (std::istreambuf_iterator<char>()) );
 
 	// add it to the source list
-	sources.push_back( std::make_pair( cl_string.c_str(), cl_string.length() + 1 ) );
+	sources.push_back( std::make_pair( cl_string.c_str(), cl_string.length() ) );
 }
 
 //============================================================================

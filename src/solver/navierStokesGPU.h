@@ -12,15 +12,17 @@
 #include <CL/cl.hpp>
 #include <CL/opencl.h>
 
-#if REAL == double
-	#define CL_REAL cl_double
-#else
+// uncommented, as all kernels use float at the moment
+//#if REAL == double
+//	#define CL_REAL cl_double
+//#else
 	#define CL_REAL cl_float
-#endif
+//#endif
 
 //====================================================================
 /*! \class NavierStokesCpu
     \brief Class for solving of Navier Stokes on GPU
+	\todo optimize device memory, for example u,v and flag as constant memory
 */
 //====================================================================
 
