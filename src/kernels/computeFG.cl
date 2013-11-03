@@ -179,7 +179,10 @@ __kernel void computeF
 	const unsigned int idx = y * nx + x;
 
 	// todo: check guards
-	if( x < nx && y < ny ) // guards
+	if( x > 0 &&
+		y > 1 &&
+		x < nx - 2 &&
+		y < ny - 1 )
 	{
 		// compute F between fluid cells only
 		if( flag_g[idx] == C_F && flag_g[idx + 1] == C_F ) // second cell test for not to overwrite boundary values
@@ -200,6 +203,60 @@ __kernel void computeF
 		{
 			// according to formula 3.42
 			f_g[idx]   = u_g[idx];
+		}
+	}
+}
+
+
+//============================================================================
+
+// todo: change u, v and flag to constant memory
+// todo: try local shared memory for u and v
+__kernel void computeG
+	(
+		__global float*	u_g,			// horizontal velocity
+		__global float*	v_g,			// horizontal velocity
+		__global float*	flag_g,			// array with fluid/boundary cell flags
+		__global float* g_g,			// storage array for G
+		float 			gy,				// body force in x direction (gravity)
+		float			dt,				// time step size
+		float			re,				// Reynolds number
+		float			alpha,
+		float			dx,				// length delta x of on cell in x-direction
+		float			dy,				// length delta y of on cell in y-direction
+		int				nx,				// dimension in x direction (including boundaries)
+		int				ny				// dimension in y direction (including boundaries)
+	)
+{
+	const unsigned int x   = get_global_id( 0 );
+	const unsigned int y   = get_global_id( 1 );
+	const unsigned int idx = y * nx + x;
+
+	// todo: check guards
+	if( x > 0 &&
+		y > 1 &&
+		x < nx - 1 &&
+		y < ny - 2 )
+	{
+		// compute G between fluid cells only
+		if( flag_g[idx] == C_F && flag_g[idx + nx] == C_F ) // second cell test for not to overwrite boundary values
+		{
+			g_g[idx] =
+				v_g[idx] + dt *
+				(
+					(
+						d2m_dx2 ( v_g, dx, idx ) +
+						d2m_dy2 ( v_g, dy, idx, nx )
+					) / re
+					- dv2_dy ( v_g, dx, alpha, idx, nx )
+					- duv_dx ( u_g, v_g, dy, alpha, idx, nx )
+					+ gy
+				);
+		}
+		else
+		{
+			// according to formula 3.42
+			g_g[idx]   = v_g[idx];
 		}
 	}
 }

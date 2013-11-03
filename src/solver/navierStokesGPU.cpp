@@ -320,7 +320,7 @@ void NavierStokesGPU::doSimulationStep()
 		std::cout << "computing Δt..." << std::endl;
 	#endif
 
-	// computeDeltaT();
+	computeDeltaT();
 
 
 	//-----------------------
@@ -331,13 +331,13 @@ void NavierStokesGPU::doSimulationStep()
 		std::cout << "applying boundary conditions..." << std::endl;
 	#endif
 
-	// setBoundaryConditions();
+	setBoundaryConditions();
 
 	#ifdef VERBOSE
 		std::cout << "applying problem specific boundary conditions..." << std::endl;
 	#endif
 
-	// setSpecificBoundaryConditions();
+	setSpecificBoundaryConditions();
 
 
 	//-----------------------
@@ -348,7 +348,7 @@ void NavierStokesGPU::doSimulationStep()
 		std::cout << "computing F and G..." << std::endl;
 	#endif
 
-	// computeFG();
+	computeFG();
 
 
 	//-----------------------
@@ -456,29 +456,45 @@ REAL **NavierStokesGPU::getP_CPU ( )
 //============================================================================
 void NavierStokesGPU::setBoundaryConditions ( )
 {
-	// kernel arguments are set in setKernelArguments()
+	try
+	{
+		// kernel arguments are set in setKernelArguments()
 
-	// call kernel setBoundaryConditionsKernel
-	_clQueue.enqueueNDRangeKernel ( _clKernels[2], cl::NullRange, _clRange, cl::NullRange );
+		// call kernel setBoundaryConditionsKernel
+		_clQueue.enqueueNDRangeKernel ( _clKernels[2], cl::NullRange, _clRange, cl::NullRange );
 
-	// wait for completion
-	_clQueue.finish();
+		// wait for completion
+		_clQueue.finish();
 
-	// call kernel setArbitraryBoundaryConditionsKernel
-	_clQueue.enqueueNDRangeKernel ( _clKernels[3], cl::NullRange, _clRange, cl::NullRange );
+		// call kernel setArbitraryBoundaryConditionsKernel
+		_clQueue.enqueueNDRangeKernel ( _clKernels[3], cl::NullRange, _clRange, cl::NullRange );
 
-	// wait for completion
-	_clQueue.finish();
+		// wait for completion
+		_clQueue.finish();
+	}
+	catch( cl::Error error )
+	{
+		std::cerr << "CL ERROR while applying boundary conditions: " << error.what() << "(" << error.err() << ")" << std::endl;
+		throw error;
+	}
 }
 
 //============================================================================
 void NavierStokesGPU::setSpecificBoundaryConditions ( )
 {
-	// the problem specific kernel is determined during kernel compilation
-	_clQueue.enqueueNDRangeKernel ( _clKernels[4], cl::NullRange, _clRange, cl::NullRange );
+	try
+	{
+		// the problem specific kernel is determined during kernel compilation
+		_clQueue.enqueueNDRangeKernel ( _clKernels[4], cl::NullRange, _clRange, cl::NullRange );
 
-	// wait for completion
-	_clQueue.finish();
+		// wait for completion
+		_clQueue.finish();
+	}
+	catch( cl::Error error )
+	{
+		std::cerr << "CL ERROR while applying problem specific boundary conditions: " << error.what() << "(" << error.err() << ")" << std::endl;
+		throw error;
+	}
 }
 
 
@@ -489,24 +505,37 @@ void NavierStokesGPU::setSpecificBoundaryConditions ( )
 //============================================================================
 void NavierStokesGPU::computeDeltaT ( )
 {
-	// allocate memory for UV maximum result
-	// todo: move to constructor?
-	cl::Buffer results_g ( _clContext, CL_MEM_WRITE_ONLY, sizeof(REAL) * 2 );
+	// results of UV reduction kernel: { max_u, max_v }
+	REAL results[2] = { 0.0, 0.0 };
 
-	// call min/max reduction kernel
-	_clQueue.enqueueNDRangeKernel (
-				_clKernels[5],
-				cl::NullRange,
-				cl::NDRange( _clWorkgroupSize ),
-				cl::NDRange( _clWorkgroupSize )		// make sure that all GPU cores are in one workgroup for optimal reduction speed
-			);
+	try
+	{
+		// allocate memory for UV maximum result
+		// todo: move to constructor?
+		cl::Buffer results_g ( _clContext, CL_MEM_WRITE_ONLY, sizeof(REAL) * 2 );
 
-	// wait for completion
-	_clQueue.finish();
+		// set result buffer as kernel argument
+		_clKernels[5].setArg( 2, results_g );
 
-	// retrieve reduction result
-	REAL results[2];
-	_clQueue.enqueueReadBuffer( results_g, CL_TRUE, 0, sizeof(REAL) * 2, results );
+		// call min/max reduction kernel
+		_clQueue.enqueueNDRangeKernel (
+					_clKernels[5],
+					cl::NullRange,
+					cl::NDRange( _clWorkgroupSize ),
+					cl::NDRange( _clWorkgroupSize )		// make sure that all GPU cores are in one workgroup for optimal reduction speed
+				);
+
+		// wait for completion
+		_clQueue.finish();
+
+		// retrieve reduction result
+		_clQueue.enqueueReadBuffer( results_g, CL_TRUE, 0, sizeof(REAL) * 2, results );
+	}
+	catch( cl::Error error )
+	{
+		std::cerr << "CL ERROR while computing Δt: " << error.what() << "(" << error.err() << ")" << std::endl;
+		throw error;
+	}
 
 	// compute the three options for the min-function
 	REAL opt_a, opt_x, opt_y, min;
@@ -526,7 +555,37 @@ void NavierStokesGPU::computeDeltaT ( )
 //============================================================================
 void NavierStokesGPU::computeFG ( )
 {
+	REAL alpha = 0.9; // todo: select alpha
 
+	try
+	{
+		// set missing kernel arguments
+		_clKernels[6].setArg( 5, sizeof(CL_REAL), &_dt );
+		_clKernels[6].setArg( 7, sizeof(CL_REAL), &alpha );
+		_clKernels[7].setArg( 5, sizeof(CL_REAL), &_dt );
+		_clKernels[7].setArg( 7, sizeof(CL_REAL), &alpha );
+
+		// todo: try combined kernel for F and G
+
+		// call kernel for F computation
+		_clQueue.enqueueNDRangeKernel ( _clKernels[6], cl::NullRange, _clRange, cl::NullRange );
+
+		// call kernel for G computation
+		_clQueue.enqueueNDRangeKernel ( _clKernels[7], cl::NullRange, _clRange, cl::NullRange );
+
+		// wait for completion
+		_clQueue.finish();
+
+
+		// boundary values for arbitrary geometries
+		//! TODO
+
+	}
+	catch( cl::Error error )
+	{
+		std::cerr << "CL ERROR while computing Δt: " << error.what() << "(" << error.err() << ")" << std::endl;
+		throw error;
+	}
 }
 
 
@@ -583,7 +642,7 @@ void NavierStokesGPU::loadKernels ( )
 	// load kernels
 	//-----------------------
 
-	_clKernels = std::vector<cl::Kernel> ( 7 );
+	_clKernels = std::vector<cl::Kernel> ( 8 );
 
 	#ifdef VERBOSE
 		std::cout << "Binding kernels..." << std::endl;
@@ -613,6 +672,7 @@ void NavierStokesGPU::loadKernels ( )
 
 		// kernels for F and G computation
 		_clKernels[6] = cl::Kernel( _clProgram, "computeF" );
+		_clKernels[7] = cl::Kernel( _clProgram, "computeG" );
 	}
 	catch( cl::Error error )
 	{
@@ -687,7 +747,34 @@ void NavierStokesGPU::setKernelArguments ( )
 		_clKernels[5].setArg( 4, sizeof(CL_REAL) * _clWorkgroupSize, NULL); // dynamically allocated local shared memory for V
 		_clKernels[5].setArg( 5, sizeof(int), &nx );
 		_clKernels[5].setArg( 6, sizeof(int), &ny );
-		_clKernels[6] = cl::Kernel( _clProgram, "computeF" );
+
+		// kernel arguments for F and G computation
+		_clKernels[6].setArg( 0,  _U_g );
+		_clKernels[6].setArg( 1,  _V_g );
+		_clKernels[6].setArg( 2,  _FLAG_g );
+		_clKernels[6].setArg( 3,  _F_g );
+		_clKernels[6].setArg( 4,  sizeof(CL_REAL), &_gx );
+		// _clKernels[6].setArg( 5, sizeof(CL_REAL), &_dt ); // set before kernel call
+		_clKernels[6].setArg( 6,  sizeof(CL_REAL), &_re );
+		// _clKernels[6].setArg( 7, sizeof(CL_REAL), &alpha ); // set before kernel call
+		_clKernels[6].setArg( 8,  sizeof(CL_REAL), &_dx );
+		_clKernels[6].setArg( 9,  sizeof(CL_REAL), &_dy );
+		_clKernels[6].setArg( 10, sizeof(int), &_nx );
+		_clKernels[6].setArg( 11, sizeof(int), &_ny );
+
+		_clKernels[7].setArg( 0,  _U_g );
+		_clKernels[7].setArg( 1,  _V_g );
+		_clKernels[7].setArg( 2,  _FLAG_g );
+		_clKernels[7].setArg( 3,  _G_g );
+		_clKernels[7].setArg( 4,  sizeof(CL_REAL), &_gy );
+		// _clKernels[7].setArg( 5, sizeof(CL_REAL), &_dt ); // set before kernel call
+		_clKernels[7].setArg( 6,  sizeof(CL_REAL), &_re );
+		// _clKernels[7].setArg( 7, sizeof(CL_REAL), &alpha ); // set before kernel call
+		_clKernels[7].setArg( 8,  sizeof(CL_REAL), &_dx );
+		_clKernels[7].setArg( 9,  sizeof(CL_REAL), &_dy );
+		_clKernels[7].setArg( 10, sizeof(int), &_nx );
+		_clKernels[7].setArg( 11, sizeof(int), &_ny );
+
 	}
 	catch( cl::Error error )
 	{
