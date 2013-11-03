@@ -27,7 +27,7 @@ void SimplePGMWriter::renderFrame (
 
 	if ( !fimg.is_open() )
 	{
-		std::cerr << "\nFailed to open image file " << img_name;
+		std::cerr << "Failed to open image file \"" << img_name << "\"" << std::endl;
 		return;
 	}
 
@@ -44,7 +44,9 @@ void SimplePGMWriter::renderFrame (
 			min = T[i];
 	}
 
-	std::cerr << "\nmax value is " << max;
+	#ifdef VERBOSE
+		std::cout << "max value is " << max << std::endl;
+	#endif
 
 	// convert array to int array and normalize to 0 - 255
 	unsigned char C[size];
@@ -53,7 +55,9 @@ void SimplePGMWriter::renderFrame (
 	if ( max - min != 0.0 )
 		factor = 255 / ( max - min );
 
-	std::cerr << "\nfactor is " << factor;
+	#ifdef VERBOSE
+		std::cout << "factor is " << factor << std::endl;
+	#endif
 
 	for ( int i = 0; i < size; ++i )
 	{

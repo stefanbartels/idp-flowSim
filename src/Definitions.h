@@ -4,6 +4,9 @@
 // set to true to use OpenCL for the simulation
 #define USE_GPU true
 
+// use verbose setting for debugging
+#define VERBOSE true
+
 // thread block dimensions
 #define BW 16
 #define BH 16
@@ -36,5 +39,19 @@
 #define B_NE	0x09	// 000 01001
 #define B_SW	0x06	// 000 00110
 #define B_SE	0x0A	// 000 01010
+
+
+
+
+
+
+
+
+#define SAVE_DELETE( object ) \
+	if( object )			  \
+	{						  \
+		delete object;		  \
+		object = 0;			  \
+	}
 
 #endif // DEFINITIONS_H

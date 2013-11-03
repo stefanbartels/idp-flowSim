@@ -35,26 +35,25 @@ int main ( int argc, char* argv[] )
 	{
 		parameterFileName = argv[1];
 
-		std::cout << "\nProblem parameter file: " << parameterFileName;
+		std::cout << "Problem parameter file: " << parameterFileName << std::endl;
 
 		if ( !InputParser::readParameters ( &parameters, parameterFileName ) )
 		{
-			std::cerr << "\nError reading parameter file.\nExiting...";
+			std::cerr << "Error reading parameter file." << std::endl << "Exiting..." << std:: endl;
 			return 1;
 		}
 	}
 	else
 	{
-		std::cerr << "\nNo parameter file specified. Using default parameters.";
+		std::cerr << "No parameter file specified. Using default parameters." << std::endl;
 	}
 
 	// read obstacle map
-
 	bool** obstacleMap = 0;
 
 	if ( !InputParser::readObstacleMap( &obstacleMap, parameters.nx, parameters.ny, parameters.obstacleFile ) )
 	{
-		std::cerr << "\nError reading obstacle map.\nExiting...";
+		std::cerr << "Error reading obstacle map." << std::endl << "Exiting..." << std::endl;
 		return 1;
 	}
 
@@ -77,7 +76,8 @@ int main ( int argc, char* argv[] )
 	solver->setParameters ( &parameters );
 	if( !solver->setObstacleMap( obstacleMap ) )
 	{
-		std::cerr << "\nObstacle map invalid. Make sure there are no boundary cells between two fluid cells!\nExiting...";
+		std::cerr << "Obstacle map invalid. Make sure there are no boundary cells between two fluid cells!" << std::endl
+				  << "Exiting..." << std::endl;
 		return 1;
 	}
 
@@ -98,7 +98,10 @@ int main ( int argc, char* argv[] )
 
 	while ( n < 1000 )
 	{
-		std::cout << "\ndoing frame " << n;
+		#ifdef VERBOSE
+			std::cout << "doing frame " << n << std::endl;
+		#endif
+
 		// do simulation step
 		solver->doSimulationStep( );
 
@@ -114,7 +117,6 @@ int main ( int argc, char* argv[] )
 				n
 			);
 
-		std::cout << "\ndone with frame " << n;
 		++n;
 	}
 
@@ -122,10 +124,8 @@ int main ( int argc, char* argv[] )
 	// cleanup
 	//-----------------------
 
-	// todo
-
-	delete solver;
-	delete viewer;
+	SAVE_DELETE( solver );
+	SAVE_DELETE( viewer );
 
     return 0;
 }

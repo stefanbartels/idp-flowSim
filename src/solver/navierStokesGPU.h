@@ -62,6 +62,7 @@ class NavierStokesGPU : public NavierStokesSolver
 		cl::NDRange					_clRange;
 
 		// kernels
+		std::vector<std::string*>	_clSourceCode;
 		std::vector<cl::Kernel>		_clKernels;
 		cl::Program					_clProgram;
 

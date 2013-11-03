@@ -48,6 +48,13 @@ NavierStokesGPU::NavierStokesGPU ( )
 //============================================================================
 NavierStokesGPU::~NavierStokesGPU ( )
 {
+	// cleanup kernel source
+	for( std::vector<std::string*>::iterator it = _clSourceCode.begin(); it != _clSourceCode.end(); ++it )
+	{
+		SAVE_DELETE( *it );
+	}
+
+	// free buffer memory
 	freeHostMatrix( _U_host );
 	freeHostMatrix( _V_host );
 	freeHostMatrix( _P_host );
@@ -451,9 +458,9 @@ void NavierStokesGPU::computeFG ( )
 //============================================================================
 void NavierStokesGPU::loadKernels ( )
 {
-	cl_int error;
-
-	std::cout << "Compiling kernels..." << std::endl;
+	#ifdef VERBOSE
+		std::cout << "Compiling kernels..." << std::endl;
+	#endif
 
 	// cl source codes
 	cl::Program::Sources source;
@@ -470,25 +477,26 @@ void NavierStokesGPU::loadKernels ( )
 	// compile opencl source
 	try
 	{
-		error = _clProgram.build( _clDevices );
+		_clProgram.build( _clDevices );
 	}
 	catch( cl::Error error )
 	{
 		// display kernel compile errors
-
 		if( error.err() == CL_BUILD_PROGRAM_FAILURE )
 		{
-			std::cerr << "Kernel build error:" << std::endl <<
+			std::cerr << "CL kernel build error:" << std::endl <<
 						 _clProgram.getBuildInfo<CL_PROGRAM_BUILD_LOG>( _clDevices[0] ) << std::endl;
 		}
 		else
 		{
-			std::cerr << "Kernel build error: " << error.err() << std::endl;
+			std::cerr << "CL ERROR while building kernels: " << error.err() << std::endl;
 		}
 		throw error;
 	}
 
-	std::cout << "Kernels compiled" << std::endl;
+	#ifdef VERBOSE
+		std::cout << "Kernels compiled" << std::endl;
+	#endif
 
 	//-----------------------
 	// load kernels
@@ -496,19 +504,20 @@ void NavierStokesGPU::loadKernels ( )
 
 	_clKernels = std::vector<cl::Kernel> ( 7 );
 
+	#ifdef VERBOSE
+		std::cout << "Binding kernels..." << std::endl;
+	#endif
+
 	try
 	{
-		std::cout << "Binding auxiliary kernels" << std::endl;
 		// auxiliary kernels
 		_clKernels[0] = cl::Kernel( _clProgram, "setKernel" );
 		_clKernels[1] = cl::Kernel( _clProgram, "setBoundaryAndInteriorKernel" );
 
-		std::cout << "Binding boundary condition kernels" << std::endl;
 		// boundary condition kernels
 		_clKernels[2] = cl::Kernel( _clProgram, "setBoundaryConditionsKernel" );
 		_clKernels[3] = cl::Kernel( _clProgram, "setArbitraryBoundaryConditionsKernel" );
 
-		std::cout << "Binding spec. boundary kernels" << std::endl;
 		if ( _problem == "moving_lid" )
 		{
 			_clKernels[4] = cl::Kernel( _clProgram, "setMovingLidBoundaryConditionsKernel" );
@@ -518,17 +527,15 @@ void NavierStokesGPU::loadKernels ( )
 			_clKernels[4] = cl::Kernel( _clProgram, "setLeftInflowBoundaryConditionsKernel" );
 		}
 
-		std::cout << "Binding delta t kernels" << std::endl;
 		// kernel to find maximum UV value for delta t computation
 		_clKernels[5] = cl::Kernel( _clProgram, "getUVMaximumKernel" );
 
-		std::cout << "Binding F G computation kernels" << std::endl;
 		// kernels for F and G computation
 		_clKernels[6] = cl::Kernel( _clProgram, "computeF" );
 	}
 	catch( cl::Error error )
 	{
-		std::cerr << "CL ERROR: " << error.what() << "(" << error.err() << ")" << std::endl;
+		std::cerr << "CL ERROR while kernel binding: " << error.what() << "(" << error.err() << ")" << std::endl;
 		throw error;
 	}
 
@@ -546,10 +553,14 @@ void NavierStokesGPU::loadSource
 {
 	// read file
 	std::ifstream cl_file( fileName.c_str() );
-	std::string cl_string( std::istreambuf_iterator<char>( cl_file ), (std::istreambuf_iterator<char>()) );
+
+	// using a pointer and new, because the strings have been deleted to soon and where damaged until compilation
+	// remember to delete them after compilation or in destructor!
+	std::string *cl_sourcecode = new std::string ( std::istreambuf_iterator<char>( cl_file ), (std::istreambuf_iterator<char>()) );
+	_clSourceCode.push_back( cl_sourcecode );
 
 	// add it to the source list
-	sources.push_back( std::make_pair( cl_string.c_str(), cl_string.length() ) );
+	sources.push_back( std::make_pair( cl_sourcecode->c_str(), cl_sourcecode->length() ) );
 }
 
 //============================================================================
@@ -559,40 +570,47 @@ void NavierStokesGPU::setKernelArguments ( )
 	int nx = _nx+2;
 	int ny = _ny+2;
 
-	// set kernel arguments for setBoundaryConditionsKernel
-	_clKernels[2].setArg( 0, _U_g );
-	_clKernels[2].setArg( 1, _V_g );
-	_clKernels[2].setArg( 2, sizeof(int), &_wN ); // northern boundary condition
-	_clKernels[2].setArg( 3, sizeof(int), &_wE ); // eastern boundary condition
-	_clKernels[2].setArg( 4, sizeof(int), &_wS ); // southern boundary condition
-	_clKernels[2].setArg( 5, sizeof(int), &_wW ); // western boundary condition
-	_clKernels[2].setArg( 6, sizeof(int), &nx );
-	_clKernels[2].setArg( 7, sizeof(int), &ny );
-	//_clKernels[2].setArg( 8, sizeof(int),   &_pitch );
+	#ifdef VERBOSE
+		std::cout << "Setting kernel arguments..." << std::endl;
+	#endif
 
-	// set kernel arguments for setArbitraryBoundaryConditionsKernel
-	_clKernels[3].setArg( 0, _U_g );
-	_clKernels[3].setArg( 1, _V_g );
-	_clKernels[3].setArg( 2, sizeof(int), &_wN ); // northern boundary condition
-	_clKernels[3].setArg( 3, sizeof(int), &_wE ); // eastern boundary condition
-	_clKernels[3].setArg( 4, sizeof(int), &_wS ); // southern boundary condition
-	_clKernels[3].setArg( 5, sizeof(int), &_wW ); // western boundary condition
-	_clKernels[3].setArg( 6, sizeof(int), &nx );
-	_clKernels[3].setArg( 7, sizeof(int), &ny );
-	//_clKernels[3].setArg( 8, sizeof(int),   &_pitch );
+	try
+	{
+		// set kernel arguments for setBoundaryConditionsKernel
+		_clKernels[2].setArg( 0, _U_g );
+		_clKernels[2].setArg( 1, _V_g );
+		_clKernels[2].setArg( 2, sizeof(int), &_wN ); // northern boundary condition
+		_clKernels[2].setArg( 3, sizeof(int), &_wE ); // eastern boundary condition
+		_clKernels[2].setArg( 4, sizeof(int), &_wS ); // southern boundary condition
+		_clKernels[2].setArg( 5, sizeof(int), &_wW ); // western boundary condition
+		_clKernels[2].setArg( 6, sizeof(int), &nx );
+		_clKernels[2].setArg( 7, sizeof(int), &ny );
 
-	// set kernel arguments for the problem specific boundary condition kernel
-	_clKernels[4].setArg( 0, _U_g );
-	_clKernels[4].setArg( 1, sizeof(int), &nx );
-	_clKernels[4].setArg( 2, sizeof(int), &ny );
-	//_clKernels[4].setArg( 3, sizeof(int),   &_pitch );
+		// set kernel arguments for setArbitraryBoundaryConditionsKernel
+		_clKernels[3].setArg( 0, _U_g );
+		_clKernels[3].setArg( 1, _V_g );
+		_clKernels[3].setArg( 2, _FLAG_g ); // northern boundary condition
+		_clKernels[3].setArg( 3, sizeof(int), &nx );
+		_clKernels[3].setArg( 4, sizeof(int), &ny );
 
-	// kernel arguments for delta t computation (UV maximum)
-	_clKernels[5].setArg( 0, _U_g );
-	_clKernels[5].setArg( 1, _V_g );
-	// argument 2: result buffer, { REAL u_max, REAL v_max }
-	_clKernels[5].setArg( 3, sizeof(CL_REAL) * _clWorkgroupSize, NULL); // dynamically allocated local shared memory for U
-	_clKernels[5].setArg( 4, sizeof(CL_REAL) * _clWorkgroupSize, NULL); // dynamically allocated local shared memory for V
-	_clKernels[5].setArg( 5, sizeof(int), &nx );
-	_clKernels[5].setArg( 6, sizeof(int), &ny );
+		// set kernel arguments for the problem specific boundary condition kernel
+		_clKernels[4].setArg( 0, _U_g );
+		_clKernels[4].setArg( 1, sizeof(int), &nx );
+		_clKernels[4].setArg( 2, sizeof(int), &ny );
+
+		// kernel arguments for delta t computation (UV maximum)
+		_clKernels[5].setArg( 0, _U_g );
+		_clKernels[5].setArg( 1, _V_g );
+		// argument 2: result buffer: { REAL u_max, REAL v_max }
+		_clKernels[5].setArg( 3, sizeof(CL_REAL) * _clWorkgroupSize, NULL); // dynamically allocated local shared memory for U
+		_clKernels[5].setArg( 4, sizeof(CL_REAL) * _clWorkgroupSize, NULL); // dynamically allocated local shared memory for V
+		_clKernels[5].setArg( 5, sizeof(int), &nx );
+		_clKernels[5].setArg( 6, sizeof(int), &ny );
+		_clKernels[6] = cl::Kernel( _clProgram, "computeF" );
+	}
+	catch( cl::Error error )
+	{
+		std::cerr << "CL ERROR while setting kernel arguments: " << error.what() << "(" << error.err() << ")" << std::endl;
+		throw error;
+	}
 }

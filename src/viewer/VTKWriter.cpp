@@ -32,7 +32,7 @@ void VTKWriter::renderFrame
 
 	if ( !vtk.is_open() )
 	{
-		std::cerr << "\nFailed to open vtk file \"" << img_name << "\" for writing!";
+		std::cerr << "Failed to open vtk file \"" << img_name << "\" for writing!" << std::endl;
 		return;
 	}
 

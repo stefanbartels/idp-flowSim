@@ -112,9 +112,9 @@ void NavierStokesSolver::freeHostMatrix
 		REAL **matrix
 	)
 {
-	// delete data array
+	// free data memory
 	free( matrix[0] );
 
-	// delete row array
+	// free row information memory
 	free( matrix );
 }
