@@ -48,6 +48,10 @@ NavierStokesGPU::NavierStokesGPU ( )
 //============================================================================
 NavierStokesGPU::~NavierStokesGPU ( )
 {
+	#ifdef VERBOSE
+		std::cout << "destructing NSGPU..." << std::endl;
+	#endif
+
 	// cleanup kernel source
 	for( std::vector<std::string*>::iterator it = _clSourceCode.begin(); it != _clSourceCode.end(); ++it )
 	{
@@ -74,22 +78,35 @@ void NavierStokesGPU::init ( )
 	// load and compile kernels
 	loadKernels();
 
+	//-----------------------
 	// allocate memory for matrices U, V, P, RHS, F, G
+	//-----------------------
+
+	#ifdef VERBOSE
+		std::cout << "allocating device buffers..." << std::endl;
+	#endif
 
 	int size = ( _nx + 2 ) * ( _ny * 2 );
 
 	// todo: use pitched memory
-	_U_g   = cl::Buffer ( _clContext, CL_MEM_READ_WRITE, sizeof(int) * size );
-	_V_g   = cl::Buffer ( _clContext, CL_MEM_READ_WRITE, sizeof(int) * size );
-	_P_g   = cl::Buffer ( _clContext, CL_MEM_READ_WRITE, sizeof(int) * size );
-	_RHS_g = cl::Buffer ( _clContext, CL_MEM_READ_WRITE, sizeof(int) * size );
-	_F_g   = cl::Buffer ( _clContext, CL_MEM_READ_WRITE, sizeof(int) * size );
-	_G_g   = cl::Buffer ( _clContext, CL_MEM_READ_WRITE, sizeof(int) * size );
+	_U_g   = cl::Buffer ( _clContext, CL_MEM_READ_WRITE, sizeof(REAL) * size );
+	_V_g   = cl::Buffer ( _clContext, CL_MEM_READ_WRITE, sizeof(REAL) * size );
+	_P_g   = cl::Buffer ( _clContext, CL_MEM_READ_WRITE, sizeof(REAL) * size );
+	_RHS_g = cl::Buffer ( _clContext, CL_MEM_READ_WRITE, sizeof(REAL) * size );
+	_F_g   = cl::Buffer ( _clContext, CL_MEM_READ_WRITE, sizeof(REAL) * size );
+	_G_g   = cl::Buffer ( _clContext, CL_MEM_READ_WRITE, sizeof(REAL) * size );
 
 	//_FLAG_g
 
 
+	//-----------------------
 	// initialise U, V and P with given initial values (0.0 at borders)
+	//-----------------------
+
+	#ifdef VERBOSE
+		std::cout << "initializing device buffers..." << std::endl;
+	#endif
+
 	// todo: border might not be neccessary
 
 	// set kernel arguments for initialisation
@@ -98,9 +115,9 @@ void NavierStokesGPU::init ( )
 	_clKernels[1].setArg( 0, _U_g );
 	_clKernels[1].setArg( 1, sizeof(REAL), &initialValue ); // boundary value
 	_clKernels[1].setArg( 2, sizeof(REAL), &_ui ); // interior value
-	_clKernels[1].setArg( 3, sizeof(int),   &_nx );
-	_clKernels[1].setArg( 4, sizeof(int),   &_ny );
-	_clKernels[1].setArg( 5, sizeof(int),   &_pitch );
+	_clKernels[1].setArg( 3, sizeof(int),  &_nx );
+	_clKernels[1].setArg( 4, sizeof(int),  &_ny );
+	_clKernels[1].setArg( 5, sizeof(int),  &_pitch );
 
 	// call kernel
 	_clQueue.enqueueNDRangeKernel (
@@ -123,14 +140,15 @@ void NavierStokesGPU::init ( )
 	_clQueue.enqueueNDRangeKernel ( _clKernels[1], cl::NullRange, _clRange, cl::NullRange );
 
 
+
 	// initialise RHS, F and G with 0.0
 	// todo: might not be neccessary
 
 	_clKernels[0].setArg( 0, _RHS_g );
 	_clKernels[0].setArg( 1, sizeof(REAL), &initialValue ); // boundary value
-	_clKernels[0].setArg( 2, sizeof(int),   &_nx );
-	_clKernels[0].setArg( 3, sizeof(int),   &_ny );
-	_clKernels[0].setArg( 4, sizeof(int),   &_pitch );
+	_clKernels[0].setArg( 2, sizeof(int),  &_nx );
+	_clKernels[0].setArg( 3, sizeof(int),  &_ny );
+	_clKernels[0].setArg( 4, sizeof(int),  &_pitch );
 
 	_clQueue.enqueueNDRangeKernel ( _clKernels[0], cl::NullRange, _clRange, cl::NullRange );
 
@@ -143,7 +161,9 @@ void NavierStokesGPU::init ( )
 
 
 
-
+	#ifdef VERBOSE
+		std::cout << "allocating host buffers..." << std::endl;
+	#endif
 
 	// allocate host memory for U, V and P buffers for communication
 	_U_host = allocHostMatrix ( _nx + 2, _ny + 2 );
@@ -292,30 +312,86 @@ bool NavierStokesGPU::setObstacleMap
 //============================================================================
 void NavierStokesGPU::doSimulationStep()
 {
+	//-----------------------
 	// get delta_t
-//	computeDeltaT();
+	//-----------------------
 
+	#ifdef VERBOSE
+		std::cout << "computing Δt..." << std::endl;
+	#endif
+
+	// computeDeltaT();
+
+
+	//-----------------------
 	// set boundary values for u and v
-//	setBoundaryConditions();
+	//-----------------------
 
-//	setSpecificBoundaryConditions();
+	#ifdef VERBOSE
+		std::cout << "applying boundary conditions..." << std::endl;
+	#endif
 
+	// setBoundaryConditions();
+
+	#ifdef VERBOSE
+		std::cout << "applying problem specific boundary conditions..." << std::endl;
+	#endif
+
+	// setSpecificBoundaryConditions();
+
+
+	//-----------------------
 	// compute F(n) and G(n)
-//	computeFG();
+	//-----------------------
 
+	#ifdef VERBOSE
+		std::cout << "computing F and G..." << std::endl;
+	#endif
+
+	// computeFG();
+
+
+	//-----------------------
 	// compute right hand side of pressure equation
+	//-----------------------
+
+	#ifdef VERBOSE
+		std::cout << "computing right hand side of pressure equation..." << std::endl;
+	#endif
+
 	//computeRightHandSide();
 
+
+	//-----------------------
 	// poisson overrelaxation loop
+	//-----------------------
+
+	#ifdef VERBOSE
+		std::cout << "poisson overrelaxation loop..." << std::endl;
+	#endif
+
 	REAL residual = INFINITY;
 
-//	for ( int it = 0; it < _it_max && abs(residual) > _epsilon; ++it )
+	int sor_it = 0;
+	// for ( ; sor_it < _it_max && abs(residual) > _epsilon; ++sor_it )
 	{
 		// do SOR step (includes residual computation)
 		//residual =  SORPoisson();
 	}
 
+	#ifdef VERBOSE
+		std::cout << "SOR iterations: " << sor_it << " / " << _it_max << std::endl;
+	#endif
+
+
+	//-----------------------
 	// compute U(n+1) and V(n+1)
+	//-----------------------
+
+	#ifdef VERBOSE
+		std::cout << "computing U and V" << std::endl;
+	#endif
+
 	//adaptUV();
 }
 
@@ -328,12 +404,13 @@ void NavierStokesGPU::doSimulationStep()
 REAL **NavierStokesGPU::getU_CPU ( )
 {
 	// copy data from device to host
+	// beware: the host array has type REAL**
 	_clQueue.enqueueReadBuffer (
 				_U_g,		// device buffer
 				CL_TRUE,	// blocking
 				0,			// offset
 				sizeof(REAL) * (_nx + 2) * (_ny + 2), // size
-				_U_host		// host buffer
+				*_U_host	// host buffer
 			);
 
 	return _U_host;
@@ -343,12 +420,13 @@ REAL **NavierStokesGPU::getU_CPU ( )
 REAL **NavierStokesGPU::getV_CPU ( )
 {
 	// copy data from device to host
+	// beware: the host array has type REAL**
 	_clQueue.enqueueReadBuffer (
 				_V_g,
 				CL_TRUE,
 				0,
 				sizeof(REAL) * (_nx + 2) * (_ny + 2),
-				_V_host
+				*_V_host
 			);
 
 	return _V_host;
@@ -358,12 +436,13 @@ REAL **NavierStokesGPU::getV_CPU ( )
 REAL **NavierStokesGPU::getP_CPU ( )
 {
 	// copy data from device to host
+	// beware: the host array has type REAL**
 	_clQueue.enqueueReadBuffer (
 				_P_g,
 				CL_TRUE,
 				0,
 				sizeof(REAL) * (_nx + 2) * (_ny + 2),
-				_P_host
+				*_P_host
 			);
 
 	return _P_host;
@@ -479,7 +558,9 @@ void NavierStokesGPU::loadKernels ( )
 	{
 		_clProgram.build( _clDevices );
 	}
-	catch( cl::Error error )
+	catch( cl::Error error )	//-----------------------
+			// load kernels
+			//-----------------------
 	{
 		// display kernel compile errors
 		if( error.err() == CL_BUILD_PROGRAM_FAILURE )

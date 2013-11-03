@@ -13,7 +13,7 @@
 #include <CL/opencl.h>
 
 // uncommented, as all kernels use float at the moment
-//#if REAL == double
+//#if REAL // not working yet!
 //	#define CL_REAL cl_double
 //#else
 	#define CL_REAL cl_float

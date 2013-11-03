@@ -99,7 +99,7 @@ int main ( int argc, char* argv[] )
 	while ( n < 1000 )
 	{
 		#ifdef VERBOSE
-			std::cout << "doing frame " << n << std::endl;
+			std::cout << "simulating frame " << n << std::endl;
 		#endif
 
 		// do simulation step
@@ -107,6 +107,10 @@ int main ( int argc, char* argv[] )
 
 		// update visualisation
 			// do fancy stuff with opengl
+
+		#ifdef VERBOSE
+			std::cout << "visualizing frame " << n << std::endl;
+		#endif
 
 		viewer->renderFrame(
 				solver->getU_CPU(),
@@ -117,7 +121,14 @@ int main ( int argc, char* argv[] )
 				n
 			);
 
+		#ifdef VERBOSE
+			std::cout << "done with frame " << n << std::endl;
+		#endif
+
 		++n;
+
+		// TODO remove
+		break;
 	}
 
 	//-----------------------
