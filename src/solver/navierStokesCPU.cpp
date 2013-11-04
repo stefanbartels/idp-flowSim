@@ -568,8 +568,7 @@ void NavierStokesCPU::computeDeltaT ( )
 //============================================================================
 void NavierStokesCPU::computeFG ( )
 {
-	// y coordinates in book are counted from lower left edge, in array from upper left edge
-	// => y-1 in the book becomes y+1 here
+	// y coordinates are counted from lower left edge
 
 	double alpha = 0.9; // todo: select alpha
 
@@ -613,7 +612,7 @@ void NavierStokesCPU::computeFG ( )
 		for( int x = 1; x < nx1; ++x )
 		{
 			// compute G between fluid cells only
-			if( _FLAG[y][x] == C_F && _FLAG[y+1][x] == C_F ) // y+1 in the book
+			if( _FLAG[y][x] == C_F && _FLAG[y+1][x] == C_F )
 			{
 				_G[y][x] =
 					_V[y][x] + _dt *
@@ -637,45 +636,43 @@ void NavierStokesCPU::computeFG ( )
 
 
 	// boundary values for arbitrary geometries
-	// todo: neccessary?
 	for ( int y = 1; y < ny1; ++y )
 	{
 		for ( int x = 1; x < nx1; ++x )
 		{
 			switch ( _FLAG[y][x] )
 			{
-				case B_N:
-					_G[y][x]   = _V[y][x];
-					break;
+//				case B_N:
+//					_G[y][x]   = _V[y][x];
+//					break;
 				case B_S:
 					_G[y-1][x] = _V[y-1][x];
 					break;
 				case B_W:
 					_F[y][x-1] = _U[y][x-1];
 					break;
-				case B_E:
-					_F[y][x]   = _U[y][x];
-					break;
+//				case B_E:
+//					_F[y][x]   = _U[y][x];
+//					break;
 				case B_NW:
 					_F[y][x-1] = _U[y][x-1];
-					_G[y][x]   = _V[y][x];
+//					_G[y][x]   = _V[y][x];
 					break;
-				case B_NE:
-					_F[y][x]   = _U[y][x];
-					_G[y][x]   = _V[y][x];
-					break;
+//				case B_NE:
+//					_F[y][x]   = _U[y][x];
+//					_G[y][x]   = _V[y][x];
+//					break;
 				case B_SW:
 					_F[y][x-1] = _U[y][x-1];
 					_G[y-1][x] = _V[y-1][x];
 					break;
 				case B_SE:
-					_F[y][x]   = _U[y][x];
+//					_F[y][x]   = _U[y][x];
 					_G[y-1][x] = _V[y-1][x];
 					break;
 			}
 		}
 	}
-
 
 
 	// setting boundary values for f according to formula 3.42
@@ -691,7 +688,6 @@ void NavierStokesCPU::computeFG ( )
 		_G[0][x]   = _V[0][x];
 		_G[_ny][x] = _V[_ny][x];
 	}
-
 }
 
 //============================================================================
