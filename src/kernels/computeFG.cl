@@ -162,7 +162,7 @@ __kernel void computeF
 	(
 		__global float*	u_g,			// horizontal velocity
 		__global float*	v_g,			// horizontal velocity
-		__global float*	flag_g,			// array with fluid/boundary cell flags
+		__global int*	flag_g,			// array with fluid/boundary cell flags
 		__global float* f_g,			// storage array for F
 		float 			gx,				// body force in x direction (gravity)
 		float			dt,				// time step size
@@ -180,8 +180,8 @@ __kernel void computeF
 
 	// todo: check guards
 	if( x > 0 &&
-		y > 1 &&
-		x < nx - 2 &&
+		y > 0 &&
+		x < nx - 1 &&
 		y < ny - 1 )
 	{
 		// compute F between fluid cells only
@@ -205,6 +205,10 @@ __kernel void computeF
 			f_g[idx]   = u_g[idx];
 		}
 	}
+	else if( ( x == 0 || x == nx-1 ) && y < ny - 1 )
+	{
+		f_g[idx]   = u_g[idx];
+	}
 }
 
 
@@ -216,7 +220,7 @@ __kernel void computeG
 	(
 		__global float*	u_g,			// horizontal velocity
 		__global float*	v_g,			// horizontal velocity
-		__global float*	flag_g,			// array with fluid/boundary cell flags
+		__global int*	flag_g,			// array with fluid/boundary cell flags
 		__global float* g_g,			// storage array for G
 		float 			gy,				// body force in x direction (gravity)
 		float			dt,				// time step size
@@ -234,9 +238,9 @@ __kernel void computeG
 
 	// todo: check guards
 	if( x > 0 &&
-		y > 1 &&
+		y > 0 &&
 		x < nx - 1 &&
-		y < ny - 2 )
+		y < ny - 1 )
 	{
 		// compute G between fluid cells only
 		if( flag_g[idx] == C_F && flag_g[idx + nx] == C_F ) // second cell test for not to overwrite boundary values
@@ -257,7 +261,14 @@ __kernel void computeG
 		{
 			// according to formula 3.42
 			g_g[idx]   = v_g[idx];
+
+			// boundary values for arbitrary geometries
+			// todo: might be not necessary
 		}
+	}
+	else if( ( y == 0 || y == ny-1 ) && x < nx - 1 )
+	{
+		g_g[idx]   = v_g[idx];
 	}
 }
 
