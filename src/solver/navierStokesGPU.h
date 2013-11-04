@@ -160,6 +160,10 @@ class NavierStokesGPU : public NavierStokesSolver
 
 		void	computeFG ( );
 
+			//! \brief computes the right-hand side of the pressure equation
+
+		void	computeRightHandSide ( );
+
 			//! @}
 
 

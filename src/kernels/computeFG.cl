@@ -151,8 +151,20 @@ float duv_dy (
 //	kernels for F and G computation
 // -------------------------------------------------
 
+// boundary flags for arbitrary geometries
 // for explanation, see Definitions.h
-#define C_F		0x10	// 000 10000
+#define C_F		0x10
+#define C_B		0x00
+
+#define B_N		0x01
+#define B_S		0x02
+#define B_W		0x04
+#define B_E		0x08
+
+#define B_NW	0x05
+#define B_NE	0x09
+#define B_SW	0x06
+#define B_SE	0x0A
 
 //============================================================================
 

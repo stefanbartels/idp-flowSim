@@ -359,7 +359,7 @@ void NavierStokesGPU::doSimulationStep()
 		std::cout << "computing right hand side of pressure equation..." << std::endl;
 	#endif
 
-	//computeRightHandSide();
+	computeRightHandSide();
 
 
 	//-----------------------
@@ -575,15 +575,31 @@ void NavierStokesGPU::computeFG ( )
 
 		// wait for completion
 		_clQueue.finish();
-
-
-		// boundary values for arbitrary geometries
-		//! TODO
-
 	}
 	catch( cl::Error error )
 	{
 		std::cerr << "CL ERROR while computing Δt: " << error.what() << "(" << error.err() << ")" << std::endl;
+		throw error;
+	}
+}
+
+//============================================================================
+void NavierStokesGPU::computeRightHandSide ( )
+{
+	try
+	{
+		// set missing kernel arguments
+		_clKernels[8].setArg( 3, sizeof(CL_REAL), &_dt );
+
+		// call kernel for RHS computation
+		_clQueue.enqueueNDRangeKernel ( _clKernels[8], cl::NullRange, _clRange, cl::NullRange );
+
+		// wait for completion
+		_clQueue.finish();
+	}
+	catch( cl::Error error )
+	{
+		std::cerr << "CL ERROR while computing RHS: " << error.what() << "(" << error.err() << ")" << std::endl;
 		throw error;
 	}
 }
@@ -608,6 +624,7 @@ void NavierStokesGPU::loadKernels ( )
 	loadSource ( source, "kernels/boundaryConditions.cl" );
 	loadSource ( source, "kernels/deltaT.cl" );
 	loadSource ( source, "kernels/computeFG.cl" );
+	loadSource ( source, "kernels/rightHandSide.cl" );
 
 	// create program
 	_clProgram = cl::Program( _clContext, source );
@@ -617,9 +634,7 @@ void NavierStokesGPU::loadKernels ( )
 	{
 		_clProgram.build( _clDevices );
 	}
-	catch( cl::Error error )	//-----------------------
-			// load kernels
-			//-----------------------
+	catch( cl::Error error )
 	{
 		// display kernel compile errors
 		if( error.err() == CL_BUILD_PROGRAM_FAILURE )
@@ -642,7 +657,7 @@ void NavierStokesGPU::loadKernels ( )
 	// load kernels
 	//-----------------------
 
-	_clKernels = std::vector<cl::Kernel> ( 8 );
+		_clKernels = std::vector<cl::Kernel>();
 
 	#ifdef VERBOSE
 		std::cout << "Binding kernels..." << std::endl;
@@ -650,29 +665,33 @@ void NavierStokesGPU::loadKernels ( )
 
 	try
 	{
-		// auxiliary kernels
-		_clKernels[0] = cl::Kernel( _clProgram, "setKernel" );
-		_clKernels[1] = cl::Kernel( _clProgram, "setBoundaryAndInteriorKernel" );
+		// auxiliary kernels [0],[1]
+		_clKernels.push_back( cl::Kernel( _clProgram, "setKernel" ) );
+		_clKernels.push_back( cl::Kernel( _clProgram, "setBoundaryAndInteriorKernel" ) );
 
-		// boundary condition kernels
-		_clKernels[2] = cl::Kernel( _clProgram, "setBoundaryConditionsKernel" );
-		_clKernels[3] = cl::Kernel( _clProgram, "setArbitraryBoundaryConditionsKernel" );
+		// boundary condition kernels [2],[3]
+		_clKernels.push_back( cl::Kernel( _clProgram, "setBoundaryConditionsKernel"	) );
+		_clKernels.push_back( cl::Kernel( _clProgram, "setArbitraryBoundaryConditionsKernel" ) );
 
+		// problem specific kernel [4]
 		if ( _problem == "moving_lid" )
 		{
-			_clKernels[4] = cl::Kernel( _clProgram, "setMovingLidBoundaryConditionsKernel" );
+			_clKernels.push_back( cl::Kernel( _clProgram, "setMovingLidBoundaryConditionsKernel" ) );
 		}
 		else if ( _problem == "left_inflow" )
 		{
-			_clKernels[4] = cl::Kernel( _clProgram, "setLeftInflowBoundaryConditionsKernel" );
+			_clKernels.push_back( cl::Kernel( _clProgram, "setLeftInflowBoundaryConditionsKernel" ) );
 		}
 
-		// kernel to find maximum UV value for delta t computation
-		_clKernels[5] = cl::Kernel( _clProgram, "getUVMaximumKernel" );
+		// kernel to find maximum UV value for delta t computation [5]
+		_clKernels.push_back( cl::Kernel( _clProgram, "getUVMaximumKernel" ) );
 
-		// kernels for F and G computation
-		_clKernels[6] = cl::Kernel( _clProgram, "computeF" );
-		_clKernels[7] = cl::Kernel( _clProgram, "computeG" );
+		// kernels for F and G computation [6],[7]
+		_clKernels.push_back( cl::Kernel( _clProgram, "computeF" ) );
+		_clKernels.push_back( cl::Kernel( _clProgram, "computeG" ) );
+
+		// kernel for the right hand side of the pressure equation [8]
+		_clKernels.push_back( cl::Kernel( _clProgram, "rightHandSideKernel" ) );
 	}
 	catch( cl::Error error )
 	{
@@ -754,6 +773,7 @@ void NavierStokesGPU::setKernelArguments ( )
 		_clKernels[6].setArg( 2,  _FLAG_g );
 		_clKernels[6].setArg( 3,  _F_g );
 		_clKernels[6].setArg( 4,  sizeof(CL_REAL), &_gx );
+		// todo: copied to device memory now or at kernel call time?
 		// _clKernels[6].setArg( 5, sizeof(CL_REAL), &_dt ); // set before kernel call
 		_clKernels[6].setArg( 6,  sizeof(CL_REAL), &_re );
 		// _clKernels[6].setArg( 7, sizeof(CL_REAL), &alpha ); // set before kernel call
@@ -775,6 +795,15 @@ void NavierStokesGPU::setKernelArguments ( )
 		_clKernels[7].setArg( 10, sizeof(int), &_nx );
 		_clKernels[7].setArg( 11, sizeof(int), &_ny );
 
+		// kernel arguments for RHS computation
+		_clKernels[8].setArg( 0, _F_g );
+		_clKernels[8].setArg( 1, _G_g );
+		_clKernels[8].setArg( 2, _RHS_g );
+		// _clKernels[8].setArg( 3, sizeof(CL_REAL), &_dt ); // set before kernel call
+		_clKernels[8].setArg( 4, sizeof(CL_REAL), &_dx );
+		_clKernels[8].setArg( 5, sizeof(CL_REAL), &_dy );
+		_clKernels[8].setArg( 6, sizeof(int), &_nx );
+		_clKernels[8].setArg( 7, sizeof(int), &_ny );
 	}
 	catch( cl::Error error )
 	{

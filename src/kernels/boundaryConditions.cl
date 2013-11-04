@@ -9,6 +9,7 @@
 #define PERIODIC	4
 
 // boundary flags for arbitrary geometries
+// for explanation, see Definitions.h
 #define C_F		0x10
 #define C_B		0x00
 
