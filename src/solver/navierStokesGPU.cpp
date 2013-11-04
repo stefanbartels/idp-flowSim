@@ -604,6 +604,27 @@ void NavierStokesGPU::computeRightHandSide ( )
 	}
 }
 
+//============================================================================
+void NavierStokesGPU::adaptUV ( )
+{
+	try
+	{
+		// set missing kernel arguments
+		_clKernels[10].setArg( 3, sizeof(CL_REAL), &_dt );
+
+		// call kernel for RHS computation
+		_clQueue.enqueueNDRangeKernel ( _clKernels[10], cl::NullRange, _clRange, cl::NullRange );
+
+		// wait for completion
+		_clQueue.finish();
+	}
+	catch( cl::Error error )
+	{
+		std::cerr << "CL ERROR while updating UV: " << error.what() << "(" << error.err() << ")" << std::endl;
+		throw error;
+	}
+}
+
 
 // -------------------------------------------------
 //	auxiliary functions
@@ -625,6 +646,8 @@ void NavierStokesGPU::loadKernels ( )
 	loadSource ( source, "kernels/deltaT.cl" );
 	loadSource ( source, "kernels/computeFG.cl" );
 	loadSource ( source, "kernels/rightHandSide.cl" );
+	//loadSource ( source, "kernels/SOR.cl" ); // todo
+	loadSource ( source, "kernels/updateUV.cl" );
 
 	// create program
 	_clProgram = cl::Program( _clContext, source );
@@ -692,6 +715,12 @@ void NavierStokesGPU::loadKernels ( )
 
 		// kernel for the right hand side of the pressure equation [8]
 		_clKernels.push_back( cl::Kernel( _clProgram, "rightHandSideKernel" ) );
+
+		// kernel for SOR step [9]
+		_clKernels.push_back( cl::Kernel( ) ); // _clProgram, "SORKernel" // todo
+
+		// kernel for velocity update [10]
+		_clKernels.push_back( cl::Kernel( _clProgram, "updateUVKernel" ) );
 	}
 	catch( cl::Error error )
 	{
@@ -804,6 +833,22 @@ void NavierStokesGPU::setKernelArguments ( )
 		_clKernels[8].setArg( 5, sizeof(CL_REAL), &_dy );
 		_clKernels[8].setArg( 6, sizeof(int), &_nx );
 		_clKernels[8].setArg( 7, sizeof(int), &_ny );
+
+		// kernel arguments for SOR step
+		// todo
+
+		// kernel arguments for UV update
+		_clKernels[10].setArg( 0,  _P_g );
+		_clKernels[10].setArg( 1,  _F_g );
+		_clKernels[10].setArg( 2,  _G_g );
+		_clKernels[10].setArg( 3,  _FLAG_g );
+		_clKernels[10].setArg( 4,  _U_g );
+		_clKernels[10].setArg( 5,  _V_g );
+		// _clKernels[10].setArg( 6, sizeof(CL_REAL), &_dt ); // set before kernel call
+		_clKernels[10].setArg( 7,  sizeof(CL_REAL), &_dx );
+		_clKernels[10].setArg( 8,  sizeof(CL_REAL), &_dy );
+		_clKernels[10].setArg( 9,  sizeof(int), &_nx );
+		_clKernels[10].setArg( 10, sizeof(int), &_ny );
 	}
 	catch( cl::Error error )
 	{

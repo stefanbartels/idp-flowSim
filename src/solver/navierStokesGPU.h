@@ -164,6 +164,16 @@ class NavierStokesGPU : public NavierStokesSolver
 
 		void	computeRightHandSide ( );
 
+			//! \brief SOR iteration for pressure Poisson equation
+			//! stores the residual in member variable residual
+			//! \returns number of SOR iterations
+
+		//int		SORPoisson ( );
+
+			//! \brief calculates new velocities
+
+		void	adaptUV ( );
+
 			//! @}
 
 
