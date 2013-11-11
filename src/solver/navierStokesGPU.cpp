@@ -605,6 +605,11 @@ void NavierStokesGPU::computeRightHandSide ( )
 }
 
 //============================================================================
+REAL NavierStokesGPU::SORPoisson()
+{
+}
+
+//============================================================================
 void NavierStokesGPU::adaptUV ( )
 {
 	try

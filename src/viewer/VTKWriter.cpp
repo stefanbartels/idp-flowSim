@@ -51,13 +51,13 @@ void VTKWriter::renderFrame
 	// write point positions
 	//-----------------------
 
-	int numPoints = (nx + 1) * (ny + 1);
-
 	int nx1 = nx + 1,
 		ny1 = ny + 1;
 
+	int numPoints = nx1 * ny1;
+
 	vtk << "DATASET STRUCTURED_GRID\n"
-		<< "DIMENSIONS " << ( nx + 1 ) << " " << ( ny + 1 ) << " 1\n"
+		<< "DIMENSIONS " << nx1 << " " << ny1 << " 1\n"
 		<< "POINTS " << numPoints << " float\n";
 
 	for( int y = 0; y < ny1; ++y )
@@ -71,6 +71,8 @@ void VTKWriter::renderFrame
 	//-----------------------
 	// write velocity
 	//-----------------------
+
+	int numCells = nx * ny;
 
 	vtk << "\nPOINT_DATA " << numPoints << "\n"
 		<< "VECTORS velocity float\n";
@@ -93,8 +95,6 @@ void VTKWriter::renderFrame
 	//-----------------------
 	// write pressure
 	//-----------------------
-
-	int numCells = nx * ny;
 
 	vtk << "\nCELL_DATA " << numCells << "\n"
 		<< "SCALARS pressure float\n"

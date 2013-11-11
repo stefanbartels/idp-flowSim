@@ -233,7 +233,7 @@ void NavierStokesCPU::doSimulationStep ( )
 	for ( int it = 0; it < _it_max && abs(residual) > _epsilon; ++it )
 	{
 		// do SOR step (includes residual computation)
-		residual =  SORPoisson();
+		residual = SORPoisson();
 	}
 
 	// compute U(n+1) and V(n+1)
@@ -716,7 +716,7 @@ void NavierStokesCPU::computeRightHandSide ( )
 }
 
 //============================================================================
-int NavierStokesCPU::SORPoisson ( )
+REAL NavierStokesCPU::SORPoisson ( )
 {
 	int nx1 = _nx + 1;
 	int ny1 = _ny + 1;
@@ -837,7 +837,7 @@ int NavierStokesCPU::SORPoisson ( )
 
 	// compute L²-Norm and return residual
 
-	return sqrt( sum / numCells );
+	return (sqrt( sum / numCells ));
 }
 
 //============================================================================

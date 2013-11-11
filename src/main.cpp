@@ -128,7 +128,7 @@ int main ( int argc, char* argv[] )
 		++n;
 
 		// TODO remove
-		break;
+		// break;
 	}
 
 	//-----------------------
