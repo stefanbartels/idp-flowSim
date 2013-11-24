@@ -794,7 +794,6 @@ int NavierStokesCPU::SORPoisson ( )
 
 	// according to formula 3.41
 	// 3.48 instead? (=> before SOR step)
-	/* // todo
 	for ( int x = 1; x < nx1; ++x )
 	{
 		_P[0][x]   = _P[1][x];
@@ -806,7 +805,6 @@ int NavierStokesCPU::SORPoisson ( )
 		_P[y][0]   = _P[y][1];
 		_P[y][nx1] = _P[y][_nx];
 	}
-	*/
 
 	//-----------------------
 	// residual
