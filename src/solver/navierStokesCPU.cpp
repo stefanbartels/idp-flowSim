@@ -553,7 +553,7 @@ void NavierStokesCPU::computeDeltaT ( )
 	}
 
 	// compute the three options for the min-function
-	opt_a = ( _re / 2.0 ) * ( 1.0 / (_dx * _dx) + 1.0 / (_dy * _dy) );
+	opt_a = ( _re / 2.0 ) * 1.0 / ( 1.0 / (_dx * _dx) + 1.0 / (_dy * _dy) );
 	opt_x = _dx / abs( u_max );
 	opt_y = _dy / abs( v_max );
 
