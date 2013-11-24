@@ -26,3 +26,11 @@ HEADERS += \
     src/viewer/VTKWriter.h \
     src/Definitions.h
 
+OTHER_FILES += \
+    src/kernels/auxiliary.cl \
+    src/kernels/updateUV.cl \
+    src/kernels/rightHandSide.cl \
+    src/kernels/deltaT.cl \
+    src/kernels/computeFG.cl \
+    src/kernels/boundaryConditions.cl
+
