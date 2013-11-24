@@ -546,9 +546,9 @@ void NavierStokesCPU::computeDeltaT ( )
 		for ( int x = 1; x < nx1; ++x )
 		{
 			if( abs( _U[y][x] ) > u_max )
-				u_max = abs( _U[y][x] );
-			if( abs( _V[y][x] ) > v_max )
-				v_max = abs( _V[y][x] );
+				u_max = ffabs( _U[y][x] );
+			if( fabs( _V[y][x] ) > v_max )
+				v_max = fabs( _V[y][x] );
 		}
 	}
 
