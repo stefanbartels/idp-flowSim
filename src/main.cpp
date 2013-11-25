@@ -96,6 +96,16 @@ int main ( int argc, char* argv[] )
 
 	int n = 0;
 
+	// plot initial state
+	viewer->renderFrame(
+			solver->getU_CPU(),
+			solver->getV_CPU(),
+			solver->getP_CPU(),
+			parameters.nx,
+			parameters.ny,
+			n++
+		);
+
 	while ( n < 1000 )
 	{
 		#ifdef VERBOSE
@@ -108,9 +118,9 @@ int main ( int argc, char* argv[] )
 		// update visualisation
 			// do fancy stuff with opengl
 
-		#ifdef VERBOSE
-			std::cout << "visualizing frame " << n << std::endl;
-		#endif
+		//#ifdef VERBOSE
+		//	std::cout << "visualizing frame " << n << std::endl;
+		//#endif
 
 		viewer->renderFrame(
 				solver->getU_CPU(),
@@ -121,9 +131,9 @@ int main ( int argc, char* argv[] )
 				n
 			);
 
-		#ifdef VERBOSE
-			std::cout << "done with frame " << n << std::endl;
-		#endif
+		//#ifdef VERBOSE
+		//	std::cout << "done with frame " << n << std::endl;
+		//#endif
 
 		++n;
 

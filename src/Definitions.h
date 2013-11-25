@@ -2,7 +2,7 @@
 #define DEFINITIONS_H
 
 // set to true to use OpenCL for the simulation
-#define USE_GPU false
+#define USE_GPU true
 
 // use verbose setting for debugging
 #define VERBOSE true

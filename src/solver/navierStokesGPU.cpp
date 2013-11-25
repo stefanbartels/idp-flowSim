@@ -35,8 +35,8 @@ NavierStokesGPU::NavierStokesGPU ( )
 		// create command queue
 		_clQueue = cl::CommandQueue( _clContext, _clDevices[0] );
 
-		// define thread range
-		_clRange = cl::NDRange( BW, BH );
+		// define global thread range
+		_clRange = cl::NullRange;
 	}
 	catch( cl::Error error )
 	{
@@ -62,6 +62,8 @@ NavierStokesGPU::~NavierStokesGPU ( )
 	freeHostMatrix( _U_host );
 	freeHostMatrix( _V_host );
 	freeHostMatrix( _P_host );
+
+	// todo free device memory
 }
 
 // -------------------------------------------------
@@ -71,9 +73,16 @@ NavierStokesGPU::~NavierStokesGPU ( )
 //============================================================================
 void NavierStokesGPU::init ( )
 {
+	int nx2 = _nx + 2;
+	int ny2 = _ny + 2;
+	int size = ( _nx + 2 ) * ( _ny * 2 );
+
+	// define global thread range
+	_clRange = cl::NDRange( nx2, ny2 );
+
 	// calculate pitch
 	// todo
-	_pitch = _nx;
+	_pitch = _nx + 2;
 
 	// load and compile kernels
 	loadKernels();
@@ -85,8 +94,6 @@ void NavierStokesGPU::init ( )
 	#ifdef VERBOSE
 		std::cout << "allocating device buffers..." << std::endl;
 	#endif
-
-	int size = ( _nx + 2 ) * ( _ny * 2 );
 
 	// todo: use pitched memory
 	_U_g   = cl::Buffer ( _clContext, CL_MEM_READ_WRITE, sizeof(REAL) * size );
@@ -110,14 +117,14 @@ void NavierStokesGPU::init ( )
 	// todo: border might not be neccessary
 
 	// set kernel arguments for initialisation
-	REAL initialValue = 0.0;
+	REAL initialBoundaryValue = 0.0;
 
 	_clKernels[1].setArg( 0, _U_g );
-	_clKernels[1].setArg( 1, sizeof(REAL), &initialValue ); // boundary value
-	_clKernels[1].setArg( 2, sizeof(REAL), &_ui ); // interior value
-	_clKernels[1].setArg( 3, sizeof(int),  &_nx );
-	_clKernels[1].setArg( 4, sizeof(int),  &_ny );
-	_clKernels[1].setArg( 5, sizeof(int),  &_pitch );
+	_clKernels[1].setArg( 1, sizeof(CL_REAL), &initialBoundaryValue ); // boundary value
+	_clKernels[1].setArg( 2, sizeof(CL_REAL), &_ui ); // interior value
+	_clKernels[1].setArg( 3, sizeof(int),     &nx2 );
+	_clKernels[1].setArg( 4, sizeof(int),     &ny2 );
+	_clKernels[1].setArg( 5, sizeof(int),     &_pitch );
 
 	// call kernel
 	_clQueue.enqueueNDRangeKernel (
@@ -128,26 +135,30 @@ void NavierStokesGPU::init ( )
 		);
 
 
+	std::cout << "Range: " << _clRange[0] << "*" << _clRange[1] << std::endl;
 	// update arguments for V
 	_clKernels[1].setArg( 0, _V_g );
-	_clKernels[1].setArg( 1, sizeof(REAL), &_vi ); // interior value
+	_clKernels[1].setArg( 2, sizeof(CL_REAL), &_vi ); // interior value
 
 	_clQueue.enqueueNDRangeKernel ( _clKernels[1], cl::NullRange, _clRange, cl::NullRange );
+
 
 	_clKernels[1].setArg( 0, _P_g );
-	_clKernels[1].setArg( 1, sizeof(REAL), &_pi ); // interior value
+	_clKernels[1].setArg( 2, sizeof(CL_REAL), &_pi ); // interior value
 
 	_clQueue.enqueueNDRangeKernel ( _clKernels[1], cl::NullRange, _clRange, cl::NullRange );
 
 
-
+	//-----------------------
 	// initialise RHS, F and G with 0.0
+	//-----------------------
+
 	// todo: might not be neccessary
 
 	_clKernels[0].setArg( 0, _RHS_g );
-	_clKernels[0].setArg( 1, sizeof(REAL), &initialValue ); // boundary value
-	_clKernels[0].setArg( 2, sizeof(int),  &_nx );
-	_clKernels[0].setArg( 3, sizeof(int),  &_ny );
+	_clKernels[0].setArg( 1, sizeof(REAL), &initialBoundaryValue );
+	_clKernels[0].setArg( 2, sizeof(int),  &nx2 );
+	_clKernels[0].setArg( 3, sizeof(int),  &ny2 );
 	_clKernels[0].setArg( 4, sizeof(int),  &_pitch );
 
 	_clQueue.enqueueNDRangeKernel ( _clKernels[0], cl::NullRange, _clRange, cl::NullRange );
@@ -160,12 +171,14 @@ void NavierStokesGPU::init ( )
 
 
 
+	//-----------------------
+	// allocate host memory for U, V and P buffers for communication
+	//-----------------------
 
 	#ifdef VERBOSE
 		std::cout << "allocating host buffers..." << std::endl;
 	#endif
 
-	// allocate host memory for U, V and P buffers for communication
 	_U_host = allocHostMatrix ( _nx + 2, _ny + 2 );
 	_V_host = allocHostMatrix ( _nx + 2, _ny + 2 );
 	_P_host = allocHostMatrix ( _nx + 2, _ny + 2 );
@@ -298,8 +311,8 @@ bool NavierStokesGPU::setObstacleMap
 					flag
 				);
 
-	delete [] flag[0];
-	delete [] flag;
+	free( flag[0] );
+	free( flag );
 
 	return true;
 }
@@ -413,6 +426,8 @@ REAL **NavierStokesGPU::getU_CPU ( )
 				*_U_host	// host buffer
 			);
 
+	_clQueue.finish();
+
 	return _U_host;
 }
 
@@ -429,6 +444,8 @@ REAL **NavierStokesGPU::getV_CPU ( )
 				*_V_host
 			);
 
+	_clQueue.finish();
+
 	return _V_host;
 }
 
@@ -444,6 +461,8 @@ REAL **NavierStokesGPU::getP_CPU ( )
 				sizeof(REAL) * (_nx + 2) * (_ny + 2),
 				*_P_host
 			);
+
+	_clQueue.finish();
 
 	return _P_host;
 }
@@ -540,7 +559,7 @@ void NavierStokesGPU::computeDeltaT ( )
 	// compute the three options for the min-function
 	REAL opt_a, opt_x, opt_y, min;
 
-	opt_a = ( _re / 2.0 ) * ( 1.0 / (_dx * _dx) + 1.0 / (_dy * _dy) );
+	opt_a = ( _re / 2.0 ) * ( 1.0 / ( 1.0 / (_dx * _dx) + 1.0 / (_dy * _dy) ) );
 	opt_x = _dx / abs( results[0] ); // results[0] = u_max
 	opt_y = _dy / abs( results[1] );// results[1] = v_max
 
@@ -607,6 +626,18 @@ void NavierStokesGPU::computeRightHandSide ( )
 //============================================================================
 REAL NavierStokesGPU::SORPoisson()
 {
+
+
+
+
+
+
+
+
+
+
+
+	return 0.0;
 }
 
 //============================================================================

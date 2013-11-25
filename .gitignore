@@ -3,3 +3,4 @@ bin_debug/
 NavierStokesGPU.pro.user
 *.o
 *~
+*.bak

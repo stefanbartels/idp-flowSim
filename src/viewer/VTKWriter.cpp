@@ -25,14 +25,14 @@ void VTKWriter::renderFrame
 	// open file
 	//-----------------------
 
-	char img_name[32];
-	sprintf( img_name, "output/it_%05d.vtk", it );
+	char filename[32];
+	sprintf( filename, "output/it_%05d.vtk", it );
 
-	std::ofstream vtk ( img_name );
+	std::ofstream vtk ( filename );
 
 	if ( !vtk.is_open() )
 	{
-		std::cerr << "Failed to open vtk file \"" << img_name << "\" for writing!" << std::endl;
+		std::cerr << "Failed to open vtk file \"" << filename << "\" for writing!" << std::endl;
 		return;
 	}
 
