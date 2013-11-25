@@ -560,8 +560,8 @@ void NavierStokesGPU::computeDeltaT ( )
 	REAL opt_a, opt_x, opt_y, min;
 
 	opt_a = ( _re / 2.0 ) * ( 1.0 / ( 1.0 / (_dx * _dx) + 1.0 / (_dy * _dy) ) );
-	opt_x = _dx / abs( results[0] ); // results[0] = u_max
-	opt_y = _dy / abs( results[1] );// results[1] = v_max
+	opt_x = _dx / fabs( results[0] ); // results[0] = u_max
+	opt_y = _dy / fabs( results[1] );// results[1] = v_max
 
 	// get smallest value
 	min = opt_a < opt_x ? opt_a : opt_x;

@@ -41,10 +41,10 @@ __kernel void getUVMaximumKernel
 
 		while( i < limit )
 		{
-			temp = u_g[i];
+			temp = fabs( u_g[i] );
 			local_max_u = ( temp > local_max_u ) ? temp : local_max_u;
 
-			temp = v_g[i];
+			temp = fabs( v_g[i] );
 			local_max_v = ( temp > local_max_v ) ? temp : local_max_v;
 
 			i += local_size;
@@ -74,7 +74,7 @@ __kernel void getUVMaximumKernel
 
 			offset = offset / 2;
 
-			barrier(CLK_LOCAL_MEM_FENCE);
+			barrier( CLK_LOCAL_MEM_FENCE );
 		}
 
 		// write back results
