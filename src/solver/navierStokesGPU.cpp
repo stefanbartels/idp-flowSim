@@ -386,10 +386,10 @@ void NavierStokesGPU::doSimulationStep()
 	REAL residual = INFINITY;
 
 	int sor_it = 0;
-	// for ( ; sor_it < _it_max && abs(residual) > _epsilon; ++sor_it )
+	for ( ; sor_it < _it_max && abs(residual) > _epsilon; ++sor_it )
 	{
 		// do SOR step (includes residual computation)
-		//residual =  SORPoisson();
+		residual =  SORPoisson();
 	}
 
 	#ifdef VERBOSE
@@ -531,7 +531,7 @@ void NavierStokesGPU::computeDeltaT ( )
 	{
 		// allocate memory for UV maximum result
 		// todo: move to constructor?
-		cl::Buffer results_g ( _clContext, CL_MEM_WRITE_ONLY, sizeof(REAL) * 2 );
+		cl::Buffer results_g ( _clContext, CL_MEM_WRITE_ONLY, sizeof(CL_REAL) * 2 );
 
 		// set result buffer as kernel argument
 		_clKernels[5].setArg( 2, results_g );
@@ -549,7 +549,7 @@ void NavierStokesGPU::computeDeltaT ( )
 		_clQueue.finish();
 
 		// retrieve reduction result
-		_clQueue.enqueueReadBuffer( results_g, CL_TRUE, 0, sizeof(REAL) * 2, results );
+		_clQueue.enqueueReadBuffer( results_g, CL_TRUE, 0, sizeof(CL_REAL) * 2, results );
 	}
 	catch( cl::Error error )
 	{
@@ -631,42 +631,92 @@ REAL NavierStokesGPU::SORPoisson()
 	// as it may not converge with the symmetrical red/black parallelisation
 	// this is the same as setting omega to 1.0
 
-	int nx1 = _nx + 1;
-	int ny1 = _ny + 1;
-
-	REAL dx2 = _dx * _dx;
-	REAL dy2 = _dy * _dy;
-
 	// the epsilon-parameters in formula 3.44 are set to 1.0 according to page 38
-	// set in method setKernelArguments()
-	// REAL constant_expr = 1.0 / ( 2.0 / dx2 + 2.0 / dy2 );
+
+	REAL residual = 0.0;
+
+	try
+	{
+		//-----------------------
+		// gauß seidel step
+		//-----------------------
+
+		int red = 0;
+
+		// call gaussSeidelRedBlackKernel
+		// todo: use correct range and offset for kernel call to exclude boundaries
+
+		// set red flag as kernel argument
+		_clKernels[9].setArg( 5, sizeof(int), &red );
+
+		// call kernel for black cells
+		_clQueue.enqueueNDRangeKernel ( _clKernels[8], cl::NullRange, _clRange, cl::NullRange );
+
+		// wait for completion
+		_clQueue.finish();
+
+		// set flag for red cells
+		red = 1;
+		_clKernels[9].setArg( 5, sizeof(int), &red );
+
+		// call kernel for red cells
+		_clQueue.enqueueNDRangeKernel ( _clKernels[8], cl::NullRange, _clRange, cl::NullRange );
+
+		// wait for completion
+		_clQueue.finish();
 
 
-	//-----------------------
-	// gauß seidel step
-	//-----------------------
+		//-----------------------
+		// boundary values
+		//-----------------------
 
-	// gaussSeidelRedBlackKernel
-	// todo: use correct range and offset for kernel call to exclude boundaries
+		// call pressureBoundaryConditionsKernel
+		// todo: use better range (1D wit max(nx,ny))
 
+		_clQueue.enqueueNDRangeKernel ( _clKernels[10], cl::NullRange, _clRange, cl::NullRange );
 
-
-	//-----------------------
-	// boundary values
-	//-----------------------
-
-	// pressureBoundaryConditionsKernel
-	// todo: use better range (1D wit max(nx,ny))
+		// wait for completion
+		_clQueue.finish();
 
 
+		//-----------------------
+		// residual
+		//-----------------------
 
-	//-----------------------
-	// residual
-	//-----------------------
+		// allocate output buffer
+		// todo: move to constructor?
+		cl::Buffer result_g ( _clContext, CL_MEM_WRITE_ONLY, sizeof(CL_REAL) );
+		REAL result = 0.0;
 
-	// pressureResidualReductionKernel
+		// set output buffer as kernel argument
+		_clKernels[11].setArg( 2, result_g );
 
-	return 0.0;
+		// call pressureResidualReductionKernel
+		_clQueue.enqueueNDRangeKernel (
+						_clKernels[11],
+						cl::NullRange,
+						cl::NDRange( _clWorkgroupSize ),
+						cl::NDRange( _clWorkgroupSize )		// make sure that all GPU cores are in one workgroup for optimal reduction speed
+					);
+
+		// wait for completion
+		_clQueue.finish();
+
+		// get result
+		_clQueue.enqueueReadBuffer( result_g, CL_TRUE, 0, sizeof(CL_REAL) , &result );
+
+		// compute residual
+		residual = sqrt( result / (_nx * _ny) );
+
+
+	}
+	catch( cl::Error error )
+	{
+		std::cerr << "CL ERROR while computing Δt: " << error.what() << "(" << error.err() << ")" << std::endl;
+		throw error;
+	}
+
+	return residual;
 }
 
 //============================================================================
