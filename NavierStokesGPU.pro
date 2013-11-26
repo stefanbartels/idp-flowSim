@@ -32,5 +32,6 @@ OTHER_FILES += \
     src/kernels/rightHandSide.cl \
     src/kernels/deltaT.cl \
     src/kernels/computeFG.cl \
-    src/kernels/boundaryConditions.cl
+    src/kernels/boundaryConditions.cl \
+    src/kernels/poisson.cl
 

@@ -5,8 +5,9 @@
 //============================================================================
 
 /*
- * this is not a ranged kernel and is to be called for just one workgroup
+ * this is an 1D kernel and is to be called with a range of the size of one workgroup
  * todo: seems to be very inefficient
+ * todo: call with range: ( local_work_size < SIZE ? local_work_size : SIZE )
  *
  * only for arrays without pitch
  * uses a two step reduction algorithm
@@ -32,12 +33,12 @@ __kernel void getUVMaximumKernel
 	float local_max_u = -INFINITY;
 	float local_max_v = -INFINITY;
 
+	unsigned int i = idx_global;
+	float temp, temp2;
+
 	if( idx_global < limit ) // guard
 	{
 		// process simulation area chunkwise in parallel
-
-		unsigned int i = idx_global;
-		float temp, temp2;
 
 		while( i < limit )
 		{
@@ -54,9 +55,14 @@ __kernel void getUVMaximumKernel
 		u_s[idx_local] = local_max_u;
 		v_s[idx_local] = local_max_v;
 
+	}
 
+	// all threads must reach barrier
+	barrier(CLK_LOCAL_MEM_FENCE);
+
+	if( idx_global < limit ) // guard
+	{
 		// collect results hierarchically
-		barrier(CLK_LOCAL_MEM_FENCE);
 
 		int offset = local_size / 2;
 		while( offset > 0 )

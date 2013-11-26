@@ -537,6 +537,7 @@ void NavierStokesGPU::computeDeltaT ( )
 		_clKernels[5].setArg( 2, results_g );
 
 		// call min/max reduction kernel
+		// todo: call with range: ( _clWorkgroupSize < SIZE ? _clWorkgroupSize : SIZE )
 		_clQueue.enqueueNDRangeKernel (
 					_clKernels[5],
 					cl::NullRange,
@@ -626,16 +627,43 @@ void NavierStokesGPU::computeRightHandSide ( )
 //============================================================================
 REAL NavierStokesGPU::SORPoisson()
 {
+	// this solver does not use overrelaxation for gauß-seidel,
+	// as it may not converge with the symmetrical red/black parallelisation
+	// this is the same as setting omega to 1.0
+
+	int nx1 = _nx + 1;
+	int ny1 = _ny + 1;
+
+	REAL dx2 = _dx * _dx;
+	REAL dy2 = _dy * _dy;
+
+	// the epsilon-parameters in formula 3.44 are set to 1.0 according to page 38
+	REAL constant_expr = 1.0 / ( 2.0 / dx2 + 2.0 / dy2 );
+
+
+	//-----------------------
+	// gauß seidel step
+	//-----------------------
+
+	// gaussSeidelRedBlackKernel
+	// todo: use correct range and offset for kernel call to exclude boundaries
 
 
 
+	//-----------------------
+	// boundary values
+	//-----------------------
+
+	// pressureBoundaryConditionsKernel
+	// todo: use better range (1D wit max(nx,ny))
 
 
 
+	//-----------------------
+	// residual
+	//-----------------------
 
-
-
-
+	// pressureResidualReductionKernel
 
 	return 0.0;
 }
