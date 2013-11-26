@@ -8,12 +8,12 @@
 // todo: shared memory for P
 __kernel void gaussSeidelRedBlackKernel
 	(
-		__global float* p_g,			// pressure array
-		__global float* flag_g,			// boundary cell flags
-		__global float* rhs_g,			// storage array for righ hand side
+		__global float*	p_g,			// pressure array
+		__global int*	flag_g,			// boundary cell flags
+		__global float*	rhs_g,			// storage array for righ hand side
 		float			dx2,			// sqare of length delta x of on cell in x-direction
 		float			dy2,			// sqare of length delta y of on cell in y-direction
-		bool			red,			// true for red, false for black
+		int				red,			// 1 for red, 0 for black
 		float			constant_expr,	// constant expression 1.0 / ( 2.0 / dx2 + 2.0 / dy2 )
 		int				nx,				// dimension in x direction (including boundaries)
 		int				ny				// dimension in y direction (including boundaries)
@@ -78,12 +78,12 @@ __kernel void gaussSeidelRedBlackKernel
 
 //============================================================================
 // todo: use 1D kernel and proper range (terribly inefficient right now)
+// todo: implement different boundary conditions
 
 __kernel void pressureBoundaryConditionsKernel
-	(( _P[y][x+1] - 2.0 * _P[y][x] + _P[y][x-1] ) / dx2
-	//	+ ( _P[y+1][x] - 2.0 * _P[y][x] + _P[y-1][x] ) / dy2
-	//	- _RHS[y][x];
+	(
 		__global float* p_g,			// pressure array
+		//int				problemId,		// id of the problem
 		int				nx,				// dimension in x direction (including boundaries)
 		int				ny				// dimension in y direction (including boundaries)
 	)
@@ -111,6 +111,8 @@ __kernel void pressureBoundaryConditionsKernel
  * todo: seems to be inefficient
  * todo: constant/texture memory for P, FLAG and RHS
  * todo: call with range: ( local_work_size < SIZE ? local_work_size : SIZE )
+ *
+ * returns the sum of all squared elements of the pressure array
  *
  * uses a two step reduction algorithm
  * see http://developer.amd.com/resources/documentation-articles/articles-whitepapers/opencl-optimization-case-study-simple-reductions/

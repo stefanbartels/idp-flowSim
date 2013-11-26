@@ -638,7 +638,8 @@ REAL NavierStokesGPU::SORPoisson()
 	REAL dy2 = _dy * _dy;
 
 	// the epsilon-parameters in formula 3.44 are set to 1.0 according to page 38
-	REAL constant_expr = 1.0 / ( 2.0 / dx2 + 2.0 / dy2 );
+	// set in method setKernelArguments()
+	// REAL constant_expr = 1.0 / ( 2.0 / dx2 + 2.0 / dy2 );
 
 
 	//-----------------------
@@ -674,10 +675,10 @@ void NavierStokesGPU::adaptUV ( )
 	try
 	{
 		// set missing kernel arguments
-		_clKernels[10].setArg( 3, sizeof(CL_REAL), &_dt );
+		_clKernels[12].setArg( 3, sizeof(CL_REAL), &_dt );
 
 		// call kernel for RHS computation
-		_clQueue.enqueueNDRangeKernel ( _clKernels[10], cl::NullRange, _clRange, cl::NullRange );
+		_clQueue.enqueueNDRangeKernel ( _clKernels[12], cl::NullRange, _clRange, cl::NullRange );
 
 		// wait for completion
 		_clQueue.finish();
@@ -710,7 +711,7 @@ void NavierStokesGPU::loadKernels ( )
 	loadSource ( source, "kernels/deltaT.cl" );
 	loadSource ( source, "kernels/computeFG.cl" );
 	loadSource ( source, "kernels/rightHandSide.cl" );
-	//loadSource ( source, "kernels/SOR.cl" ); // todo
+	loadSource ( source, "kernels/pressure.cl" ); // todo
 	loadSource ( source, "kernels/updateUV.cl" );
 
 	// create program
@@ -780,10 +781,12 @@ void NavierStokesGPU::loadKernels ( )
 		// kernel for the right hand side of the pressure equation [8]
 		_clKernels.push_back( cl::Kernel( _clProgram, "rightHandSideKernel" ) );
 
-		// kernel for SOR step [9]
-		_clKernels.push_back( cl::Kernel( ) ); // _clProgram, "SORKernel" // todo
+		// kernel for pressure equation step [9],[10],[11]
+		_clKernels.push_back( cl::Kernel( _clProgram, "gaussSeidelRedBlackKernel" ) );
+		_clKernels.push_back( cl::Kernel( _clProgram, "pressureBoundaryConditionsKernel" ) );
+		_clKernels.push_back( cl::Kernel( _clProgram, "pressureResidualReductionKernel" ) );
 
-		// kernel for velocity update [10]
+		// kernel for velocity update [12]
 		_clKernels.push_back( cl::Kernel( _clProgram, "updateUVKernel" ) );
 	}
 	catch( cl::Error error )
@@ -822,6 +825,11 @@ void NavierStokesGPU::setKernelArguments ( )
 	// domain size including boundaries
 	int nx = _nx+2;
 	int ny = _ny+2;
+
+	// constant values for pressure equation
+	float dx2 = _dx * _dx;
+	float dy2 = _dy * _dy;
+	REAL constant_expr = 1.0 / ( 2.0 / dx2 + 2.0 / dy2 );
 
 	#ifdef VERBOSE
 		std::cout << "Setting kernel arguments..." << std::endl;
@@ -872,8 +880,8 @@ void NavierStokesGPU::setKernelArguments ( )
 		// _clKernels[6].setArg( 7, sizeof(CL_REAL), &alpha ); // set before kernel call
 		_clKernels[6].setArg( 8,  sizeof(CL_REAL), &_dx );
 		_clKernels[6].setArg( 9,  sizeof(CL_REAL), &_dy );
-		_clKernels[6].setArg( 10, sizeof(int), &_nx );
-		_clKernels[6].setArg( 11, sizeof(int), &_ny );
+		_clKernels[6].setArg( 10, sizeof(int), &nx );
+		_clKernels[6].setArg( 11, sizeof(int), &ny );
 
 		_clKernels[7].setArg( 0,  _U_g );
 		_clKernels[7].setArg( 1,  _V_g );
@@ -885,8 +893,8 @@ void NavierStokesGPU::setKernelArguments ( )
 		// _clKernels[7].setArg( 7, sizeof(CL_REAL), &alpha ); // set before kernel call
 		_clKernels[7].setArg( 8,  sizeof(CL_REAL), &_dx );
 		_clKernels[7].setArg( 9,  sizeof(CL_REAL), &_dy );
-		_clKernels[7].setArg( 10, sizeof(int), &_nx );
-		_clKernels[7].setArg( 11, sizeof(int), &_ny );
+		_clKernels[7].setArg( 10, sizeof(int), &nx );
+		_clKernels[7].setArg( 11, sizeof(int), &ny );
 
 		// kernel arguments for RHS computation
 		_clKernels[8].setArg( 0, _F_g );
@@ -895,24 +903,48 @@ void NavierStokesGPU::setKernelArguments ( )
 		// _clKernels[8].setArg( 3, sizeof(CL_REAL), &_dt ); // set before kernel call
 		_clKernels[8].setArg( 4, sizeof(CL_REAL), &_dx );
 		_clKernels[8].setArg( 5, sizeof(CL_REAL), &_dy );
-		_clKernels[8].setArg( 6, sizeof(int), &_nx );
-		_clKernels[8].setArg( 7, sizeof(int), &_ny );
+		_clKernels[8].setArg( 6, sizeof(int), &nx );
+		_clKernels[8].setArg( 7, sizeof(int), &ny );
 
-		// kernel arguments for SOR step
-		// todo
+		// kernel arguments for gauß seidel step in pressure solving
+		_clKernels[9].setArg( 0, _P_g );
+		_clKernels[9].setArg( 1, _FLAG_g );
+		_clKernels[9].setArg( 2, _RHS_g );
+		_clKernels[9].setArg( 3, sizeof(CL_REAL), &dx2 );
+		_clKernels[9].setArg( 4, sizeof(CL_REAL), &dy2 );
+		// _clKernels[9].setArg( 5, sizeof(int), &red ); // red/black flag, set before kernel call
+		_clKernels[9].setArg( 6, sizeof(CL_REAL), &constant_expr );
+		_clKernels[9].setArg( 7, sizeof(int), &nx );
+		_clKernels[9].setArg( 8, sizeof(int), &ny );
+
+		// kernel arguments for updating pressure boundary conditions
+		_clKernels[10].setArg( 0, _P_g );
+		// _clKernels[10].setArg( 1, sizeof(int), &problemId ); // todo: id of the problem
+		_clKernels[10].setArg( 1, sizeof(int), &nx );
+		_clKernels[10].setArg( 2, sizeof(int), &ny );
+
+		// kernel arguments for pressure iteration residual computation
+		_clKernels[11].setArg( 0, _P_g );
+		_clKernels[11].setArg( 1, _RHS_g );
+		// argument 2: result buffer: REAL sum
+		_clKernels[11].setArg( 3, sizeof(CL_REAL) * _clWorkgroupSize, NULL); // dynamically allocated local shared memory for reduction
+		_clKernels[11].setArg( 4, sizeof(CL_REAL), &dx2 );
+		_clKernels[11].setArg( 5, sizeof(CL_REAL), &dy2 );
+		_clKernels[11].setArg( 6, sizeof(int), &nx );
+		_clKernels[11].setArg( 7, sizeof(int), &ny );
 
 		// kernel arguments for UV update
-		_clKernels[10].setArg( 0,  _P_g );
-		_clKernels[10].setArg( 1,  _F_g );
-		_clKernels[10].setArg( 2,  _G_g );
-		_clKernels[10].setArg( 3,  _FLAG_g );
-		_clKernels[10].setArg( 4,  _U_g );
-		_clKernels[10].setArg( 5,  _V_g );
-		// _clKernels[10].setArg( 6, sizeof(CL_REAL), &_dt ); // set before kernel call
-		_clKernels[10].setArg( 7,  sizeof(CL_REAL), &_dx );
-		_clKernels[10].setArg( 8,  sizeof(CL_REAL), &_dy );
-		_clKernels[10].setArg( 9,  sizeof(int), &_nx );
-		_clKernels[10].setArg( 10, sizeof(int), &_ny );
+		_clKernels[12].setArg( 0,  _P_g );
+		_clKernels[12].setArg( 1,  _F_g );
+		_clKernels[12].setArg( 2,  _G_g );
+		_clKernels[12].setArg( 3,  _FLAG_g );
+		_clKernels[12].setArg( 4,  _U_g );
+		_clKernels[12].setArg( 5,  _V_g );
+		// _clKernels[12].setArg( 6, sizeof(CL_REAL), &_dt ); // set before kernel call
+		_clKernels[12].setArg( 7,  sizeof(CL_REAL), &_dx );
+		_clKernels[12].setArg( 8,  sizeof(CL_REAL), &_dy );
+		_clKernels[12].setArg( 9,  sizeof(int), &nx );
+		_clKernels[12].setArg( 10, sizeof(int), &ny );
 	}
 	catch( cl::Error error )
 	{

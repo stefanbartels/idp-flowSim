@@ -33,5 +33,5 @@ OTHER_FILES += \
     src/kernels/deltaT.cl \
     src/kernels/computeFG.cl \
     src/kernels/boundaryConditions.cl \
-    src/kernels/poisson.cl
+    src/kernels/pressure.cl
 
