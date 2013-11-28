@@ -405,7 +405,7 @@ void NavierStokesGPU::doSimulationStep()
 		std::cout << "computing U and V" << std::endl;
 	#endif
 
-	//adaptUV();
+	adaptUV();
 }
 
 
@@ -725,7 +725,7 @@ void NavierStokesGPU::adaptUV ( )
 	try
 	{
 		// set missing kernel arguments
-		_clKernels[12].setArg( 3, sizeof(CL_REAL), &_dt );
+		_clKernels[12].setArg( 6, sizeof(CL_REAL), &_dt );
 
 		// call kernel for RHS computation
 		_clQueue.enqueueNDRangeKernel ( _clKernels[12], cl::NullRange, _clRange, cl::NullRange );

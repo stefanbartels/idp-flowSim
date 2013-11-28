@@ -5,7 +5,7 @@
 //============================================================================
 
 /*
- * this is an 1D kernel and is to be called with a range of the size of one workgroup
+ * this is not a ranged kernel and is to be called for just one workgroup
  * todo: seems to be very inefficient
  * todo: call with range: ( local_work_size < SIZE ? local_work_size : SIZE )
  *
@@ -54,18 +54,17 @@ __kernel void getUVMaximumKernel
 		// local result
 		u_s[idx_local] = local_max_u;
 		v_s[idx_local] = local_max_v;
-
 	}
 
 	// all threads must reach barrier
-	barrier(CLK_LOCAL_MEM_FENCE);
+	barrier( CLK_LOCAL_MEM_FENCE );
 
-	if( idx_global < limit ) // guard
+	// collect results hierarchically
+
+	int offset = local_size / 2;
+	while( offset > 0 )
 	{
-		// collect results hierarchically
-
-		int offset = local_size / 2;
-		while( offset > 0 )
+		if( idx_global < limit ) // guard
 		{
 			if( idx_local < offset )
 			{
@@ -77,18 +76,19 @@ __kernel void getUVMaximumKernel
 				temp2 = v_s[idx_local + offset];
 				v_s[ idx_local ] = (temp > temp2) ? temp : temp2;
 			}
-
-			offset = offset / 2;
-
-			barrier( CLK_LOCAL_MEM_FENCE );
 		}
 
-		// write back results
-		if( idx_local == 0 )
-		{
-			results[0] = u_s[0];
-			results[1] = v_s[0];
-		}
+		offset = offset / 2;
+
+		// all threads must reach barrier
+		barrier( CLK_LOCAL_MEM_FENCE );
+	}
+
+	// write back results
+	if( idx_local == 0 )
+	{
+		results[0] = u_s[0];
+		results[1] = v_s[0];
 	}
 }
 

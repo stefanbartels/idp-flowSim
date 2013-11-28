@@ -18,6 +18,11 @@
 */
 //====================================================================
 
+template <typename T, size_t N>
+T* begin(T(&arr)[N]) { return &arr[0]; }
+template <typename T, size_t N>
+T* end(T(&arr)[N]) { return &arr[0]+N; }
+
 class CLTest : public Test
 {
 	protected:

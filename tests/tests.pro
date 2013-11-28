@@ -8,10 +8,11 @@ LIBS+= -lOpenCL
 
 SOURCES += \
 	test_main.cpp \
-    CLTest.cpp \
-    Test.cpp
+	Test.cpp \
+	cltests/CLTest.cpp
 
 HEADERS += \
 	Test.h \
-    AuxiliaryKernelsTest.h \
-    CLTest.h
+	cltests/AuxiliaryKernelsTest.h \
+	cltests/CLTest.h \
+    cltests/TimestepKernelTest.h

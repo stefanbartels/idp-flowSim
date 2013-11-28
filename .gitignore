@@ -1,6 +1,6 @@
 bin/
 bin_debug/
-NavierStokesGPU.pro.user
+*.pro.user
 *.o
 *~
 *.bak

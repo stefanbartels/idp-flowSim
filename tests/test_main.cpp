@@ -8,7 +8,8 @@
 #include <vector>
 #include <iostream>
 
-#include "AuxiliaryKernelsTest.h"
+#include "cltests/AuxiliaryKernelsTest.h"
+#include "cltests/TimestepKernelTest.h"
 
 //********************************************************************
 //**    implementation
@@ -24,6 +25,7 @@ int main ( int argc, char *argv[] )
 
 	// add all tests
 	tests.push_back( new AuxiliaryKernelsTest("AuxiliaryKernelsTest") );
+	tests.push_back( new TimestepKernelTest("TimestepKernelTest") );
 
 	unsigned int size = tests.size();
 

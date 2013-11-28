@@ -156,9 +156,9 @@ class NavierStokesSolver
 
 
 	// -------------------------------------------------
-	//	helper functions
+	//	auxiliary functions
 	// -------------------------------------------------
-		//! @name helper functions
+		//! @name auxiliary functions
 		//! @{
 
 	REAL**	allocHostMatrix (

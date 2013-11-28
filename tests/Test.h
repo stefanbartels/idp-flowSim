@@ -9,8 +9,6 @@
 #include <string>
 #include <iostream>
 
-#warning "========== COMPILING TEST =========="
-
 //====================================================================
 /*! \class Test
     \brief Superclass for testing

@@ -13,11 +13,6 @@
 */
 //====================================================================
 
-template <typename T, size_t N>
-T* begin(T(&arr)[N]) { return &arr[0]; }
-template <typename T, size_t N>
-T* end(T(&arr)[N]) { return &arr[0]+N; }
-
 class AuxiliaryKernelsTest : public CLTest
 {
 	private:
@@ -39,6 +34,7 @@ class AuxiliaryKernelsTest : public CLTest
 			{
 				freeHostMatrix( _M_h );
 				freeHostMatrix( _buffer );
+				_clean = true;
 			}
 		}
 
@@ -56,7 +52,7 @@ class AuxiliaryKernelsTest : public CLTest
 			_M_h = allocHostMatrix( nx, ny );
 
 			// allocate device memory
-			cl::Buffer M_g = cl::Buffer ( _clContext, CL_MEM_READ_WRITE, sizeof(REAL) * size );
+			cl::Buffer M_g( _clContext, CL_MEM_READ_WRITE, sizeof(REAL) * size );
 
 			// allocate buffer
 			_buffer = allocHostMatrix( nx, ny );
