@@ -308,7 +308,7 @@ bool NavierStokesGPU::setObstacleMap
 					_clContext,
 					CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
 					nx2 * ny2 * sizeof( unsigned char ),
-					flag
+					*flag
 				);
 
 	free( flag[0] );
