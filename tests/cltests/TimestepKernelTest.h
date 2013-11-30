@@ -45,7 +45,6 @@ class TimestepKernelTest : public CLTest
 			int ny = 512;
 			int size = nx * ny;
 
-			std::string kernelNames[] = { "setKernel", "setBoundaryAndInteriorKernel" };
 			loadKernels( "deltaT.cl", "getUVMaximumKernel" );
 
 			// allocate host memory
@@ -73,10 +72,7 @@ class TimestepKernelTest : public CLTest
 			// getUVMaximumKernel
 			//-----------------------
 
-			REAL value = 11.0;
-
 			// set kernel arguments
-			// set message as kernel argument
 			_clKernels["getUVMaximumKernel"].setArg( 0, U_g );
 			_clKernels["getUVMaximumKernel"].setArg( 1, V_g );
 			_clKernels["getUVMaximumKernel"].setArg( 2, results_g );

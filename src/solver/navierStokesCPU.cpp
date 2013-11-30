@@ -10,12 +10,6 @@
 
 #include <iostream>
 
-// todo: use enum instead of defines?
-#define FREE_SLIP	1
-#define NO_SLIP		2
-#define OUTFLOW 	3
-#define PERIODIC	4
-
 //********************************************************************
 //**    implementation
 //********************************************************************
@@ -543,17 +537,17 @@ void NavierStokesCPU::computeDeltaT ( )
 	{
 		for ( int x = 1; x < nx1; ++x )
 		{
-			if( abs( _U[y][x] ) > u_max )
-				u_max = abs( _U[y][x] );
-			if( abs( _V[y][x] ) > v_max )
-				v_max = abs( _V[y][x] );
+			if( fabs( _U[y][x] ) > u_max )
+				u_max = fabs( _U[y][x] );
+			if( fabs( _V[y][x] ) > v_max )
+				v_max = fabs( _V[y][x] );
 		}
 	}
 
 	// compute the three options for the min-function
-	opt_a = ( _re / 2.0 ) * ( 1.0 / (_dx * _dx) + 1.0 / (_dy * _dy) );
-	opt_x = _dx / abs( u_max );
-	opt_y = _dy / abs( v_max );
+	opt_a = ( _re / 2.0 ) * 1.0 / ( 1.0 / (_dx * _dx) + 1.0 / (_dy * _dy) );
+	opt_x = _dx / fabs( u_max );
+	opt_y = _dy / fabs( v_max );
 
 	// get smallest value
 	min = opt_a < opt_x ? opt_a : opt_x;
@@ -566,8 +560,7 @@ void NavierStokesCPU::computeDeltaT ( )
 //============================================================================
 void NavierStokesCPU::computeFG ( )
 {
-	// y coordinates in book are counted from lower left edge, in array from upper left edge
-	// => y-1 in the book becomes y+1 here
+	// y coordinates in book are counted from lower left edge
 
 	REAL alpha = 0.9; // todo: select alpha
 
@@ -611,7 +604,7 @@ void NavierStokesCPU::computeFG ( )
 		for( int x = 1; x < nx1; ++x )
 		{
 			// compute G between fluid cells only
-			if( _FLAG[y][x] == C_F && _FLAG[y+1][x] == C_F ) // y+1 in the book
+			if( _FLAG[y][x] == C_F && _FLAG[y+1][x] == C_F )
 			{
 				_G[y][x] =
 					_V[y][x] + _dt *
@@ -635,7 +628,8 @@ void NavierStokesCPU::computeFG ( )
 
 
 	// boundary values for arbitrary geometries
-	// todo: neccessary?
+	/*
+	// todo: really not necessary?
 	for ( int y = 1; y < ny1; ++y )
 	{
 		for ( int x = 1; x < nx1; ++x )
@@ -673,7 +667,7 @@ void NavierStokesCPU::computeFG ( )
 			}
 		}
 	}
-
+	*/
 
 
 	// setting boundary values for f according to formula 3.42
@@ -689,7 +683,6 @@ void NavierStokesCPU::computeFG ( )
 		_G[0][x]   = _V[0][x];
 		_G[_ny][x] = _V[_ny][x];
 	}
-
 }
 
 //============================================================================
@@ -726,6 +719,8 @@ REAL NavierStokesCPU::SORPoisson ( )
 
 	// the epsilon-parameters in formula 3.44 are set to 1.0 according to page 38
 	REAL constant_expr = _omega / ( 2.0 / (_dx * _dx) + 2.0 / (_dy * _dy) );
+	// REAL constant_expr = _omega / ( 2.0 * (1.0 / (_dx * _dx) + 1.0 / (_dy * _dy)) );
+
 
 	REAL dx2 = _dx * _dx;
 	REAL dy2 = _dy * _dy;
@@ -744,8 +739,8 @@ REAL NavierStokesCPU::SORPoisson ( )
 			if( _FLAG[y][x] == C_F )
 			{
 				_P[y][x] =
-					( 1 - _omega ) * _P[y][x] + constant_expr *
-					(
+					( 1.0 - _omega ) * _P[y][x] +
+					constant_expr * (
 						( _P[y][x-1] + _P[y][x+1] ) / dx2
 						+
 						( _P[y-1][x] + _P[y+1][x] ) / dy2
@@ -772,6 +767,7 @@ REAL NavierStokesCPU::SORPoisson ( )
 						break;
 					case B_NW:
 						_P[y][x] = (_P[y-1][x] + _P[y][x+1]) / 2;
+						//_P[y][x] = (_P[y+1][x] + _P[y][x-1]) / 2;	// todo is this more correct?
 						break;
 					case B_NE:
 						_P[y][x] = (_P[y+1][x] + _P[y][x+1]) / 2;
@@ -781,6 +777,7 @@ REAL NavierStokesCPU::SORPoisson ( )
 						break;
 					case B_SE:
 						_P[y][x] = (_P[y+1][x] + _P[y][x-1]) / 2;
+						//_P[y][x] = (_P[y-1][x] + _P[y][x+1]) / 2;	// todo is this more correct? Karman not working any longer with this line!
 						break;
 				}
 			}
@@ -793,7 +790,8 @@ REAL NavierStokesCPU::SORPoisson ( )
 
 	// according to formula 3.41
 	// 3.48 instead? (=> before SOR step)
-	/* // todo
+	// only Neumann
+	// todo: implement dirichlet and periodic
 	for ( int x = 1; x < nx1; ++x )
 	{
 		_P[0][x]   = _P[1][x];
@@ -805,7 +803,6 @@ REAL NavierStokesCPU::SORPoisson ( )
 		_P[y][0]   = _P[y][1];
 		_P[y][nx1] = _P[y][_nx];
 	}
-	*/
 
 	//-----------------------
 	// residual
@@ -828,6 +825,11 @@ REAL NavierStokesCPU::SORPoisson ( )
 					+ ( ( _P[y+1][x] - _P[y][x] ) - ( _P[y][x] - _P[y-1][x] ) ) / dy2
 					- _RHS[y][x];
 
+				//tmp =
+				//	  ( _P[y][x+1] - 2.0 * _P[y][x] + _P[y][x-1] ) / dx2
+				//	+ ( _P[y+1][x] - 2.0 * _P[y][x] + _P[y-1][x] ) / dy2
+				//	- _RHS[y][x];
+
 				sum += tmp * tmp;
 
 				++numCells;
@@ -837,7 +839,7 @@ REAL NavierStokesCPU::SORPoisson ( )
 
 	// compute L²-Norm and return residual
 
-	return (sqrt( sum / numCells ));
+	return sqrt( sum / numCells );
 }
 
 //============================================================================

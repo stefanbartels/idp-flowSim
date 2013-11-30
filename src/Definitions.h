@@ -41,7 +41,11 @@
 #define B_SE	0x0A	// 000 01010
 
 
-
+// boundary types
+#define FREE_SLIP	1
+#define NO_SLIP		2
+#define OUTFLOW		3
+#define PERIODIC	4
 
 
 

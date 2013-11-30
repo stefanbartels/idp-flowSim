@@ -78,7 +78,7 @@ __kernel void gaussSeidelRedBlackKernel
 
 //============================================================================
 // todo: use 1D kernel and proper range (terribly inefficient right now)
-// todo: implement different boundary conditions
+// todo: only neumann, implement dirichlet and periodic boundary conditions
 
 __kernel void pressureBoundaryConditionsKernel
 	(

@@ -10,6 +10,7 @@
 
 #include "cltests/AuxiliaryKernelsTest.h"
 #include "cltests/TimestepKernelTest.h"
+#include "cltests/BoundaryKernelsTest.h"
 
 //********************************************************************
 //**    implementation
@@ -26,6 +27,7 @@ int main ( int argc, char *argv[] )
 	// add all tests
 	tests.push_back( new AuxiliaryKernelsTest("AuxiliaryKernelsTest") );
 	tests.push_back( new TimestepKernelTest("TimestepKernelTest") );
+	tests.push_back( new BoundaryKernelsTest("BoundaryKernelsTest") );
 
 	unsigned int size = tests.size();
 

@@ -50,6 +50,28 @@ CLTest::~CLTest ( )
 }
 
 //============================================================================
+void CLTest::printHostMatrix
+	(
+		std::string title,
+		REAL **M,
+		int width,
+		int height
+	)
+{
+	std::cout << title << std::endl;
+
+	for( int y = 0; y < height; ++y )
+	{
+		for( int x = 0; x < width; ++x )
+		{
+			std::cout << M[y][x] << " ";
+		}
+
+		std::cout << std::endl;
+	}
+}
+
+//============================================================================
 void  CLTest::loadKernels
 	(
 		std::string clfile,

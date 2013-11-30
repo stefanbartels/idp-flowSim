@@ -4,11 +4,6 @@
 #include <string>
 #include "Definitions.h"
 
-#define FREE_SLIP	1
-#define NO_SLIP		2
-#define OUTFLOW 	3
-#define PERIODIC	4
-
 struct ProblemParameters
 {
 	// geometry data

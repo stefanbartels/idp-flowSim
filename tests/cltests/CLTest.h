@@ -47,6 +47,9 @@ class CLTest : public Test
 		~CLTest ( );
 
 	protected:
+		//! prints a matrix to console
+		void printHostMatrix ( std::string title, REAL** M, int width, int height );
+
 		//! load one kernel from one file
 		//! compiled kernels can be accessed with _clKernels["kernel name"]
 		void loadKernels ( std::string clfile, std::string kernelName );
