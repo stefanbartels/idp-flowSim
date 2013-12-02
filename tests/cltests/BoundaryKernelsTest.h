@@ -48,11 +48,11 @@ class BoundaryKernelsTest : public CLTest
 			}
 		}
 
-
+		//============================================================================
 		ErrorCode run ( )
 		{
-			int nx = 5;
-			int ny = 5;
+			int nx = 10; // do not change without changing flag array!
+			int ny = 10;
 			int size = nx * ny;
 
 			std::string kernelNames[] = {
@@ -151,6 +151,167 @@ class BoundaryKernelsTest : public CLTest
 			}
 
 
+
+
+
+
+			//-----------------------
+			// setArbitraryBoundaryConditionsKernel
+			//-----------------------
+
+			// create flag array
+			unsigned char* FLAG_h[ny];
+			unsigned char flag_data[100] =
+				{
+					15, 15, 15, 15, 15, 15, 15, 15, 15, 15,		// 15,   15,   15,   15,   15,   15,   15,   15,   15,  15,
+					15, 16, 16, 16, 16, 16, 16, 16, 16, 15,     // 15,  C_F,  C_F,  C_F,  C_F,  C_F,  C_F,  C_F,  C_F,  15,
+					15, 16, 16, 16,  6, 10, 16, 16, 16, 15,     // 15,  C_F,  C_F,  C_F, B_SW, B_SE,  C_F,  C_F,  C_F,  15,
+					15, 16, 16, 16,  4,  8, 16, 16, 16, 15,     // 15,  C_F,  C_F,  C_F,  B_W,  B_E,  C_F,  C_F,  C_F,  15,
+					15, 16,  6,  2,  0,  0,  2, 10, 16, 15,     // 15,  C_F, B_SW,  B_S,  C_B,  C_B,  B_S, B_SE,  C_F,  15,
+					15, 16,  5,  1,  0,  0,  1,  9, 16, 15,     // 15,  C_F, B_NW,  B_N,  C_B,  C_B,  B_N, B_NE,  C_F,  15,
+					15, 16, 16, 16,  4,  8, 16, 16, 16, 15,     // 15,  C_F,  C_F,  C_F,  B_W,  B_E,  C_F,  C_F,  C_F,  15,
+					15, 16, 16, 16,  5,  9, 16, 16, 16, 15,     // 15,  C_F,  C_F,  C_F, B_NW, B_NE,  C_F,  C_F,  C_F,  15,
+					15, 16, 16, 16, 16, 16, 16, 16, 16, 15,     // 15,  C_F,  C_F,  C_F,  C_F,  C_F,  C_F,  C_F,  C_F,  15,
+					15, 15, 15, 15, 15, 15, 15, 15, 15, 15      // 15,   15,   15,   15,   15,   15,   15,   15,   15,  15
+				};
+
+			FLAG_h[0] = flag_data;
+			for( int i = 1; i < ny; ++i )
+			{
+				FLAG_h[i] = flag_data + i * nx;
+			}
+
+			// allocate device memory for flag array
+			cl::Buffer FLAG_g( _clContext, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(cl_char) * size, *FLAG_h );
+
+			// set kernel arguments
+			_clKernels["setArbitraryBoundaryConditionsKernel"].setArg( 0, U_g );
+			_clKernels["setArbitraryBoundaryConditionsKernel"].setArg( 1, V_g );
+			_clKernels["setArbitraryBoundaryConditionsKernel"].setArg( 2, FLAG_g );
+			_clKernels["setArbitraryBoundaryConditionsKernel"].setArg( 3, sizeof(int), &nx );
+			_clKernels["setArbitraryBoundaryConditionsKernel"].setArg( 4, sizeof(int), &ny );
+
+			// call kernel
+			_clQueue.enqueueNDRangeKernel (
+					_clKernels["setArbitraryBoundaryConditionsKernel"],
+					cl::NullRange,			// offset
+					cl::NDRange( nx, ny ),	// global,
+					cl::NullRange			// local,
+				);
+
+			_clQueue.finish();
+
+			// get result
+			_clQueue.enqueueReadBuffer( U_g, CL_TRUE, 0, sizeof(cl_float) * size, *_U_buffer );
+			_clQueue.enqueueReadBuffer( V_g, CL_TRUE, 0, sizeof(cl_float) * size, *_V_buffer );
+
+			// set boundaries on CPU
+			setArbitraryBoundaryConditionsHost( _U_h, _V_h, FLAG_h, nx, ny );
+
+			// compare results
+			bool equal = true;
+			for( int y = 0; y < ny && equal; ++y )
+			{
+				for( int x = 0; x < nx && equal; ++x )
+				{
+					if(
+							(REAL)_U_h[y][x] != (REAL)_U_buffer[y][x]
+							||
+							(REAL)_V_h[y][x] != (REAL)_V_buffer[y][x]
+						)
+					{
+						std::cout << " (probably) irrelevant difference in kernel \"setArbitraryBoundaryConditionsKernel\" due to parallel accesses" << std::endl;
+						// debug output:
+						//printHostMatrix( "CPU U:", _U_h, nx, ny );
+						//printHostMatrix( "GPU U:", _U_buffer, nx, ny );
+						//printHostMatrix( "CPU V:", _V_h, nx, ny );
+						//printHostMatrix( "GPU V:", _V_buffer, nx, ny );
+						//printHostMatrixDifference( "U differences:", _U_h, _U_buffer, nx, ny );
+						//printHostMatrixDifference( "V differences:", _V_h, _V_buffer, nx, ny );
+						//cleanup();
+						//return Error;
+						equal = false;
+					}
+				}
+			}
+
+
+
+
+
+			//-----------------------
+			// setMovingLidBoundaryConditionsKernel
+			//-----------------------
+
+			// init host memory with random values between -10 and 10
+			for( int y = 0; y < ny; ++y )
+			{
+				for( int x = 0; x < nx; ++x )
+				{
+					_U_h[y][x] = (REAL(rand()) / REAL(RAND_MAX)) * 20.0 -10.0;
+					_U_buffer[y][x] = 0.0;
+				}
+			}
+
+			// copy to device memory
+			_clQueue.enqueueWriteBuffer(
+					U_g,
+					CL_TRUE,
+					0,
+					sizeof(cl_float) * size,
+					*_U_h
+				);
+
+			// set kernel arguments
+			_clKernels["setMovingLidBoundaryConditionsKernel"].setArg( 0, U_g );
+			_clKernels["setMovingLidBoundaryConditionsKernel"].setArg( 1, sizeof(int), &nx );
+			_clKernels["setMovingLidBoundaryConditionsKernel"].setArg( 2, sizeof(int), &ny );
+
+			// call kernel
+			_clQueue.enqueueNDRangeKernel (
+					_clKernels["setMovingLidBoundaryConditionsKernel"],
+					cl::NullRange,			// offset
+					cl::NDRange( nx, ny ),	// global,
+					cl::NullRange			// local,
+				);
+
+			_clQueue.finish();
+
+			// get result
+			_clQueue.enqueueReadBuffer( U_g, CL_TRUE, 0, sizeof(cl_float) * size, *_U_buffer );
+
+			// set boundaries on CPU
+			for ( int x = 1; x < nx; ++x )
+			{
+				_U_h[0][x] = 2.0 - _U_h[1][x];
+			}
+
+			// compare results
+			for( int y = 0; y < ny; ++y )
+			{
+				for( int x = 0; x < nx; ++x )
+				{
+					if(
+							(REAL)_U_h[y][x] != (REAL)_U_buffer[y][x]
+						)
+					{
+						std::cout << " Kernel \"setMovingLidBoundaryConditionsKernel\"" << std::endl;
+						// debug output:
+						//printHostMatrix( "CPU U:", _U_h, nx, ny );
+						//printHostMatrix( "GPU U:", _U_buffer, nx, ny );
+						//printHostMatrixDifference( "U differences:", _U_h, _U_buffer, nx, ny );
+
+						cleanup();
+						return Error;
+					}
+				}
+			}
+
+
+
+
+
+
 			cleanup();
 
 			return Success;
@@ -158,6 +319,7 @@ class BoundaryKernelsTest : public CLTest
 
 
 
+		//============================================================================
 		// auxiliary functions
 		void setBoundaryConditionsHost
 			(
@@ -294,6 +456,91 @@ class BoundaryKernelsTest : public CLTest
 						V[y][nx1] = V[y][nx];
 					}
 					break;
+			}
+		}
+
+		//============================================================================
+		void setArbitraryBoundaryConditionsHost
+			(
+				REAL**          U,
+				REAL**	        V,
+				unsigned char** FLAG,
+				int nx,
+				int ny
+			)
+		{
+			nx -= 2;	// for mirroring CPU implementation
+			ny -= 2;
+
+			int nx1 = nx + 1;
+			int ny1 = ny + 1;
+
+			for( int y = 1; y < ny1; ++y )
+			{
+				for( int x = 1; x < nx1; ++x )
+				{
+					switch( FLAG[y][x] )
+					{
+						case C_F:
+							continue;
+							break;
+
+						case B_N: // northern obstacle boundary => fluid in the north
+							U[y][x-1] = -U[y+1][x-1];
+							U[y][x]   = -U[y+1][x];
+							V[y][x]   = 0.0;
+							break;
+
+						case B_S: // fluid in the south
+							U[y][x-1] = -U[y-1][x-1];
+							U[y][x]   = -U[y-1][x];
+							V[y-1][x]   = 0.0;
+							break;
+
+						case B_W: // fluid in the west
+							U[y][x-1] = 0.0;
+							V[y-1][x] = -V[y-1][x-1];
+							V[y][x]   = -V[y][x-1];
+							break;
+
+						case B_E: // fluid in the east
+							U[y][x] = 0.0;
+							V[y-1][x] = -V[y-1][x+1];
+							V[y][x]   = -V[y][x+1];
+							break;
+
+						case B_NW: // fluid in the north and west
+							U[y][x]   = -U[y+1][x];
+							U[y][x-1] = 0.0;
+							V[y][x]   = 0.0;
+							V[y-1][x] = -V[y-1][x-1];
+							break;
+
+						case B_NE: // fluid in the north and east
+							U[y][x]   = 0.0;
+							U[y][x-1] = -U[y+1][x-1];
+
+							V[y][x]   = 0.0;
+							V[y-1][x] = -V[y-1][x+1];
+							break;
+
+						case B_SW: // fluid	in the south and west
+							U[y][x]   = -U[y-1][x];
+							U[y][x-1] = 0.0;
+
+							V[y][x]   = -V[y][x-1];
+							V[y-1][x] = 0.0;
+							break;
+
+						case B_SE: // fluid	in the south and east
+							U[y][x]   = 0.0;
+							U[y][x-1] = -U[y-1][x-1];
+
+							V[y][x]   = -V[y][x+1];
+							V[y-1][x] = 0.0;
+							break;
+					}
+				}
 			}
 		}
 };

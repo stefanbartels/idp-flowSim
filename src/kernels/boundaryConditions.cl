@@ -25,6 +25,7 @@
 
 //============================================================================
 // todo: terrible inefficient => optimize
+// todo: consider calling as 1D kernel or with range nx-2, ny-2 and offset 1,1
 __kernel void setBoundaryConditionsKernel
 	(
 		__global float*	u_g,
@@ -151,11 +152,12 @@ __kernel void setBoundaryConditionsKernel
 
 //============================================================================
 // todo: terrible inefficient => optimize
+// todo: call with range nx-2, ny-2 and offset 1,1
 __kernel void setArbitraryBoundaryConditionsKernel
 	(
 		__global float*	u_g,
 		__global float*	v_g,
-		__global float* flag_g,
+		__global unsigned char* flag_g,
 		int				nx,
 		int				ny
 //		int				pitch
@@ -174,6 +176,12 @@ __kernel void setArbitraryBoundaryConditionsKernel
 	{
 		char flag = flag_g[ idx ];
 
+		// todo: at corners (fluid cell with walls at two adjecent walls) the velocity value
+		//       inside the corner is dependent on the order the cells are processed.
+		//       As no wall is allowed to be between two fluid cells, this should not matter,
+		//       but leads to different values on the GPU.
+		//        => check if it really doesn't matter
+
 		if( flag == B_N ) { // northern obstacle boundary => fluid in the north
 			u_g[ idx-1 ]  = -u_g[ idx+nx-1 ];
 			u_g[ idx ]    = -u_g[ idx+nx ];
@@ -182,7 +190,7 @@ __kernel void setArbitraryBoundaryConditionsKernel
 		else if( flag == B_S ) { // fluid in the south
 			u_g[ idx-1 ]  = -u_g[ idx-nx-1 ];
 			u_g[ idx ]    = -u_g[ idx-nx ];
-			v_g[ idx ]    = 0.0;
+			v_g[ idx-nx ] = 0.0;
 		}
 		else if( flag == B_W ) { // fluid in the west
 			u_g[ idx-1 ]  = 0.0;
@@ -200,7 +208,7 @@ __kernel void setArbitraryBoundaryConditionsKernel
 			u_g[ idx-1 ]  = 0.0;
 
 			v_g[ idx ]    = 0.0;
-			v_g[ idx-nx ] = -v_g[ idx-nx+1 ];
+			v_g[ idx-nx ] = -v_g[ idx-nx-1 ];
 		}
 		else if( flag == B_NE ) { // fluid in the north and east
 			u_g[ idx ]    = 0.0;
@@ -209,7 +217,7 @@ __kernel void setArbitraryBoundaryConditionsKernel
 			v_g[ idx ]    = 0.0;
 			v_g[ idx-nx ] = -v_g[ idx-nx+1 ];
 		}
-		else if( flag == B_SE ) { // fluid in the south and west
+		else if( flag == B_SW ) { // fluid in the south and west
 			u_g[ idx ]    = -u_g[ idx-nx ];
 			u_g[ idx-1 ]  = 0.0;
 
@@ -239,6 +247,8 @@ __kernel void setArbitraryBoundaryConditionsKernel
 // -------------------------------------------------
 
 //============================================================================
+// todo: call only for one row
+
 __kernel void setMovingLidBoundaryConditionsKernel
 	(
 		__global float*	u_g,
@@ -253,7 +263,7 @@ __kernel void setMovingLidBoundaryConditionsKernel
 
 	if	(
 			y == 0	&&
-			x >	1	&&
+			x >	0	&&
 			x < nx
 		)
 	{

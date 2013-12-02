@@ -419,6 +419,11 @@ void NavierStokesCPU::setBoundaryConditions ( )
 	 */
 
 	// loop over interior cells
+	// todo: at corners (fluid cell with walls at two adjecent walls) the velocity value
+	//       inside the corner is dependent on the order the cells are processed.
+	//       As no wall is allowed to be between two fluid cells, this should not matter,
+	//       but leads to different values on the GPU.
+	//        => check if it really doesn't matter
 
 	for( int y = 1; y < ny1; ++y )
 	{
@@ -439,7 +444,7 @@ void NavierStokesCPU::setBoundaryConditions ( )
 				case B_S: // fluid in the south
 					_U[y][x-1] = -_U[y-1][x-1];
 					_U[y][x]   = -_U[y-1][x];
-					_V[y][x]   = 0.0;
+					_V[y-1][x]   = 0.0;
 					break;
 
 				case B_W: // fluid in the west
@@ -460,7 +465,7 @@ void NavierStokesCPU::setBoundaryConditions ( )
 					_U[y][x-1] = 0.0;
 
 					_V[y][x]   = 0.0;
-					_V[y-1][x] = -_V[y-1][x+1];
+					_V[y-1][x] = -_V[y-1][x-1];
 					break;
 
 				case B_NE: // fluid in the north and east
