@@ -447,7 +447,7 @@ void NavierStokesCPU::setBoundaryConditions ( )
 				case B_S: // fluid in the south
 					_U[y][x-1] = -_U[y-1][x-1];
 					_U[y][x]   = -_U[y-1][x];
-					_V[y][x]   = 0.0;
+					_V[y-1][x] = 0.0;
 					break;
 
 				case B_W: // fluid in the west
@@ -468,7 +468,7 @@ void NavierStokesCPU::setBoundaryConditions ( )
 					_U[y][x-1] = 0.0;
 
 					_V[y][x]   = 0.0;
-					_V[y-1][x] = -_V[y-1][x+1];
+					_V[y-1][x] = -_V[y-1][x-1];
 					break;
 
 				case B_NE: // fluid in the north and east
