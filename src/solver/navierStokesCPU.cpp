@@ -376,14 +376,14 @@ void NavierStokesCPU::setBoundaryConditions ( )
 			for( int y = 1; y < ny1; ++y )
 			{
 				_U[y][_nx] = 0.0;
-				_V[y][nx1] = -_U[y][_nx];
+				_V[y][nx1] = -_V[y][_nx];
 			}
 			break;
 		case FREE_SLIP:
 			for( int y = 1; y < ny1; ++y )
 			{
 				_U[y][_nx] = 0.0;
-				_V[y][nx1] = _U[y][_nx];
+				_V[y][nx1] = _V[y][_nx];
 			}
 			break;
 		case OUTFLOW:
@@ -545,8 +545,8 @@ void NavierStokesCPU::computeDeltaT ( )
 	{
 		for ( int x = 1; x < nx1; ++x )
 		{
-			if( abs( _U[y][x] ) > u_max )
-				u_max = ffabs( _U[y][x] );
+			if( fabs( _U[y][x] ) > u_max )
+				u_max = fabs( _U[y][x] );
 			if( fabs( _V[y][x] ) > v_max )
 				v_max = fabs( _V[y][x] );
 		}
