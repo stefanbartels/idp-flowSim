@@ -189,10 +189,10 @@ class FGKernelsTest : public CLTest
 						// debug output:
 						//printHostMatrix( "CPU F:", _F_h, nx, ny );
 						//printHostMatrix( "GPU F:", _F_buffer, nx, ny );
-						printHostMatrix( "CPU G:", _G_h, nx, ny );
-						printHostMatrix( "GPU G:", _G_buffer, nx, ny );
+						//printHostMatrix( "CPU G:", _G_h, nx, ny );
+						//printHostMatrix( "GPU G:", _G_buffer, nx, ny );
 						//printHostMatrixDifference( "F differences:", _F_h, _F_buffer, nx, ny );
-						printHostMatrixDifference( "G differences:", _G_h, _G_buffer, nx, ny );
+						//printHostMatrixDifference( "G differences:", _G_h, _G_buffer, nx, ny );
 						cleanup();
 						return Error;
 					}

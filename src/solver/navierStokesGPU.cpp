@@ -62,8 +62,6 @@ NavierStokesGPU::~NavierStokesGPU ( )
 	freeHostMatrix( _U_host );
 	freeHostMatrix( _V_host );
 	freeHostMatrix( _P_host );
-
-	// todo free device memory
 }
 
 // -------------------------------------------------

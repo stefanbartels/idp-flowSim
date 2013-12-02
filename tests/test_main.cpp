@@ -12,6 +12,7 @@
 #include "cltests/TimestepKernelTest.h"
 #include "cltests/BoundaryKernelsTest.h"
 #include "cltests/FGKernelsTest.h"
+#include "cltests/RHSKernelTest.h"
 
 //********************************************************************
 //**    implementation
@@ -30,6 +31,7 @@ int main ( int argc, char *argv[] )
 	tests.push_back( new TimestepKernelTest("Timestep kernel test") );
 	tests.push_back( new BoundaryKernelsTest("Boundary kernels test") );
 	tests.push_back( new FGKernelsTest("FG computation kernels test") );
+	tests.push_back( new RHSKernelTest("Right hand side kernel test") );
 
 	unsigned int size = tests.size();
 

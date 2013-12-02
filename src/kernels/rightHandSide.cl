@@ -5,6 +5,9 @@
 //============================================================================
 
 // computes the right-hand side of poisson equation according to formula 3.38
+// this kernel produces different results, probably due to different
+//   floating point precision of GPU and CPU
+
 // todo: try shared local memory for F and G
 
 __kernel void rightHandSideKernel

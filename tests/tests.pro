@@ -17,4 +17,5 @@ HEADERS += \
 	cltests/CLTest.h \
     cltests/TimestepKernelTest.h \
     cltests/BoundaryKernelsTest.h \
-    cltests/FGKernelsTest.h
+    cltests/FGKernelsTest.h \
+    cltests/RHSKernelTest.h
