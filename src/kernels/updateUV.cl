@@ -12,17 +12,17 @@
 
 __kernel void updateUVKernel
 	(
-		__global float* p_g,			// pressure array
-		__global float* f_g,			// F
-		__global float* g_g,			// G
-		__global int*   flag_g,			// array with fluid/boundary cell flags
-		__global float* u_g,			// horizontal velocity
-		__global float* v_g,			// vertical velocity
-		float			dt,				// time step size
-		float			dx,				// length delta x of on cell in x-direction
-		float			dy,				// length delta y of on cell in y-direction
-		int				nx,				// dimension in x direction (including boundaries)
-		int				ny				// dimension in y direction (including boundaries)
+		__global float*			p_g,			// pressure array
+		__global float*			f_g,			// F
+		__global float*			g_g,			// G
+		__global unsigned char*	flag_g,			// array with fluid/boundary cell flags
+		__global float*			u_g,			// horizontal velocity
+		__global float*			v_g,			// vertical velocity
+		float					dt,				// time step size
+		float					dx,				// length delta x of on cell in x-direction
+		float					dy,				// length delta y of on cell in y-direction
+		int						nx,				// dimension in x direction (including boundaries)
+		int						ny				// dimension in y direction (including boundaries)
 	)
 {
 	const unsigned int x   = get_global_id( 0 );

@@ -224,7 +224,7 @@ void NavierStokesCPU::doSimulationStep ( )
 	// poisson overrelaxation loop
 	REAL residual = INFINITY;
 
-	for ( int it = 0; it < _it_max && abs(residual) > _epsilon; ++it )
+	for ( int it = 0; it < _it_max && fabs(residual) > _epsilon; ++it )
 	{
 		// do SOR step (includes residual computation)
 		residual = SORPoisson();
@@ -926,10 +926,10 @@ inline REAL NavierStokesCPU::du2_dx  ( int x, int y, REAL alpha )
 			+
 			alpha *
 			(
-				abs( _U[y][x] + _U[y][x+1] ) *
+				fabs( _U[y][x] + _U[y][x+1] ) *
 				   ( _U[y][x] - _U[y][x+1] )
 				-
-				abs( _U[y][x-1] + _U[y][x] ) *
+				fabs( _U[y][x-1] + _U[y][x] ) *
 				   ( _U[y][x-1] - _U[y][x] )
 			)
 		) / ( 4.0 * _dx);
@@ -950,10 +950,10 @@ inline REAL NavierStokesCPU::dv2_dy  ( int x, int y, REAL alpha )
 			+
 			alpha *
 			(
-				abs( _V[y][x] + _V[y+1][x] ) *
+				fabs( _V[y][x] + _V[y+1][x] ) *
 				   ( _V[y][x] - _V[y+1][x] )
 				-
-				abs( _V[y-1][x] + _V[y][x] ) *
+				fabs( _V[y-1][x] + _V[y][x] ) *
 				   ( _V[y-1][x] - _V[y][x] )
 			)
 		) / ( 4.0 * _dy );
@@ -974,10 +974,10 @@ inline REAL NavierStokesCPU::duv_dx  ( int x, int y, REAL alpha )
 			+
 			alpha *
 			(
-					abs( _U[y][x] + _U[y+1][x] ) *
+					fabs( _U[y][x] + _U[y+1][x] ) *
 					   ( _V[y][x] - _V[y][x+1] )
 					-
-					abs( _U[y][x-1] + _U[y+1][x-1] ) *
+					fabs( _U[y][x-1] + _U[y+1][x-1] ) *
 					   ( _V[y][x-1] - _V[y][x] )
 			)
 		) / ( 4.0 * _dx );
@@ -998,10 +998,10 @@ inline REAL NavierStokesCPU::duv_dy  ( int x, int y, REAL alpha )
 			+
 			alpha *
 			(
-				abs( _V[y][x] + _V[y][x+1] ) *
+				fabs( _V[y][x] + _V[y][x+1] ) *
 				   ( _U[y][x] - _U[y+1][x] )
 				-
-				abs( _V[y-1][x] + _V[y-1][x+1] ) *
+				fabs( _V[y-1][x] + _V[y-1][x+1] ) *
 				   ( _U[y-1][x] - _U[y][x] )
 			)
 		) / ( 4.0 * _dy );

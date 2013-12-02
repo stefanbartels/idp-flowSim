@@ -174,18 +174,18 @@ float duv_dy (
 
 __kernel void computeF
 	(
-		__global float*	u_g,			// horizontal velocity
-		__global float*	v_g,			// horizontal velocity
-		__global int*	flag_g,			// array with fluid/boundary cell flags
-		__global float* f_g,			// storage array for F
-		float 			gx,				// body force in x direction (gravity)
-		float			dt,				// time step size
-		float			re,				// Reynolds number
-		float			alpha,
-		float			dx,				// length delta x of on cell in x-direction
-		float			dy,				// length delta y of on cell in y-direction
-		int				nx,				// dimension in x direction (including boundaries)
-		int				ny				// dimension in y direction (including boundaries)
+		__global float*			u_g,			// horizontal velocity
+		__global float*			v_g,			// horizontal velocity
+		__global unsigned char*	flag_g,			// array with fluid/boundary cell flags
+		__global float*			f_g,			// storage array for F
+		float					gx,				// body force in x direction (gravity)
+		float					dt,				// time step size
+		float					re,				// Reynolds number
+		float					alpha,
+		float					dx,				// length delta x of on cell in x-direction
+		float					dy,				// length delta y of on cell in y-direction
+		int						nx,				// dimension in x direction (including boundaries)
+		int						ny				// dimension in y direction (including boundaries)
 	)
 {
 	const unsigned int x   = get_global_id( 0 );
@@ -196,7 +196,7 @@ __kernel void computeF
 	if( y > 0 &&
 		y < ny - 1 )
 	{
-		if( x > 0 &&
+		 if( x > 0 &&
 			x < nx - 1 )
 		{
 			// compute F between fluid cells only
@@ -234,18 +234,18 @@ __kernel void computeF
 // todo: try local shared memory for u and v
 __kernel void computeG
 	(
-		__global float*	u_g,			// horizontal velocity
-		__global float*	v_g,			// horizontal velocity
-		__global int*	flag_g,			// array with fluid/boundary cell flags
-		__global float* g_g,			// storage array for G
-		float 			gy,				// body force in x direction (gravity)
-		float			dt,				// time step size
-		float			re,				// Reynolds number
-		float			alpha,
-		float			dx,				// length delta x of on cell in x-direction
-		float			dy,				// length delta y of on cell in y-direction
-		int				nx,				// dimension in x direction (including boundaries)
-		int				ny				// dimension in y direction (including boundaries)
+		__global float*			u_g,			// horizontal velocity
+		__global float*			v_g,			// horizontal velocity
+		__global unsigned char*	flag_g,			// array with fluid/boundary cell flags
+		__global float*			g_g,			// storage array for G
+		float					gy,				// body force in x direction (gravity)
+		float					dt,				// time step size
+		float					re,				// Reynolds number
+		float					alpha,
+		float					dx,				// length delta x of on cell in x-direction
+		float					dy,				// length delta y of on cell in y-direction
+		int						nx,				// dimension in x direction (including boundaries)
+		int						ny				// dimension in y direction (including boundaries)
 	)
 {
 	const unsigned int x   = get_global_id( 0 );

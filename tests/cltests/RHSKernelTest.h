@@ -9,8 +9,8 @@
 #include <math.h>
 
 //====================================================================
-/*! \class FGKernelsTest
-	\brief Class for testing F and G computation kernels
+/*! \class RHSKernelTest
+	\brief Class for testing right hand side computation kernels
 */
 //====================================================================
 
