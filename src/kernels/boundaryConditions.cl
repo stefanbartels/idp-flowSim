@@ -47,28 +47,33 @@ __kernel void setBoundaryConditionsKernel
 	const unsigned ny_1 = ny - 1;
 	const unsigned ny_2 = ny - 2;
 
-	if( x < nx && y < ny )
+	if	(
+			x > 0		&&
+			x < nx-1	&&
+			y > 0		&&
+			y < ny-1
+		)
 	{
 		//-----------------------
 		// southern boundary
 		//-----------------------
 
-		if( y == 0 )
+		if( y == 1 )
 		{
 			if( wS == NO_SLIP )
 			{
-				u_g[ idx ] = -u_g[ nx + x ];
-				v_g[ idx ] = 0.0;
+				u_g[ x ] = -u_g[ nx + x ];
+				v_g[ x ] = 0.0;
 			}
 			else if( wS == FREE_SLIP )
 			{
-				u_g[ idx ] = u_g[ nx + x ];
-				v_g[ idx ] = 0.0;
+				u_g[ x ] = u_g[ nx + x ];
+				v_g[ x ] = 0.0;
 			}
 			else if( wS == OUTFLOW )
 			{
-				u_g[ idx ] = u_g[ nx + x ];
-				v_g[ idx ] = v_g[ nx + x ];
+				u_g[ x ] = u_g[ nx + x ];
+				v_g[ x ] = v_g[ nx + x ];
 			}
 		}
 
@@ -76,22 +81,22 @@ __kernel void setBoundaryConditionsKernel
 		// northern boundary
 		//-----------------------
 
-		if( y == ny_1 )
+		if( y == ny_2 )
 		{
 			if( wN == NO_SLIP )
 			{
-				u_g[ idx ]      = -u_g[ idx - nx ];
-				v_g[ idx - nx ] = 0.0;
+				u_g[ idx + nx  ] = -u_g[ idx ];
+				v_g[ idx ]       = 0.0;
 			}
 			else if( wN == FREE_SLIP )
 			{
-				u_g[ idx ]      = u_g[ idx - nx ];
-				v_g[ idx - nx ] = 0.0;
+				u_g[ idx + nx ] = u_g[ idx ];
+				v_g[ idx ]      = 0.0;
 			}
 			else if( wN == OUTFLOW )
 			{
-				u_g[ idx ]      = u_g[ idx - nx ];
-				v_g[ idx - nx ] = v_g[ idx - 2*nx ];
+				u_g[ idx + nx ] = u_g[ idx ];
+				v_g[ idx ]      = v_g[ idx - nx ];
 			}
 		}
 
@@ -99,22 +104,22 @@ __kernel void setBoundaryConditionsKernel
 		// western boundary
 		//-----------------------
 
-		if( x == 0 )
+		if( x == 1 )
 		{
 			if( wW == NO_SLIP )
 			{
-				u_g[ idx ] = 0.0;
-				v_g[ idx ] = -v_g[ idx + 1 ];
+				u_g[ y*nx ] = 0.0;
+				v_g[ y*nx ] = -v_g[ y*nx + 1 ];
 			}
 			else if( wW == FREE_SLIP )
 			{
-				u_g[ idx ] = 0.0;
-				v_g[ idx ] = v_g[ idx + 1 ];
+				u_g[ y*nx ] = 0.0;
+				v_g[ y*nx ] = v_g[ y*nx + 1 ];
 			}
 			else if( wW == OUTFLOW )
 			{
-				u_g[ idx ] = u_g[ idx + 1 ];
-				v_g[ idx ] = v_g[ idx + 1 ];
+				u_g[ y*nx ] = u_g[ y*nx + 1 ];
+				v_g[ y*nx ] = v_g[ y*nx + 1 ];
 			}
 		}
 
@@ -123,22 +128,22 @@ __kernel void setBoundaryConditionsKernel
 		// eastern boundary
 		//-----------------------
 
-		if( x == nx_1 )
+		if( x == nx_2 )
 		{
 			if( wE == NO_SLIP )
 			{
-					u_g[ idx - 1 ] = 0.0;
-					v_g[ idx ]     = -u_g[ idx - 1 ];
+				u_g[ idx ]     = 0.0;
+				v_g[ idx + 1 ] = -v_g[ idx ];
 			}
 			else if( wE == FREE_SLIP )
 			{
-					u_g[ idx - 1 ] = 0.0;
-					v_g[ idx ]     = u_g[ idx - 1 ];
+				u_g[ idx ]    = 0.0;
+				v_g[ idx + 1] = v_g[ idx ];
 			}
 			else if( wE == OUTFLOW )
 			{
-					u_g[ idx - 1 ] = u_g[ idx - 2 ];
-					v_g[ idx ] 	   = v_g[ idx - 1 ];
+				u_g[ idx ]    = u_g[ idx - 1 ];
+				v_g[ idx + 1] = v_g[ idx ];
 			}
 		}
 	}

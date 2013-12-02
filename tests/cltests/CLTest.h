@@ -50,6 +50,16 @@ class CLTest : public Test
 		//! prints a matrix to console
 		void printHostMatrix ( std::string title, REAL** M, int width, int height );
 
+		//! marks differences between two matrices
+		void printHostMatrixDifference
+			(
+				std::string title,
+				REAL **M_1,
+				REAL **M_2,
+				int width,
+				int height
+			);
+
 		//! load one kernel from one file
 		//! compiled kernels can be accessed with _clKernels["kernel name"]
 		void loadKernels ( std::string clfile, std::string kernelName );

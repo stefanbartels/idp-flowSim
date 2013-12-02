@@ -368,14 +368,14 @@ void NavierStokesCPU::setBoundaryConditions ( )
 			for( int y = 1; y < ny1; ++y )
 			{
 				_U[y][_nx] = 0.0;
-				_V[y][nx1] = -_U[y][_nx];
+				_V[y][nx1] = -_V[y][_nx];
 			}
 			break;
 		case FREE_SLIP:
 			for( int y = 1; y < ny1; ++y )
 			{
 				_U[y][_nx] = 0.0;
-				_V[y][nx1] = _U[y][_nx];
+				_V[y][nx1] = _V[y][_nx];
 			}
 			break;
 		case OUTFLOW:

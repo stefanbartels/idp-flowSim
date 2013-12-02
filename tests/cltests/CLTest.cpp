@@ -64,7 +64,33 @@ void CLTest::printHostMatrix
 	{
 		for( int x = 0; x < width; ++x )
 		{
-			std::cout << M[y][x] << " ";
+			std::cout << M[y][x] << "\t";
+		}
+
+		std::cout << std::endl;
+	}
+}
+
+//============================================================================
+void CLTest::printHostMatrixDifference
+	(
+		std::string title,
+		REAL **M_1,
+		REAL **M_2,
+		int width,
+		int height
+	)
+{
+	std::cout << title << std::endl;
+
+	for( int y = 0; y < height; ++y )
+	{
+		for( int x = 0; x < width; ++x )
+		{
+			if( M_1[y][x] == M_2[y][x] )
+				std::cout << ". ";
+			else
+				std::cout << "X ";
 		}
 
 		std::cout << std::endl;

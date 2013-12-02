@@ -133,14 +133,17 @@ class BoundaryKernelsTest : public CLTest
 					if(
 							_U_h[y][x] != _U_buffer[y][x]
 							||
-							_U_h[y][x] != _U_buffer[y][x]
+							_V_h[y][x] != _V_buffer[y][x]
 						)
 					{
 						std::cout << " Kernel \"setBoundaryConditionsKernel\"" << std::endl;
-						printHostMatrix( "CPU U:", _U_h, nx, ny );
-						printHostMatrix( "GPU U:", _U_buffer, nx, ny );
-						printHostMatrix( "CPU V:", _V_h, nx, ny );
-						printHostMatrix( "GPU V:", _V_buffer, nx, ny );
+						// debug output:
+						//printHostMatrix( "CPU U:", _U_h, nx, ny );
+						//printHostMatrix( "GPU U:", _U_buffer, nx, ny );
+						//printHostMatrix( "CPU V:", _V_h, nx, ny );
+						//printHostMatrix( "GPU V:", _V_buffer, nx, ny );
+						//printHostMatrixDifference( "U differences:", _U_h, _U_buffer, nx, ny );
+						//printHostMatrixDifference( "V differences:", _V_h, _V_buffer, nx, ny );
 						cleanup();
 						return Error;
 					}
@@ -274,14 +277,14 @@ class BoundaryKernelsTest : public CLTest
 					for( int y = 1; y < ny1; ++y )
 					{
 						U[y][nx] = 0.0;
-						V[y][nx1] = -U[y][nx];
+						V[y][nx1] = -V[y][nx];
 					}
 					break;
 				case FREE_SLIP:
 					for( int y = 1; y < ny1; ++y )
 					{
 						U[y][nx] = 0.0;
-						V[y][nx1] = U[y][nx];
+						V[y][nx1] = V[y][nx];
 					}
 					break;
 				case OUTFLOW:
