@@ -573,13 +573,16 @@ void NavierStokesCPU::computeFG ( )
 	int nx1 = _nx + 1;
 	int ny1 = _ny + 1;
 
-	// todo: combine loops
-
-	// compute F according to formula 3.36
 	for( int y = 1; y < ny1; ++y )
 	{
 		for( int x = 1; x < _nx; ++x )
 		{
+			//-----------------------
+			// compute F
+			//-----------------------
+
+			// according to formula 3.36
+
 			// compute F between fluid cells only
 			if( _FLAG[y][x] == C_F && _FLAG[y][x+1] == C_F ) // second cell test for not to overwrite boundary values
 			{
@@ -600,14 +603,14 @@ void NavierStokesCPU::computeFG ( )
 				// according to formula 3.42
 				_F[y][x]   = _U[y][x];
 			}
-		}
-	}
 
-	// compute G according to formula 3.37
-	for( int y = 1; y < _ny; ++y )
-	{
-		for( int x = 1; x < nx1; ++x )
-		{
+
+			//-----------------------
+			// compute G
+			//-----------------------
+
+			// according to formula 3.37
+
 			// compute G between fluid cells only
 			if( _FLAG[y][x] == C_F && _FLAG[y+1][x] == C_F )
 			{

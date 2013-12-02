@@ -170,6 +170,8 @@ float duv_dy (
 
 // todo: change u, v and flag to constant memory
 // todo: try local shared memory for u and v
+// todo: reduce kernel range according to guards
+
 __kernel void computeF
 	(
 		__global float*	u_g,			// horizontal velocity
@@ -191,35 +193,37 @@ __kernel void computeF
 	const unsigned int idx = y * nx + x;
 
 	// todo: check guards
-	if( x > 0 &&
-		y > 0 &&
-		x < nx - 1 &&
+	if( y > 0 &&
 		y < ny - 1 )
 	{
-		// compute F between fluid cells only
-		if( flag_g[idx] == C_F && flag_g[idx + 1] == C_F ) // second cell test for not to overwrite boundary values
+		if( x > 0 &&
+			x < nx - 1 )
 		{
-			f_g[idx] =
-				u_g[idx] + dt *
-				(
+			// compute F between fluid cells only
+			if( flag_g[idx] == C_F && flag_g[idx + 1] == C_F ) // second cell test for not to overwrite boundary values
+			{
+				f_g[idx] =
+					u_g[idx] + dt *
 					(
-						d2m_dx2 ( u_g, dx, idx ) +
-						d2m_dy2 ( u_g, dy, idx, nx )
-					) / re
-					- du2_dx ( u_g, dx, alpha, idx )
-					- duv_dy ( u_g, v_g, dy, alpha, idx, nx )
-					+ gx
-				);
+						(
+							d2m_dx2 ( u_g, dx, idx ) +
+							d2m_dy2 ( u_g, dy, idx, nx )
+						) / re
+						- du2_dx ( u_g, dx, alpha, idx )
+						- duv_dy ( u_g, v_g, dy, alpha, idx, nx )
+						+ gx
+					);
+			}
+			else
+			{
+				// according to formula 3.42
+				f_g[idx]   = u_g[idx];
+			}
 		}
 		else
 		{
-			// according to formula 3.42
 			f_g[idx]   = u_g[idx];
 		}
-	}
-	else if( ( x == 0 || x == nx-1 ) && y < ny - 1 )
-	{
-		f_g[idx]   = u_g[idx];
 	}
 }
 
@@ -250,37 +254,37 @@ __kernel void computeG
 
 	// todo: check guards
 	if( x > 0 &&
-		y > 0 &&
-		x < nx - 1 &&
-		y < ny - 1 )
+		x < nx - 1 )
 	{
-		// compute G between fluid cells only
-		if( flag_g[idx] == C_F && flag_g[idx + nx] == C_F ) // second cell test for not to overwrite boundary values
+		if( y > 0 &&
+			y < ny - 1 )
 		{
-			g_g[idx] =
-				v_g[idx] + dt *
-				(
+			// compute G between fluid cells only
+			if( flag_g[idx] == C_F && flag_g[idx + nx] == C_F ) // second cell test for not to overwrite boundary values
+			{
+				g_g[idx] =
+					v_g[idx] + dt *
 					(
-						d2m_dx2 ( v_g, dx, idx ) +
-						d2m_dy2 ( v_g, dy, idx, nx )
-					) / re
-					- dv2_dy ( v_g, dx, alpha, idx, nx )
-					- duv_dx ( u_g, v_g, dy, alpha, idx, nx )
-					+ gy
-				);
+						(
+							d2m_dx2 ( v_g, dx, idx ) +
+							d2m_dy2 ( v_g, dy, idx, nx )
+						) / re
+						- dv2_dy ( v_g, dx, alpha, idx, nx )
+						- duv_dx ( u_g, v_g, dy, alpha, idx, nx )
+						+ gy
+					);
+			}
+			else
+			{
+				// according to formula 3.42
+				g_g[idx]   = v_g[idx];
+			}
 		}
 		else
 		{
-			// according to formula 3.42
 			g_g[idx]   = v_g[idx];
-
-			// boundary values for arbitrary geometries
-			// todo: might be not necessary
 		}
 	}
-	else if( ( y == 0 || y == ny-1 ) && x < nx - 1 )
-	{
-		g_g[idx]   = v_g[idx];
-	}
+
 }
 

@@ -271,7 +271,7 @@ class BoundaryKernelsTest : public CLTest
 			_clQueue.enqueueNDRangeKernel (
 					_clKernels["setMovingLidBoundaryConditionsKernel"],
 					cl::NullRange,			// offset
-					cl::NDRange( nx, ny ),	// global,
+					cl::NDRange( nx, 1 ),	// global,
 					cl::NullRange			// local,
 				);
 
@@ -309,6 +309,58 @@ class BoundaryKernelsTest : public CLTest
 
 
 
+
+
+
+
+			//-----------------------
+			// setLeftInflowBoundaryConditionsKernel
+			//-----------------------
+
+			// set kernel arguments
+			_clKernels["setLeftInflowBoundaryConditionsKernel"].setArg( 0, U_g );
+			_clKernels["setLeftInflowBoundaryConditionsKernel"].setArg( 1, sizeof(int), &nx );
+			_clKernels["setLeftInflowBoundaryConditionsKernel"].setArg( 2, sizeof(int), &ny );
+
+			// call kernel
+			_clQueue.enqueueNDRangeKernel (
+					_clKernels["setLeftInflowBoundaryConditionsKernel"],
+					cl::NullRange,			// offset
+					cl::NDRange( 1, ny ),	// global,
+					cl::NullRange			// local,
+				);
+
+			_clQueue.finish();
+
+			// get result
+			_clQueue.enqueueReadBuffer( U_g, CL_TRUE, 0, sizeof(cl_float) * size, *_U_buffer );
+
+			// set boundary conditions on CPU
+			for ( int y = 1; y < ny; ++y )
+			{
+				_U_h[y][0] = 1.0;
+			}
+
+			// compare results
+			for( int y = 0; y < ny; ++y )
+			{
+				for( int x = 0; x < nx; ++x )
+				{
+					if(
+							(REAL)_U_h[y][x] != (REAL)_U_buffer[y][x]
+						)
+					{
+						std::cout << " Kernel \"setLeftInflowBoundaryConditionsKernel\"" << std::endl;
+						// debug output:
+						//printHostMatrix( "CPU U:", _U_h, nx, ny );
+						//printHostMatrix( "GPU U:", _U_buffer, nx, ny );
+						//printHostMatrixDifference( "U differences:", _U_h, _U_buffer, nx, ny );
+
+						cleanup();
+						return Error;
+					}
+				}
+			}
 
 
 

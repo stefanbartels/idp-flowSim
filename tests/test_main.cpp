@@ -11,6 +11,7 @@
 #include "cltests/AuxiliaryKernelsTest.h"
 #include "cltests/TimestepKernelTest.h"
 #include "cltests/BoundaryKernelsTest.h"
+#include "cltests/FGKernelsTest.h"
 
 //********************************************************************
 //**    implementation
@@ -25,9 +26,10 @@ int main ( int argc, char *argv[] )
 	std::cout << std::endl;
 
 	// add all tests
-	tests.push_back( new AuxiliaryKernelsTest("AuxiliaryKernelsTest") );
-	tests.push_back( new TimestepKernelTest("TimestepKernelTest") );
-	tests.push_back( new BoundaryKernelsTest("BoundaryKernelsTest") );
+	tests.push_back( new AuxiliaryKernelsTest("Auxiliary kernels test") );
+	tests.push_back( new TimestepKernelTest("Timestep kernel test") );
+	tests.push_back( new BoundaryKernelsTest("Boundary kernels test") );
+	tests.push_back( new FGKernelsTest("FG computation kernels test") );
 
 	unsigned int size = tests.size();
 
