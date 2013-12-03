@@ -95,8 +95,8 @@ class FGKernelsTest : public CLTest
 			{
 				for( int x = 0; x < nx; ++x )
 				{
-					_U_h[y][x] = (REAL(rand()) / REAL(RAND_MAX)) * 20.0 -10.0;
-					_V_h[y][x] = (REAL(rand()) / REAL(RAND_MAX)) * 20.0 -10.0;
+					_U_h[y][x] = (REAL(rand()) / REAL(RAND_MAX)) * 20.0 - 10.0;
+					_V_h[y][x] = (REAL(rand()) / REAL(RAND_MAX)) * 20.0 - 10.0;
 					_F_h[y][x] = 99;
 					_G_h[y][x] = 99;
 					FLAG_h[y][x] = C_F;
@@ -186,7 +186,7 @@ class FGKernelsTest : public CLTest
 							_G_h[y][x] != _G_buffer[y][x]
 					   )
 					{
-						std::cout << " Kernel \"computeF\" suffers from different float precision" << std::endl;
+						std::cout << " Kernel \"computeF\" suffers from different float precision difference" << std::endl;
 						// debug output:
 						//printHostMatrix( "CPU F:", _F_h, nx, ny );
 						//printHostMatrix( "GPU F:", _F_buffer, nx, ny );
@@ -231,8 +231,6 @@ class FGKernelsTest : public CLTest
 
 			int nx1 = nx + 1;
 			int ny1 = ny + 1;
-			int nx2 = nx + 2;
-			int ny2 = ny + 2;
 
 			for( int y = 1; y < ny1; ++y )
 			{

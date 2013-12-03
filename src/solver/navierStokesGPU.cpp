@@ -535,7 +535,7 @@ void NavierStokesGPU::computeDeltaT ( )
 		_clKernels[5].setArg( 2, results_g );
 
 		// call min/max reduction kernel
-		// todo: call with range: ( _clWorkgroupSize < SIZE ? _clWorkgroupSize : SIZE )
+		// todo: determine optimal work size N: N = x^2, N<=max_work_size, SIZE<=max_work_size ? N>=SIZE
 		_clQueue.enqueueNDRangeKernel (
 					_clKernels[5],
 					cl::NullRange,
@@ -690,6 +690,7 @@ REAL NavierStokesGPU::SORPoisson()
 		_clKernels[11].setArg( 2, result_g );
 
 		// call pressureResidualReductionKernel
+		// todo: determine optimal work size N: N = x^2, N<=max_work_size, SIZE<=max_work_size ? N>=SIZE
 		_clQueue.enqueueNDRangeKernel (
 						_clKernels[11],
 						cl::NullRange,

@@ -151,7 +151,7 @@ class UpdateUVKernelTest : public CLTest
 							_V_h[y][x] != _V_buffer[y][x]
 					   )
 					{
-						std::cout << " Kernel \"updateUVKernel\" suffers from different float precision" << std::endl;
+						std::cout << " Kernel \"updateUVKernel\" suffers from different float precision difference" << std::endl;
 						// debug output:
 						//printHostMatrix( "CPU U:", _U_h, nx, ny );
 						//printHostMatrix( "GPU U:", _U_buffer, nx, ny );

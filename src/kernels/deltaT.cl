@@ -7,7 +7,7 @@
 /*
  * this is not a ranged kernel and is to be called for just one workgroup
  * todo: seems to be very inefficient
- * todo: call with range: ( local_work_size < SIZE ? local_work_size : SIZE )
+ * todo: determine optimal work size N: N = x^2, N<=max_work_size, SIZE<=max_work_size ? N>=SIZE
  *
  * only for arrays without pitch
  * uses a two step reduction algorithm
@@ -43,10 +43,10 @@ __kernel void getUVMaximumKernel
 		while( i < limit )
 		{
 			temp = fabs( u_g[i] );
-			local_max_u = ( temp > local_max_u ) ? temp : local_max_u;
+			local_max_u = ( temp > local_max_u ) ? temp : local_max_u;	// todo: use fmax
 
 			temp = fabs( v_g[i] );
-			local_max_v = ( temp > local_max_v ) ? temp : local_max_v;
+			local_max_v = ( temp > local_max_v ) ? temp : local_max_v;	// todo: use fmax
 
 			i += local_size;
 		}
@@ -68,13 +68,13 @@ __kernel void getUVMaximumKernel
 		{
 			if( idx_local < offset )
 			{
-      			temp  = u_s[idx_local];
+				temp  = u_s[idx_local];
 				temp2 = u_s[idx_local + offset];
-				u_s[ idx_local ] = (temp > temp2) ? temp : temp2;
+				u_s[ idx_local ] = (temp > temp2) ? temp : temp2;	// todo: use fmax
 
-      			temp  = v_s[idx_local];
+				temp  = v_s[idx_local];
 				temp2 = v_s[idx_local + offset];
-				v_s[ idx_local ] = (temp > temp2) ? temp : temp2;
+				v_s[ idx_local ] = (temp > temp2) ? temp : temp2;	// todo: use fmax
 			}
 		}
 

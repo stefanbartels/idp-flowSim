@@ -128,7 +128,7 @@ class RHSKernelTest : public CLTest
 				{
 					if( _RHS_h[y][x] != _RHS_buffer[y][x] )
 					{
-						std::cout << " Kernel \"rightHandSideKernel\" suffers from different float precision" << std::endl;
+						std::cout << " Kernel \"rightHandSideKernel\" suffers from different float precision difference" << std::endl;
 						// debug output:
 						//printHostMatrix( "CPU RHS:", _RHS_h, nx, ny );
 						//printHostMatrix( "GPU RHS:", _RHS_buffer, nx, ny );

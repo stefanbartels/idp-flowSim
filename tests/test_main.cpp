@@ -13,7 +13,7 @@
 #include "cltests/BoundaryKernelsTest.h"
 #include "cltests/FGKernelsTest.h"
 #include "cltests/RHSKernelTest.h"
-
+#include "cltests/PressureEquationKernelTest.h"
 #include "cltests/UpdateUVKernelTest.h"
 
 //********************************************************************
@@ -34,7 +34,7 @@ int main ( int argc, char *argv[] )
 	tests.push_back( new BoundaryKernelsTest("Boundary kernels test") );
 	tests.push_back( new FGKernelsTest("FG computation kernels test") );
 	tests.push_back( new RHSKernelTest("Right hand side kernel test") );
-
+	tests.push_back( new PressureEquationKernelTest("Pressure equation test") );
 	tests.push_back( new UpdateUVKernelTest("UV update kernel test") );
 
 	unsigned int size = tests.size();
