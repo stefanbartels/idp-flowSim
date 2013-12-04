@@ -9,9 +9,9 @@ class VTKWriter : public Viewer
 		VTKWriter();
 
 		void renderFrame (
-				double** U,
-				double** V,
-				double** P,
+				REAL** U,
+				REAL** V,
+				REAL** P,
 				int nx,
 				int ny,
 				int it

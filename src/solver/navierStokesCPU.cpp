@@ -10,14 +10,6 @@
 
 #include <iostream>
 
-using namespace std;
-
-// todo: use enum instead of defines?
-#define FREE_SLIP	1
-#define NO_SLIP		2
-#define OUTFLOW 	3
-#define PERIODIC	4
-
 //********************************************************************
 //**    implementation
 //********************************************************************
@@ -35,15 +27,15 @@ NavierStokesCPU::NavierStokesCPU ( )
 //============================================================================
 NavierStokesCPU::~NavierStokesCPU()
 {
-	freeMatrix( _U );
-	freeMatrix( _V );
-	freeMatrix( _P );
-	freeMatrix( _RHS );
-	freeMatrix( _F );
-	freeMatrix( _G );
+	freeHostMatrix( _U );
+	freeHostMatrix( _V );
+	freeHostMatrix( _P );
+	freeHostMatrix( _RHS );
+	freeHostMatrix( _F );
+	freeHostMatrix( _G );
 
-	delete [] _FLAG[0];
-	delete [] _FLAG;
+	free( _FLAG[0] );
+	free( _FLAG );
 }
 
 // -------------------------------------------------
@@ -55,29 +47,29 @@ void NavierStokesCPU::init ( )
 {
 	// allocate memory for matrices U, V, P, RHS, F, G
 
-	_U   = allocMatrix ( _nx + 2, _ny + 2 );
-	_V   = allocMatrix ( _nx + 2, _ny + 2 );
-	_P   = allocMatrix ( _nx + 2, _ny + 2 );
-	_RHS = allocMatrix ( _nx + 2, _ny + 2 );
-	_F   = allocMatrix ( _nx + 2, _ny + 2 );
-	_G   = allocMatrix ( _nx + 2, _ny + 2 );
+	_U   = allocHostMatrix ( _nx + 2, _ny + 2 );
+	_V   = allocHostMatrix ( _nx + 2, _ny + 2 );
+	_P   = allocHostMatrix ( _nx + 2, _ny + 2 );
+	_RHS = allocHostMatrix ( _nx + 2, _ny + 2 );
+	_F   = allocHostMatrix ( _nx + 2, _ny + 2 );
+	_G   = allocHostMatrix ( _nx + 2, _ny + 2 );
 
 	// initialise matrices with 0.0
 	// todo: might not be neccessary
 
-	setMatrix ( _U, 0, _nx + 1, 0, _ny + 1, 0.0 );
-	setMatrix ( _V, 0, _nx + 1, 0, _ny + 1, 0.0 );
-	setMatrix ( _P, 0, _nx + 1, 0, _ny + 1, 0.0 );
+	setHostMatrix ( _U, 0, _nx + 1, 0, _ny + 1, 0.0 );
+	setHostMatrix ( _V, 0, _nx + 1, 0, _ny + 1, 0.0 );
+	setHostMatrix ( _P, 0, _nx + 1, 0, _ny + 1, 0.0 );
 
-	setMatrix ( _RHS, 0, _nx + 1, 0, _ny + 1, 0.0 );
-	setMatrix ( _F,	  0, _nx + 1, 0, _ny + 1, 0.0 );
-	setMatrix ( _G,   0, _nx + 1, 0, _ny + 1, 0.0 );
+	setHostMatrix ( _RHS, 0, _nx + 1, 0, _ny + 1, 0.0 );
+	setHostMatrix ( _F,	  0, _nx + 1, 0, _ny + 1, 0.0 );
+	setHostMatrix ( _G,   0, _nx + 1, 0, _ny + 1, 0.0 );
 
 	// initialise interior cells of U, V and P with given initial values
 
-	setMatrix ( _U, 1, _nx, 1, _ny, _ui );
-	setMatrix ( _V, 1, _nx, 1, _ny, _vi );
-	setMatrix ( _P, 1, _nx, 1, _ny, _pi );
+	setHostMatrix ( _U, 1, _nx, 1, _ny, _ui );
+	setHostMatrix ( _V, 1, _nx, 1, _ny, _vi );
+	setHostMatrix ( _P, 1, _nx, 1, _ny, _pi );
 }
 
 //============================================================================
@@ -230,12 +222,12 @@ void NavierStokesCPU::doSimulationStep ( )
 	computeRightHandSide();
 
 	// poisson overrelaxation loop
-	double residual = INFINITY;
+	REAL residual = INFINITY;
 
 	for ( int it = 0; it < _it_max && fabs(residual) > _epsilon; ++it )
 	{
 		// do SOR step (includes residual computation)
-		residual =  SORPoisson();
+		residual = SORPoisson();
 	}
 
 	// compute U(n+1) and V(n+1)
@@ -248,19 +240,19 @@ void NavierStokesCPU::doSimulationStep ( )
 // -------------------------------------------------
 
 //============================================================================
-double** NavierStokesCPU::getU_CPU()
+REAL** NavierStokesCPU::getU_CPU()
 {
 	return _U;
 }
 
 //============================================================================
-double** NavierStokesCPU::getV_CPU()
+REAL** NavierStokesCPU::getV_CPU()
 {
 	return _V;
 }
 
 //============================================================================
-double** NavierStokesCPU::getP_CPU()
+REAL** NavierStokesCPU::getP_CPU()
 {
 	return _P;
 }
@@ -427,6 +419,11 @@ void NavierStokesCPU::setBoundaryConditions ( )
 	 */
 
 	// loop over interior cells
+	// todo: at corners (fluid cell with walls at two adjecent walls) the velocity value
+	//       inside the corner is dependent on the order the cells are processed.
+	//       As no wall is allowed to be between two fluid cells, this should not matter,
+	//       but leads to different values on the GPU.
+	//        => check if it really doesn't matter
 
 	for( int y = 1; y < ny1; ++y )
 	{
@@ -507,7 +504,7 @@ void NavierStokesCPU::setSpecificBoundaryConditions ( )
 
 	if ( _problem == "moving_lid" )
 	{
-		//const double lid_velocity = 1.0;
+		//const REAL lid_velocity = 1.0;
 		for ( int x = 1; x < _nx + 1; ++x )
 		{
 			_U[0][x] = 2.0 - _U[1][x];
@@ -532,8 +529,8 @@ void NavierStokesCPU::computeDeltaT ( )
 {
 	// compute delta t according to formula 3.50
 
-	double u_max = 0.0, v_max = 0.0;
-	double opt_a, opt_x, opt_y, min;
+	REAL u_max = 0.0, v_max = 0.0;
+	REAL opt_a, opt_x, opt_y, min;
 
 	// get u_max and v_max: iterate over arrays U and V (same size => one loop)
 
@@ -570,7 +567,7 @@ void NavierStokesCPU::computeFG ( )
 {
 	// y coordinates are counted from lower left edge
 
-	double alpha = 0.9; // todo: select alpha
+	REAL alpha = 0.9; // todo: select alpha
 
 	// faster than comparing using <=
 	int nx1 = _nx + 1;
@@ -720,7 +717,7 @@ void NavierStokesCPU::computeRightHandSide ( )
 }
 
 //============================================================================
-int NavierStokesCPU::SORPoisson ( )
+REAL NavierStokesCPU::SORPoisson ( )
 {
 	int nx1 = _nx + 1;
 	int ny1 = _ny + 1;
@@ -729,10 +726,12 @@ int NavierStokesCPU::SORPoisson ( )
 	// so a mixture of values from timestep n and n+1 is used
 
 	// the epsilon-parameters in formula 3.44 are set to 1.0 according to page 38
-	double constant_expr = _omega / ( 2.0 / (_dx * _dx) + 2.0 / (_dy * _dy) );
+	REAL constant_expr = _omega / ( 2.0 / (_dx * _dx) + 2.0 / (_dy * _dy) );
+	// REAL constant_expr = _omega / ( 2.0 * (1.0 / (_dx * _dx) + 1.0 / (_dy * _dy)) );
 
-	double dx2 = _dx * _dx;
-	double dy2 = _dy * _dy;
+
+	REAL dx2 = _dx * _dx;
+	REAL dy2 = _dy * _dy;
 
 	//-----------------------
 	// SOR step
@@ -748,8 +747,8 @@ int NavierStokesCPU::SORPoisson ( )
 			if( _FLAG[y][x] == C_F )
 			{
 				_P[y][x] =
-					( 1 - _omega ) * _P[y][x] + constant_expr *
-					(
+					( 1.0 - _omega ) * _P[y][x] +
+					constant_expr * (
 						( _P[y][x-1] + _P[y][x+1] ) / dx2
 						+
 						( _P[y-1][x] + _P[y+1][x] ) / dy2
@@ -776,6 +775,7 @@ int NavierStokesCPU::SORPoisson ( )
 						break;
 					case B_NW:
 						_P[y][x] = (_P[y-1][x] + _P[y][x+1]) / 2;
+						//_P[y][x] = (_P[y+1][x] + _P[y][x-1]) / 2;	// todo is this more correct?
 						break;
 					case B_NE:
 						_P[y][x] = (_P[y+1][x] + _P[y][x+1]) / 2;
@@ -785,6 +785,7 @@ int NavierStokesCPU::SORPoisson ( )
 						break;
 					case B_SE:
 						_P[y][x] = (_P[y+1][x] + _P[y][x-1]) / 2;
+						//_P[y][x] = (_P[y-1][x] + _P[y][x+1]) / 2;	// todo is this more correct? Karman not working any longer with this line!
 						break;
 				}
 			}
@@ -797,6 +798,9 @@ int NavierStokesCPU::SORPoisson ( )
 
 	// according to formula 3.41
 	// 3.48 instead? (=> before SOR step)
+	// only Neumann
+	// todo: implement dirichlet and periodic
+
 	for ( int x = 1; x < nx1; ++x )
 	{
 		_P[0][x]   = _P[1][x];
@@ -815,8 +819,8 @@ int NavierStokesCPU::SORPoisson ( )
 
 	// compute residual using L²-Norm (according to formula 3.45 and 3.46)
 
-	double tmp;
-	double sum = 0.0;
+	REAL tmp;
+	REAL sum = 0.0;
 	int numCells = 0;
 
 	for ( int y = 1; y < ny1; ++y )
@@ -829,6 +833,11 @@ int NavierStokesCPU::SORPoisson ( )
 					  ( ( _P[y][x+1] - _P[y][x] ) - ( _P[y][x] - _P[y][x-1] ) ) / dx2
 					+ ( ( _P[y+1][x] - _P[y][x] ) - ( _P[y][x] - _P[y-1][x] ) ) / dy2
 					- _RHS[y][x];
+
+				//tmp =
+				//	  ( _P[y][x+1] - 2.0 * _P[y][x] + _P[y][x-1] ) / dx2
+				//	+ ( _P[y+1][x] - 2.0 * _P[y][x] + _P[y-1][x] ) / dy2
+				//	- _RHS[y][x];
 
 				sum += tmp * tmp;
 
@@ -850,8 +859,8 @@ void NavierStokesCPU::adaptUV ( )
 	int nx1 = _nx + 1;
 	int ny1 = _ny + 1;
 
-	double dt_dx = _dt / _dx;
-	double dt_dy = _dt / _dy;
+	REAL dt_dx = _dt / _dx;
+	REAL dt_dy = _dt / _dy;
 
 	// update u. two nested loops because of different limits
 	for ( int y = 1; y < ny1; ++y )
@@ -888,23 +897,23 @@ void NavierStokesCPU::adaptUV ( )
 
 
 // -------------------------------------------------
-//	F & G helper functions
+//	auxiliary functions for F & G
 // -------------------------------------------------
 
 //============================================================================
-inline double NavierStokesCPU::d2m_dx2 ( double** M, int x, int y )
+inline REAL NavierStokesCPU::d2m_dx2 ( REAL** M, int x, int y )
 {
 	return ( M[y][x-1] - 2.0 * M[y][x] + M[y][x+1] ) / ( _dx * _dx );
 }
 
 //============================================================================
-inline double NavierStokesCPU::d2m_dy2 ( double** M, int x, int y )
+inline REAL NavierStokesCPU::d2m_dy2 ( REAL** M, int x, int y )
 {
 	return ( M[y-1][x] - 2.0 * M[y][x] + M[y+1][x] ) / ( _dy * _dy );
 }
 
 //============================================================================
-inline double NavierStokesCPU::du2_dx  ( int x, int y, double alpha )
+inline REAL NavierStokesCPU::du2_dx  ( int x, int y, REAL alpha )
 {
 	return
 		(
@@ -928,7 +937,7 @@ inline double NavierStokesCPU::du2_dx  ( int x, int y, double alpha )
 }
 
 //============================================================================
-inline double NavierStokesCPU::dv2_dy  ( int x, int y, double alpha )
+inline REAL NavierStokesCPU::dv2_dy  ( int x, int y, REAL alpha )
 {
 	return
 		(
@@ -952,7 +961,7 @@ inline double NavierStokesCPU::dv2_dy  ( int x, int y, double alpha )
 }
 
 //============================================================================
-inline double NavierStokesCPU::duv_dx  ( int x, int y, double alpha )
+inline REAL NavierStokesCPU::duv_dx  ( int x, int y, REAL alpha )
 {
 	return
 		(
@@ -976,7 +985,7 @@ inline double NavierStokesCPU::duv_dx  ( int x, int y, double alpha )
 }
 
 //============================================================================
-inline double NavierStokesCPU::duv_dy  ( int x, int y, double alpha )
+inline REAL NavierStokesCPU::duv_dy  ( int x, int y, REAL alpha )
 {
 	return
 		(
@@ -997,64 +1006,4 @@ inline double NavierStokesCPU::duv_dy  ( int x, int y, double alpha )
 				   ( _U[y-1][x] - _U[y][x] )
 			)
 		) / ( 4.0 * _dy );
-}
-
-
-
-// -------------------------------------------------
-//	helper functions
-// -------------------------------------------------
-
-//============================================================================
-double** NavierStokesCPU::allocMatrix (
-		int	width,
-		int	height
-	)
-{
-	// array of pointers to rows
-	double** rows = (double**)malloc( height * sizeof( double* ) );
-
-	// the actual data array. allocation for all rows at once to get continuous memory
-	double* matrix = (double*)malloc( width * height * sizeof( double ) );
-
-	rows[0] = matrix;
-	for ( int i = 1; i < height; ++i )
-	{
-		rows[i] = matrix + i * width;
-	}
-
-	return rows;
-}
-
-//============================================================================
-void NavierStokesCPU::setMatrix (
-		double**	matrix,
-		int			xStart,
-		int			xStop,
-		int			yStart,
-		int			yStop,
-		double		value
-	)
-{
-	// faster than comparing using <=
-	++xStop;
-	++yStop;
-
-	for ( int y = yStart; y < yStop; ++y )
-	{
-		for( int x = xStart; x < xStop; ++x )
-		{
-			matrix[y][x] = value;
-		}
-	}
-}
-
-//============================================================================
-void NavierStokesCPU::freeMatrix( double **matrix )
-{
-	// delete data array
-	delete [] matrix[0];
-
-	// delete row array
-	delete [] matrix;
 }

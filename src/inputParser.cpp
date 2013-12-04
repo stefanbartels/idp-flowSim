@@ -9,8 +9,6 @@
 #include <cstdlib>
 #include <stdio.h>
 
-using namespace std;
-
 //********************************************************************
 //**    implementation
 //********************************************************************
@@ -50,17 +48,17 @@ bool InputParser::readParameters
 	)
 {
 	// open input file
-	ifstream file( fileName );
+	std::ifstream file( fileName );
 
 	if ( file.fail() || !file.is_open() )
 	{
-		cerr << "\nCould not open parameter file \"" << fileName << "\"";
+		std::cerr << "Could not open parameter file \"" << fileName << "\"" << std::endl;
 		return false;
 	}
 
-	string	buffer;
-	int		i_buffer;
-	double	d_buffer;
+	std::string	buffer;
+	int			i_buffer;
+	REAL		d_buffer;
 
 	int line = 0;
 	int numReadValues = 0;
@@ -217,21 +215,21 @@ bool InputParser::readParameters
 		}
 		else if ( buffer == "problem" )
 		{
-			string s_buffer;
+			std::string s_buffer;
 			file >> s_buffer;
 			parameters->problem = s_buffer;
 			++numReadValues;
 		}
 		else if ( buffer == "map" )
 		{
-			string s_buffer;
+			std::string s_buffer;
 			file >> s_buffer;
 			parameters->obstacleFile = s_buffer;
 			++numReadValues;
 		}
 		else // unknown parameter
 		{
-			cerr << "\nUnknown parameter \"" << buffer << "\".\nPlease check yout input file!";
+			std::cerr << "Unknown parameter \"" << buffer << "\". Please check yout input file!" << std::endl;
 			file.close();
 			return false;
 		}
@@ -247,13 +245,13 @@ bool InputParser::readParameters
 
 	if ( !file.eof() )
 	{
-		cerr << "\nAborted parameter parsing after line " << line << ".";
+		std::cerr << "Aborted parameter parsing after line " << line << "." << std::endl;
 		// return false;
 	}
 
 	if ( file.bad() )
 	{
-		cerr << "\nParameter file corrupted.";
+		std::cerr << "Parameter file corrupted." << std::endl;
 		return false;
 	}
 
@@ -262,13 +260,13 @@ bool InputParser::readParameters
 	// no values found? => no valid parameter file
 	if ( numReadValues == 0 )
 	{
-		cerr << "\nNo valid parameter file.";
+		std::cerr << "No valid parameter file." << std::endl;
 		return false;
 	}
 	// not all values given? =>	using standard values for missing parameters
 	else if ( numReadValues < 22 )
 	{
-		cerr << "\nUsing standard values for missing parameters.\nPlease check yout input file!";
+		std::cerr << "Using standard values for missing parameters. Please check yout input file!" << std::endl;
 	}
 
 	// done
@@ -313,13 +311,13 @@ bool** allocateObstacleMap
 //============================================================================
 bool InputParser::readObstacleMap
 	(
-		bool***	obstacleMap,
-		int		width,
-		int		height,
-		string	fileName
+		bool***		obstacleMap,
+		int			width,
+		int			height,
+		std::string	fileName
 	)
 {
-	string buffer;
+	std::string buffer;
 	int i_buffer;
 
 	int pgm_width, pgm_height;
@@ -337,7 +335,9 @@ bool InputParser::readObstacleMap
 
 	if( fileName.compare("") == 0 )
 	{
-		cerr << "\nCreating empty map...";
+		#if VERBOSE
+			std::cout << "Creating empty map..." << std::endl;
+		#endif
 
 		map = allocateObstacleMap( width, height );
 
@@ -374,11 +374,11 @@ bool InputParser::readObstacleMap
 	// open obstacle map file
 	//-----------------------
 
-	ifstream file( fileName.c_str() );
+	std::ifstream file( fileName.c_str() );
 
 	if ( file.fail() || !file.is_open() )
 	{
-		cerr << "\nCould not open obstacle map file \"" << fileName << "\"";
+		std::cerr << "Could not open obstacle map file \"" << fileName << "\"" << std::endl;
 		return false;
 	}
 
@@ -400,7 +400,7 @@ bool InputParser::readObstacleMap
 	}
 	else
 	{
-		cerr << "\nObstacle map is no compatible PGM image! Supported types: P2 and P5";
+		std::cerr << "Obstacle map is no compatible PGM image! Supported types: P2 and P5" << std::endl;
 		file.close();
 		return false;
 	}
@@ -426,8 +426,9 @@ bool InputParser::readObstacleMap
 
 	if( pgm_width != width || pgm_height != height )
 	{
-		cerr << "\nObstacle map does not fit domain size!\nDomain size: " << width << "x" << height <<
-				"\nPGM size: " << pgm_width << "x" << pgm_height;
+		std::cerr << "Obstacle map does not fit domain size!" << std::endl
+				  << "Domain size: " << width << "*" << height << std::endl
+				  << "PGM size: " << pgm_width << "x" << pgm_height << std::endl;
 		file.close();
 		return false;
 	}
@@ -524,35 +525,35 @@ void InputParser::printParameters
 		ProblemParameters *parameters
 	)
 {
-	cout << "\n====================\nParameter set:";
+	std::cout << "====================" << std::endl << "Parameter set:" << std::endl;
 
-	cout << "\nDomain size:\t" << parameters->xlength << " x " << parameters->ylength;
-	cout << "\nGrid size:\t" << parameters->nx << " x " << parameters->ny;
+	std::cout << "Domain size:\t" << parameters->xlength << " x " << parameters->ylength << std::endl;
+	std::cout << "Grid size:\t" << parameters->nx << " x " << parameters->ny << std::endl;
 
-	cout << "\nTime step Δt:\t" << parameters->dt;
-	cout << "\nSafety factor τ:\t" << parameters->tau;
+	std::cout << "Time step Δt:\t" << parameters->dt << std::endl;
+	std::cout << "Safety factor τ:\t" << parameters->tau << std::endl;
 
-	cout << "\nMax. SOR iterations:\t" << parameters->it_max;
+	std::cout << "Max. SOR iterations:\t" << parameters->it_max << std::endl;
 
-	cout << "\nε:\t" << parameters->epsilon;
-	cout << "\nω:\t" << parameters->omega;
-	cout << "\nγ:\t" << parameters->gamma;
+	std::cout << "ε:\t" << parameters->epsilon << std::endl;
+	std::cout << "ω:\t" << parameters->omega << std::endl;
+	std::cout << "γ:\t" << parameters->gamma << std::endl;
 
-	cout << "\nReynolds number:\t" << parameters->re;
-	cout << "\nGravity X:\t" << parameters->gx;
-	cout << "\nGravity Y:\t" << parameters->gy;
+	std::cout << "Reynolds number:\t" << parameters->re << std::endl;
+	std::cout << "Gravity X:\t" << parameters->gx << std::endl;
+	std::cout << "Gravity Y:\t" << parameters->gy << std::endl;
 
-	cout << "\nInitial horizontal velocity:\t" << parameters->ui;
-	cout << "\nInitial vertical velocity:\t" << parameters->vi;
-	cout << "\nInitial pressure:\t" << parameters->pi;
+	std::cout << "Initial horizontal velocity:\t" << parameters->ui << std::endl;
+	std::cout << "Initial vertical velocity:\t" << parameters->vi << std::endl;
+	std::cout << "Initial pressure:\t" << parameters->pi << std::endl;
 
-	cout << "\nNorthern boundary:\t" << parameters->wN;
-	cout << "\nSouthern boundary:\t" << parameters->wS;
-	cout << "\nWestern boundary:\t" << parameters->wW;
-	cout << "\nEastern boundary:\t" << parameters->wE;
-	cout << "\n(1: free slip, 2: no slip, 3: outflow, 4: periodic)";
+	std::cout << "Northern boundary:\t" << parameters->wN << std::endl;
+	std::cout << "Southern boundary:\t" << parameters->wS << std::endl;
+	std::cout << "Western boundary:\t" << parameters->wW << std::endl;
+	std::cout << "Eastern boundary:\t" << parameters->wE << std::endl;
+	std::cout << "(1: free slip, 2: no slip, 3: outflow, 4: periodic)";
 
-	cout << "\nProblem:\t" << parameters->problem;
-	cout << "\nObstacle map:\t" << parameters->obstacleFile;
-	cout << "\n====================";
+	std::cout << "Problem:\t" << parameters->problem << std::endl;
+	std::cout << "Obstacle map:\t" << parameters->obstacleFile << std::endl;
+	std::cout << "====================" << std::endl;
 }

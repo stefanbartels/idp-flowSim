@@ -3,28 +3,7 @@
 
 #include <string>
 #include "../inputParser.h"
-
-/*
- * obstacle map data values
- * ----------------------------------------------------
- * | 0 | 0 | 0 | center | east | west | south | north |
- * ----------------------------------------------------
- *
- * 1 = fluid cell
- * 0 = obstacle cell
- */
-#define C_F		0x10	// 000 10000
-#define C_B		0x00	// 000 00000
-
-#define B_N		0x01	// 000 00001
-#define B_S		0x02	// 000 00010
-#define B_W		0x04	// 000 00100
-#define B_E		0x08	// 000 01000
-
-#define B_NW	0x05	// 000 00101
-#define B_NE	0x09	// 000 01001
-#define B_SW	0x06	// 000 00110
-#define B_SE	0x0A	// 000 01010
+#include "../Definitions.h"
 
 //====================================================================
 /*! \class NavierStokesSolver
@@ -50,17 +29,17 @@ class NavierStokesSolver
 		//! @{
 
 	// geometry data
-	double		_xlength,	//! domain size in x-direction
+	REAL		_xlength,	//! domain size in x-direction
 				_ylength;	//! domain size in y-direction
 
 	int			_nx,		//! number of interior cells in x-direction
 				_ny;		//! number of interior cells in y-direction
 
-	double		_dx,		//! length delta x of on cell in x-direction
+	REAL		_dx,		//! length delta x of on cell in x-direction
 				_dy;		//! length delta y of on cell in y-direction
 
 	// time stepping data
-	double		_t0,		//! start time
+	REAL		_t0,		//! start time
 				_t,			//! current time value
 				_dt,		//! time step size
 				_tau;		//! safety factor for time step size control
@@ -69,16 +48,16 @@ class NavierStokesSolver
 	int			_it_max;	//! maximal number of pressure iterations per time step
 				//_it;		//! SOR iteration counter (-> local variable)
 
-	double		_epsilon,	//! stopping tolerance eps for pressure iteration
+	REAL		_epsilon,	//! stopping tolerance eps for pressure iteration
 				_omega,		//! relaxation parameter for SOR iteration
 				_gamma;		//! upwind differencing factor
 
 	// problem dependent quantities
-	double		_re,		//! Reynolds number Re
+	REAL		_re,		//! Reynolds number Re
 				_gx,		//! body force gx (e.g. gravity)
 				_gy;		//! body force gy (e.g. gravity)
 
-	double		_ui,		//! initial velocity in x-direction
+	REAL		_ui,		//! initial velocity in x-direction
 				_vi,		//! initial velocity in y-direction
 				_pi;		//! initial pressure
 
@@ -113,43 +92,9 @@ class NavierStokesSolver
 	void setParameters
 		(
 			ProblemParameters*	parameters
-		)
-	{
-		_xlength = parameters->xlength;
-		_ylength = parameters->ylength;
+		);
 
-		_nx = parameters->nx;
-		_ny = parameters->ny;
-
-		_dx = _xlength / (double) _nx;
-		_dy = _ylength / (double) _ny;
-
-		_dt = parameters->dt;
-		_tau = parameters->tau;
-
-		_it_max = parameters->it_max;
-
-		_epsilon = parameters->epsilon;
-		_omega = parameters->omega;
-		_gamma = parameters->gamma;
-
-		_re = parameters->re;
-		_gx = parameters->gx;
-		_gy = parameters->gy;
-
-		_ui = parameters->ui;
-		_vi = parameters->vi;
-		_pi = parameters->pi;
-
-		_wN = parameters->wN;
-		_wS = parameters->wS;
-		_wW = parameters->wW;
-		_wE = parameters->wE;
-
-		_problem = parameters->problem;
-	};
-
-		//! \brief initialises the arrays U, V and P
+		//! \brief allocates and initialises simulation memory
 
 	virtual void init ( ) = 0;
 
@@ -197,13 +142,42 @@ class NavierStokesSolver
 		//! @name data access
 		//! @{
 
-	virtual double** getU_CPU ( ) = 0;
+	virtual REAL** getU_CPU ( ) = 0;
 
-	virtual double** getV_CPU ( ) = 0;
+	virtual REAL** getV_CPU ( ) = 0;
 
-	virtual double** getP_CPU ( ) = 0;
+	virtual REAL** getP_CPU ( ) = 0;
 
 		//! @}
+
+
+
+
+
+
+	// -------------------------------------------------
+	//	auxiliary functions
+	// -------------------------------------------------
+		//! @name auxiliary functions
+		//! @{
+
+	REAL**	allocHostMatrix (
+			int width,
+			int height
+		);
+
+	void	setHostMatrix (
+			REAL** matrix,
+			int xStart,
+			int xStop,
+			int yStart,
+			int yStop,
+			REAL value
+		);
+
+	void	freeHostMatrix (
+			REAL** matrix
+		);
 };
 
 #endif // NAVIERSTOKESSOLVER_H

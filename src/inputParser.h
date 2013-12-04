@@ -2,40 +2,34 @@
 #define INPUTPARSER_H
 
 #include <string>
-
-#define FREE_SLIP	1
-#define NO_SLIP		2
-#define OUTFLOW 	3
-#define PERIODIC	4
-
-using namespace std;
+#include "Definitions.h"
 
 struct ProblemParameters
 {
 	// geometry data
-	double		xlength,		//! domain size in x-direction
+	REAL		xlength,		//! domain size in x-direction
 				ylength;		//! domain size in y-direction
 
 	int			nx,				//! number of interior cells in x-direction
 				ny;				//! number of interior cells in y-direction
 
 	// time stepping data
-	double		dt,				//! time step size
+	REAL		dt,				//! time step size
 				tau;			//! safety factor for time step size control
 
 	// pressure-iteration data
 	int			it_max;			//! maximal number of pressure iterations per time step
 
-	double		epsilon,		//! stopping tolerance eps for pressure iteration
+	REAL		epsilon,		//! stopping tolerance eps for pressure iteration
 				omega,			//! relaxation parameter for SOR iteration
 				gamma;			//! upwind differencing factor
 
 	// problem dependent quantities
-	double		re,				//! Reynolds number Re
+	REAL		re,				//! Reynolds number Re
 				gx,				//! body force gx (e.g. gravity)
 				gy;				//! body force gy (e.g. gravity)
 
-	double		ui,				//! initial velocity in x-direction
+	REAL		ui,				//! initial velocity in x-direction
 				vi,				//! initial velocity in y-direction
 				pi;				//! initial pressure
 
@@ -44,9 +38,9 @@ struct ProblemParameters
 				wW,				//! boundary condition along western boundary
 				wE;				//! boundary condition along eastern boundary
 
-	string		problem;		//! problem type
+	std::string	problem;		//! problem type
 
-	string		obstacleFile;	//! obstacle map file name
+	std::string	obstacleFile;	//! obstacle map file name
 };
 
 
@@ -73,10 +67,10 @@ class InputParser
 			);
 
 		static bool readObstacleMap (
-				bool***	obstacleMap,
-				int		width,
-				int		height,
-				string	fileName
+				bool***		obstacleMap,
+				int			width,
+				int			height,
+				std::string	fileName
 			);
 
 		static void printParameters (

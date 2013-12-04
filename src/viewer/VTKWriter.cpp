@@ -4,8 +4,6 @@
 #include <fstream>
 #include <iomanip>
 
-using namespace std;
-
 VTKWriter::VTKWriter()
 {
 }
@@ -13,12 +11,12 @@ VTKWriter::VTKWriter()
 //============================================================================
 void VTKWriter::renderFrame
 	(
-		double **U,
-		double **V,
-		double **P,
-		int nx,
-		int ny,
-		int it
+		REAL	**U,
+		REAL	**V,
+		REAL	**P,
+		int		nx,
+		int		ny,
+		int		it
 	)
 {
 	// www.vtk.org/VTK/img/file-formats.pdf‎
@@ -27,19 +25,19 @@ void VTKWriter::renderFrame
 	// open file
 	//-----------------------
 
-	char img_name[32];
-	sprintf( img_name, "output/it_%05d.vtk", it );
+	char filename[32];
+	sprintf( filename, "output/it_%05d.vtk", it );
 
-	ofstream vtk ( img_name );
+	std::ofstream vtk ( filename );
 
 	if ( !vtk.is_open() )
 	{
-		cerr << "\nFailed to open vtk file \"" << img_name << "\" for writing!";
+		std::cerr << "Failed to open vtk file \"" << filename << "\" for writing!" << std::endl;
 		return;
 	}
 
 	// set output flags
-	vtk << setprecision( 16 );
+	vtk << std::setprecision( 16 );
 
 	//-----------------------
 	// write vtk header
@@ -53,13 +51,13 @@ void VTKWriter::renderFrame
 	// write point positions
 	//-----------------------
 
-	int numPoints = (nx + 1) * (ny + 1);
-
 	int nx1 = nx + 1,
 		ny1 = ny + 1;
 
+	int numPoints = nx1 * ny1;
+
 	vtk << "DATASET STRUCTURED_GRID\n"
-		<< "DIMENSIONS " << ( nx + 1 ) << " " << ( ny + 1 ) << " 1\n"
+		<< "DIMENSIONS " << nx1 << " " << ny1 << " 1\n"
 		<< "POINTS " << numPoints << " float\n";
 
 	for( int y = 0; y < ny1; ++y )
@@ -74,6 +72,8 @@ void VTKWriter::renderFrame
 	// write velocity
 	//-----------------------
 
+	int numCells = nx * ny;
+
 	vtk << "\nPOINT_DATA " << numPoints << "\n"
 		<< "VECTORS velocity float\n";
 
@@ -84,7 +84,7 @@ void VTKWriter::renderFrame
 	{
 		for( int x = 0; x < nx1; ++x )
 		{
-			vtk << fixed <<
+			vtk << std::fixed <<
 				   ( U[y][x] + U[y+1][x] ) * 0.5 // todo: check conversion to float
 				<< " " <<
 				   ( V[y][x] + V[y][x+1] ) * 0.5
@@ -96,8 +96,6 @@ void VTKWriter::renderFrame
 	// write pressure
 	//-----------------------
 
-	int numCells = nx * ny;
-
 	vtk << "\nCELL_DATA " << numCells << "\n"
 		<< "SCALARS pressure float\n"
 		<< "LOOKUP_TABLE default\n";
@@ -106,7 +104,7 @@ void VTKWriter::renderFrame
 	{
 		for( int x = 1; x < nx1; ++x )
 		{
-			vtk << fixed << P[y][x] << "\n";
+			vtk << std::fixed << P[y][x] << "\n";
 		}
 	}
 

@@ -9,9 +9,9 @@ class SimplePGMWriter : public Viewer
 		SimplePGMWriter();
 
 		void renderFrame (
-				double** U,
-				double** V,
-				double** P,
+				REAL** U,
+				REAL** V,
+				REAL** P,
 				int nx,
 				int ny,
 				int it
