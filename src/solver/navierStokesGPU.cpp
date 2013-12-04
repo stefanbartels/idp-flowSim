@@ -48,7 +48,7 @@ NavierStokesGPU::NavierStokesGPU ( )
 //============================================================================
 NavierStokesGPU::~NavierStokesGPU ( )
 {
-	#ifdef VERBOSE
+	#if VERBOSE
 		std::cout << "destructing NSGPU..." << std::endl;
 	#endif
 
@@ -89,17 +89,17 @@ void NavierStokesGPU::init ( )
 	// allocate memory for matrices U, V, P, RHS, F, G
 	//-----------------------
 
-	#ifdef VERBOSE
+	#if VERBOSE
 		std::cout << "allocating device buffers..." << std::endl;
 	#endif
 
 	// todo: use pitched memory
-	_U_g   = cl::Buffer ( _clContext, CL_MEM_READ_WRITE, sizeof(REAL) * size );
-	_V_g   = cl::Buffer ( _clContext, CL_MEM_READ_WRITE, sizeof(REAL) * size );
-	_P_g   = cl::Buffer ( _clContext, CL_MEM_READ_WRITE, sizeof(REAL) * size );
-	_RHS_g = cl::Buffer ( _clContext, CL_MEM_READ_WRITE, sizeof(REAL) * size );
-	_F_g   = cl::Buffer ( _clContext, CL_MEM_READ_WRITE, sizeof(REAL) * size );
-	_G_g   = cl::Buffer ( _clContext, CL_MEM_READ_WRITE, sizeof(REAL) * size );
+	_U_g   = cl::Buffer ( _clContext, CL_MEM_READ_WRITE, sizeof(CL_REAL) * size );
+	_V_g   = cl::Buffer ( _clContext, CL_MEM_READ_WRITE, sizeof(CL_REAL) * size );
+	_P_g   = cl::Buffer ( _clContext, CL_MEM_READ_WRITE, sizeof(CL_REAL) * size );
+	_RHS_g = cl::Buffer ( _clContext, CL_MEM_READ_WRITE, sizeof(CL_REAL) * size );
+	_F_g   = cl::Buffer ( _clContext, CL_MEM_READ_WRITE, sizeof(CL_REAL) * size );
+	_G_g   = cl::Buffer ( _clContext, CL_MEM_READ_WRITE, sizeof(CL_REAL) * size );
 
 	//_FLAG_g
 
@@ -108,7 +108,7 @@ void NavierStokesGPU::init ( )
 	// initialise U, V and P with given initial values (0.0 at borders)
 	//-----------------------
 
-	#ifdef VERBOSE
+	#if VERBOSE
 		std::cout << "initializing device buffers..." << std::endl;
 	#endif
 
@@ -154,7 +154,7 @@ void NavierStokesGPU::init ( )
 	// todo: might not be neccessary
 
 	_clKernels[0].setArg( 0, _RHS_g );
-	_clKernels[0].setArg( 1, sizeof(REAL), &initialBoundaryValue );
+	_clKernels[0].setArg( 1, sizeof(CL_REAL), &initialBoundaryValue );
 	_clKernels[0].setArg( 2, sizeof(int),  &nx2 );
 	_clKernels[0].setArg( 3, sizeof(int),  &ny2 );
 	_clKernels[0].setArg( 4, sizeof(int),  &_pitch );
@@ -173,7 +173,7 @@ void NavierStokesGPU::init ( )
 	// allocate host memory for U, V and P buffers for communication
 	//-----------------------
 
-	#ifdef VERBOSE
+	#if VERBOSE
 		std::cout << "allocating host buffers..." << std::endl;
 	#endif
 
@@ -327,7 +327,7 @@ void NavierStokesGPU::doSimulationStep()
 	// get delta_t
 	//-----------------------
 
-	#ifdef VERBOSE
+	#if VERBOSE
 		std::cout << "computing Δt..." << std::endl;
 	#endif
 
@@ -338,13 +338,13 @@ void NavierStokesGPU::doSimulationStep()
 	// set boundary values for u and v
 	//-----------------------
 
-	#ifdef VERBOSE
+	#if VERBOSE
 		std::cout << "applying boundary conditions..." << std::endl;
 	#endif
 
 	setBoundaryConditions();
 
-	#ifdef VERBOSE
+	#if VERBOSE
 		std::cout << "applying problem specific boundary conditions..." << std::endl;
 	#endif
 
@@ -355,7 +355,7 @@ void NavierStokesGPU::doSimulationStep()
 	// compute F(n) and G(n)
 	//-----------------------
 
-	#ifdef VERBOSE
+	#if VERBOSE
 		std::cout << "computing F and G..." << std::endl;
 	#endif
 
@@ -366,7 +366,7 @@ void NavierStokesGPU::doSimulationStep()
 	// compute right hand side of pressure equation
 	//-----------------------
 
-	#ifdef VERBOSE
+	#if VERBOSE
 		std::cout << "computing right hand side of pressure equation..." << std::endl;
 	#endif
 
@@ -377,7 +377,7 @@ void NavierStokesGPU::doSimulationStep()
 	// poisson overrelaxation loop
 	//-----------------------
 
-	#ifdef VERBOSE
+	#if VERBOSE
 		std::cout << "poisson overrelaxation loop..." << std::endl;
 	#endif
 
@@ -390,7 +390,7 @@ void NavierStokesGPU::doSimulationStep()
 		residual =  SORPoisson();
 	}
 
-	#ifdef VERBOSE
+	#if VERBOSE
 		std::cout << "SOR iterations: " << sor_it << " / " << _it_max << std::endl;
 	#endif
 
@@ -399,7 +399,7 @@ void NavierStokesGPU::doSimulationStep()
 	// compute U(n+1) and V(n+1)
 	//-----------------------
 
-	#ifdef VERBOSE
+	#if VERBOSE
 		std::cout << "computing U and V" << std::endl;
 	#endif
 
@@ -420,7 +420,7 @@ REAL **NavierStokesGPU::getU_CPU ( )
 				_U_g,		// device buffer
 				CL_TRUE,	// blocking
 				0,			// offset
-				sizeof(REAL) * (_nx + 2) * (_ny + 2), // size
+				sizeof(CL_REAL) * (_nx + 2) * (_ny + 2), // size
 				*_U_host	// host buffer
 			);
 
@@ -438,7 +438,7 @@ REAL **NavierStokesGPU::getV_CPU ( )
 				_V_g,
 				CL_TRUE,
 				0,
-				sizeof(REAL) * (_nx + 2) * (_ny + 2),
+				sizeof(CL_REAL) * (_nx + 2) * (_ny + 2),
 				*_V_host
 			);
 
@@ -456,7 +456,7 @@ REAL **NavierStokesGPU::getP_CPU ( )
 				_P_g,
 				CL_TRUE,
 				0,
-				sizeof(REAL) * (_nx + 2) * (_ny + 2),
+				sizeof(CL_REAL) * (_nx + 2) * (_ny + 2),
 				*_P_host
 			);
 
@@ -648,7 +648,7 @@ REAL NavierStokesGPU::SORPoisson()
 		_clKernels[9].setArg( 5, sizeof(int), &red );
 
 		// call kernel for black cells
-		_clQueue.enqueueNDRangeKernel ( _clKernels[8], cl::NullRange, _clRange, cl::NullRange );
+		_clQueue.enqueueNDRangeKernel ( _clKernels[9], cl::NullRange, _clRange, cl::NullRange );
 
 		// wait for completion
 		_clQueue.finish();
@@ -658,7 +658,7 @@ REAL NavierStokesGPU::SORPoisson()
 		_clKernels[9].setArg( 5, sizeof(int), &red );
 
 		// call kernel for red cells
-		_clQueue.enqueueNDRangeKernel ( _clKernels[8], cl::NullRange, _clRange, cl::NullRange );
+		_clQueue.enqueueNDRangeKernel ( _clKernels[9], cl::NullRange, _clRange, cl::NullRange );
 
 		// wait for completion
 		_clQueue.finish();
@@ -747,7 +747,7 @@ void NavierStokesGPU::adaptUV ( )
 //============================================================================
 void NavierStokesGPU::loadKernels ( )
 {
-	#ifdef VERBOSE
+	#if VERBOSE
 		std::cout << "Compiling kernels..." << std::endl;
 	#endif
 
@@ -786,7 +786,7 @@ void NavierStokesGPU::loadKernels ( )
 		throw error;
 	}
 
-	#ifdef VERBOSE
+	#if VERBOSE
 		std::cout << "Kernels compiled" << std::endl;
 	#endif
 
@@ -796,7 +796,7 @@ void NavierStokesGPU::loadKernels ( )
 
 		_clKernels = std::vector<cl::Kernel>();
 
-	#ifdef VERBOSE
+	#if VERBOSE
 		std::cout << "Binding kernels..." << std::endl;
 	#endif
 
@@ -880,7 +880,7 @@ void NavierStokesGPU::setKernelArguments ( )
 	float dy2 = _dy * _dy;
 	REAL constant_expr = 1.0 / ( 2.0 / dx2 + 2.0 / dy2 );
 
-	#ifdef VERBOSE
+	#if VERBOSE
 		std::cout << "Setting kernel arguments..." << std::endl;
 	#endif
 

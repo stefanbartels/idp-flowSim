@@ -335,7 +335,7 @@ bool InputParser::readObstacleMap
 
 	if( fileName.compare("") == 0 )
 	{
-		#ifdef VERBOSE
+		#if VERBOSE
 			std::cout << "Creating empty map..." << std::endl;
 		#endif
 

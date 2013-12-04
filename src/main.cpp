@@ -4,12 +4,15 @@
 
 #include <iostream>
 
-#include "solver/navierStokesCPU.h"
-#include "solver/navierStokesGPU.h"
 #include "viewer/SimplePGMWriter.h"
 #include "viewer/VTKWriter.h"
 #include "inputParser.h"
 
+#if USE_GPU
+	#include "solver/navierStokesGPU.h"
+#else
+	#include "solver/navierStokesCPU.h"
+#endif
 
 //********************************************************************
 //**    implementation
@@ -68,8 +71,12 @@ int main ( int argc, char* argv[] )
 	NavierStokesSolver* solver;
 
 	#if USE_GPU
+		std::cout << "Simulating on GPU" << std::endl;
+
 		solver = new NavierStokesGPU();
 	#else
+		std::cout << "Simulating on CPU" << std::endl;
+
 		solver = new NavierStokesCPU();
 	#endif
 
@@ -108,9 +115,9 @@ int main ( int argc, char* argv[] )
 
 	while ( n < 1000 )
 	{
-		#ifdef VERBOSE
+		//#if VERBOSE
 			std::cout << "simulating frame " << n << std::endl;
-		#endif
+		//#endif
 
 		// do simulation step
 		solver->doSimulationStep( );
@@ -118,7 +125,7 @@ int main ( int argc, char* argv[] )
 		// update visualisation
 			// do fancy stuff with opengl
 
-		//#ifdef VERBOSE
+		//#if VERBOSE
 		//	std::cout << "visualizing frame " << n << std::endl;
 		//#endif
 
@@ -131,14 +138,7 @@ int main ( int argc, char* argv[] )
 				n
 			);
 
-		//#ifdef VERBOSE
-		//	std::cout << "done with frame " << n << std::endl;
-		//#endif
-
 		++n;
-
-		// TODO remove
-		// break;
 	}
 
 	//-----------------------

@@ -44,7 +44,7 @@ void SimplePGMWriter::renderFrame (
 			min = T[i];
 	}
 
-	#ifdef VERBOSE
+	#if VERBOSE
 		std::cout << "max value is " << max << std::endl;
 	#endif
 
@@ -55,7 +55,7 @@ void SimplePGMWriter::renderFrame (
 	if ( max - min != 0.0 )
 		factor = 255 / ( max - min );
 
-	#ifdef VERBOSE
+	#if VERBOSE
 		std::cout << "factor is " << factor << std::endl;
 	#endif
 

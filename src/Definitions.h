@@ -5,7 +5,7 @@
 #define USE_GPU true
 
 // use verbose setting for debugging
-#define VERBOSE true
+#define VERBOSE false
 
 // thread block dimensions
 #define BW 16
