@@ -81,6 +81,16 @@ class NavierStokesSolver
 	public:
 
 	// -------------------------------------------------
+	//	constructor / destructor
+	// -------------------------------------------------
+		//! @name constructor / destructor
+		//! @{
+
+	virtual ~NavierStokesSolver ( ) { };
+
+		//! @}
+
+	// -------------------------------------------------
 	//	initialisation
 	// -------------------------------------------------
 		//! @name initialisation

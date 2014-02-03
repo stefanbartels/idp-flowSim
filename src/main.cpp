@@ -2,6 +2,7 @@
 //**    includes
 //********************************************************************
 
+#include <stdlib.h>
 #include <iostream>
 
 #include "viewer/SimplePGMWriter.h"
@@ -147,6 +148,9 @@ int main ( int argc, char* argv[] )
 
 	SAVE_DELETE( solver );
 	SAVE_DELETE( viewer );
+
+	free( obstacleMap[0] );
+	free( obstacleMap );
 
     return 0;
 }
