@@ -14,7 +14,8 @@ SOURCES += \
     src/viewer/Viewer.cpp \
     src/viewer/SimplePGMWriter.cpp \
     src/viewer/VTKWriter.cpp \
-    src/solver/navierStokesSolver.cpp
+    src/solver/navierStokesSolver.cpp \
+    src/Simulation.cpp
 
 HEADERS += \
 	src/solver/navierStokesSolver.h \
@@ -24,7 +25,8 @@ HEADERS += \
     src/viewer/Viewer.h \
     src/viewer/SimplePGMWriter.h \
     src/viewer/VTKWriter.h \
-    src/Definitions.h
+    src/Definitions.h \
+    src/Simulation.h
 
 OTHER_FILES += \
     src/kernels/auxiliary.cl \

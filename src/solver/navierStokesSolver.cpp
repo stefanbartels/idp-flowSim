@@ -18,7 +18,7 @@
 //============================================================================
 void NavierStokesSolver::setParameters
 	(
-		ProblemParameters *parameters
+		Parameters *parameters
 	)
 {
 	_xlength = parameters->xlength;

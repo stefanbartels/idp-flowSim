@@ -14,7 +14,7 @@
 //********************************************************************
 
 //============================================================================
-void InputParser::setStandardParameters(ProblemParameters *parameters)
+void InputParser::setDefaultParameters ( Parameters *parameters)
 {
 	parameters->xlength			= 1.0;
 	parameters->ylength			= 1.0;
@@ -38,21 +38,48 @@ void InputParser::setStandardParameters(ProblemParameters *parameters)
 	parameters->wE				= 2;
 	parameters->problem			= "moving_lid";
 	parameters->obstacleFile	= "";
+	parameters->obstacleMap		= 0;
 }
 
 //============================================================================
 bool InputParser::readParameters
 	(
-		ProblemParameters*	parameters,
-		char*				fileName
+		int			argc,
+		char*		argv[],
+		Parameters*	parameters
 	)
 {
-	// open input file
-	std::ifstream file( fileName );
+	// set default parameters
+	setDefaultParameters( parameters );
+
+	//-------------------------------
+	// parse command line parameters
+	//-------------------------------
+
+	char* parameterFileName;
+
+	if ( argc > 1 )
+	{
+		parameterFileName = argv[1];
+
+		std::cout << "Problem parameter file: " << parameterFileName << std::endl;
+	}
+	else
+	{
+		std::cerr << "No parameter file specified. Using default parameters." << std::endl;
+		return true;
+	}
+
+
+	//-------------------------------
+	// read parameter file
+	//-------------------------------
+
+	std::ifstream file( parameterFileName );
 
 	if ( file.fail() || !file.is_open() )
 	{
-		std::cerr << "Could not open parameter file \"" << fileName << "\"" << std::endl;
+		std::cerr << "Could not open parameter file \"" << parameterFileName << "\"" << std::endl;
 		return false;
 	}
 
@@ -267,6 +294,25 @@ bool InputParser::readParameters
 	else if ( numReadValues < 22 )
 	{
 		std::cerr << "Using standard values for missing parameters. Please check yout input file!" << std::endl;
+	}
+
+
+
+
+
+	//-------------------------------
+	// read obstacle map
+	//-------------------------------
+
+	if ( !readObstacleMap(
+			 &(parameters->obstacleMap),
+			 parameters->nx,
+			 parameters->ny,
+			 parameters->obstacleFile )
+		 )
+	{
+		std::cerr << "Error reading obstacle map." << std::endl;
+		return false;
 	}
 
 	// done
@@ -522,7 +568,7 @@ bool InputParser::readObstacleMap
 //============================================================================
 void InputParser::printParameters
 	(
-		ProblemParameters *parameters
+		Parameters *parameters
 	)
 {
 	std::cout << "====================" << std::endl << "Parameter set:" << std::endl;

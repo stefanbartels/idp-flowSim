@@ -5,15 +5,11 @@
 #include <stdlib.h>
 #include <iostream>
 
+#include "Simulation.h"
 #include "viewer/SimplePGMWriter.h"
 #include "viewer/VTKWriter.h"
 #include "inputParser.h"
 
-#if USE_GPU
-	#include "solver/navierStokesGPU.h"
-#else
-	#include "solver/navierStokesCPU.h"
-#endif
 
 //********************************************************************
 //**    implementation
@@ -21,43 +17,19 @@
 
 int main ( int argc, char* argv[] )
 {
+	Parameters parameters;
+	Simulation* simulation;
+
 	//-----------------------
 	// read parameters
 	//-----------------------
 
-	// set default problem parameters
-	ProblemParameters parameters;
-	InputParser::setStandardParameters ( &parameters );
+	// TODO: make parameter file not compulsory but loadable via gui
 
-	char* parameterFileName;
-
-	// parse command line arguments
-	// only one until now: parameter file name
-
-	// parameter file
-	if ( argc > 1 )
+	// parse command line arguments and read parameter file
+	if ( !InputParser::readParameters ( argc, argv, &parameters ) )
 	{
-		parameterFileName = argv[1];
-
-		std::cout << "Problem parameter file: " << parameterFileName << std::endl;
-
-		if ( !InputParser::readParameters ( &parameters, parameterFileName ) )
-		{
-			std::cerr << "Error reading parameter file." << std::endl << "Exiting..." << std:: endl;
-			return 1;
-		}
-	}
-	else
-	{
-		std::cerr << "No parameter file specified. Using default parameters." << std::endl;
-	}
-
-	// read obstacle map
-	bool** obstacleMap = 0;
-
-	if ( !InputParser::readObstacleMap( &obstacleMap, parameters.nx, parameters.ny, parameters.obstacleFile ) )
-	{
-		std::cerr << "Error reading obstacle map." << std::endl << "Exiting..." << std::endl;
+		std::cerr << "Error reading parameter file." << std::endl << "Exiting..." << std:: endl;
 		return 1;
 	}
 
@@ -69,25 +41,22 @@ int main ( int argc, char* argv[] )
 	// create gui, solver and viewer objects and pass parameters
 	//-----------------------
 
-	NavierStokesSolver* solver;
-
-	#if USE_GPU
-		std::cout << "Simulating on GPU" << std::endl;
-
-		solver = new NavierStokesGPU();
-	#else
-		std::cout << "Simulating on CPU" << std::endl;
-
-		solver = new NavierStokesCPU();
-	#endif
-
-	solver->setParameters ( &parameters );
-	if( !solver->setObstacleMap( obstacleMap ) )
+	try
 	{
-		std::cerr << "Obstacle map invalid. Make sure there are no boundary cells between two fluid cells!" << std::endl
-				  << "Exiting..." << std::endl;
+		// TODO: move check for valid obstacle map to inputParser
+		//       and remove this try/catch
+
+		simulation = new Simulation( &parameters );
+	}
+	catch( const char* error_message )
+	{
+		std::cerr << "Error during simulation setup:\n " << error_message << "\nExiting..." << std::endl;
 		return 1;
 	}
+
+
+
+
 
 	Viewer* viewer = new VTKWriter();
 
@@ -100,57 +69,24 @@ int main ( int argc, char* argv[] )
 	// simulation/visualisation loop
 	//-----------------------
 
-	solver->init();
-
-	int n = 0;
-
 	// plot initial state
 	viewer->renderFrame(
-			solver->getU_CPU(),
-			solver->getV_CPU(),
-			solver->getP_CPU(),
+			simulation->getU_CPU(),
+			simulation->getV_CPU(),
+			simulation->getP_CPU(),
 			parameters.nx,
 			parameters.ny,
-			n++
+			0
 		);
 
-	while ( n < 1000 )
-	{
-		//#if VERBOSE
-			std::cout << "simulating frame " << n << std::endl;
-		//#endif
-
-		// do simulation step
-		solver->doSimulationStep( );
-
-		// update visualisation
-			// do fancy stuff with opengl
-
-		//#if VERBOSE
-		//	std::cout << "visualizing frame " << n << std::endl;
-		//#endif
-
-		viewer->renderFrame(
-				solver->getU_CPU(),
-				solver->getV_CPU(),
-				solver->getP_CPU(),
-				parameters.nx,
-				parameters.ny,
-				n
-			);
-
-		++n;
-	}
+	simulation->simulate( viewer );
 
 	//-----------------------
 	// cleanup
 	//-----------------------
 
-	SAVE_DELETE( solver );
+	SAVE_DELETE( simulation );
 	SAVE_DELETE( viewer );
-
-	free( obstacleMap[0] );
-	free( obstacleMap );
 
     return 0;
 }

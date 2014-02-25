@@ -99,9 +99,11 @@ class NavierStokesSolver
 		//! \brief defines the problem parameters
 		//! \param problem parameter set
 
+		// TODO: not a nice solution
+
 	void setParameters
 		(
-			ProblemParameters*	parameters
+			Parameters*	parameters
 		);
 
 		//! \brief allocates and initialises simulation memory

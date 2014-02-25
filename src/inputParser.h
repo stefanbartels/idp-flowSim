@@ -2,9 +2,10 @@
 #define INPUTPARSER_H
 
 #include <string>
+#include <stdlib.h>
 #include "Definitions.h"
 
-struct ProblemParameters
+struct Parameters
 {
 	// geometry data
 	REAL		xlength,		//! domain size in x-direction
@@ -41,6 +42,26 @@ struct ProblemParameters
 	std::string	problem;		//! problem type
 
 	std::string	obstacleFile;	//! obstacle map file name
+
+	bool**		obstacleMap;	//! map defining the obstacle positions
+
+
+
+
+	// Constructor and destructor to free memory properly
+	Parameters ( )
+	{
+		obstacleMap = 0;
+	}
+
+	~Parameters ( )
+	{
+		if( obstacleMap != 0)
+		{
+			free( obstacleMap[0] );
+			free( obstacleMap );
+		}
+	}
 };
 
 
@@ -57,15 +78,17 @@ class InputParser
 {
 	public:
 
-		static void setStandardParameters (
-				ProblemParameters*	parameters
+		static void setDefaultParameters (
+				Parameters*	parameters
 			);
 
 		static bool readParameters (
-				ProblemParameters*	parameters,
-				char*				fileName
+				int			argc,
+				char*		argv[],
+				Parameters*	parameters
 			);
 
+		// TODO: move check for valid map here!
 		static bool readObstacleMap (
 				bool***		obstacleMap,
 				int			width,
@@ -74,7 +97,7 @@ class InputParser
 			);
 
 		static void printParameters (
-				ProblemParameters*	parameters
+				Parameters*	parameters
 			);
 };
 
