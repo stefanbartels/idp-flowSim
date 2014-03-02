@@ -3,22 +3,26 @@
 #include <iostream>
 #include <fstream>
 
-SimplePGMWriter::SimplePGMWriter()
+SimplePGMWriter::SimplePGMWriter
+	(
+		Parameters* parameters
+	) :
+	Viewer( parameters )
 {
+
 }
 
 
 //============================================================================
 void SimplePGMWriter::renderFrame (
-		REAL** U,
-		REAL** V,
-		REAL** P,
-		int nx,
-		int ny,
+		double** U,
+		double** V,
+		double** P,
 		int it
 	)
 {
-	REAL* T = *P;
+	int nx = _parameters->nx;
+	int ny = _parameters->ny;
 
 	char img_name[32];
 	sprintf( img_name, "output/it_%05d.pgm", it );
@@ -38,10 +42,10 @@ void SimplePGMWriter::renderFrame (
 
 	for ( int i = 0; i < size; ++i )
 	{
-		if ( T[i] > max )
-			max = T[i];
-		if ( T[i] < min )
-			min = T[i];
+		if ( (*P)[i] > max )
+			max = (*P)[i];
+		if ( (*P)[i] < min )
+			min = (*P)[i];
 	}
 
 	#if VERBOSE
@@ -61,7 +65,7 @@ void SimplePGMWriter::renderFrame (
 
 	for ( int i = 0; i < size; ++i )
 	{
-		C[i] = (char)( (T[i] - min ) * factor );
+		C[i] = (char)( ((*P)[i] - min ) * factor );
 	}
 
 

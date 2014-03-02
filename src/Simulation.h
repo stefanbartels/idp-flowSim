@@ -2,37 +2,51 @@
 #define SIMULATION_H
 
 #include "Definitions.h"
+#include "Parameters.h"
 #include "solver/navierStokesSolver.h"
 #include "viewer/Viewer.h"
+#include <QThread>
 
 //====================================================================
 /*! \class Simulation
 	\brief Class handling the fluid simulation
 */
 //====================================================================
-class Simulation
+class Simulation : public QThread
 {
+	Q_OBJECT
+
 	protected:
 		Parameters*			_parameters;
 		NavierStokesSolver*	_solver;
 
+		Viewer*				_viewer;
+
+		bool                _running;
+		int					_iterations;
+
 	public:
 
-		Simulation ( Parameters* parameters );
+		Simulation ( Parameters* parameters, Viewer* viewer );
 
 		~Simulation ( );
-
-
-
-
-		void simulate ( Viewer* viewer );
-
 
 
 		// TODO: move to separate flow field class
 		REAL** getU_CPU();
 		REAL** getV_CPU();
 		REAL** getP_CPU();
+
+	protected:
+		void run ( );
+
+	public slots:
+		void simulate ( );
+
+		void stop ( );
+
+	signals:
+		void simulatedFrame ( );
 };
 
 #endif // SIMULATION_H

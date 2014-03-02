@@ -2,18 +2,24 @@
 #define VIEWER_H
 
 #include "../Definitions.h"
+#include "../Parameters.h"
 
 class Viewer
 {
-	public:
-		Viewer();
+	protected:
+		Parameters* _parameters;
 
-		virtual void renderFrame (
-				REAL** U,
-				REAL** V,
-				REAL** P,
-				int nx,
-				int ny,
+	public:
+		Viewer
+		(
+			Parameters* parameters
+		);
+
+		// TODO: give access to FlowField class
+		virtual void renderFrame  (
+				double** U,
+				double** V,
+				double** P,
 				int it
 			) = 0;
 };

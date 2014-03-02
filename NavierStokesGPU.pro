@@ -1,10 +1,9 @@
 TEMPLATE = app
-CONFIG += console
-CONFIG -= qt
+CONFIG += console gui opengl thread
 
 INCLUDEPATH += /usr/include/nvidia-current
 
-LIBS+= -lOpenCL
+LIBS+= -lOpenCL -lQtOpenGL
 
 SOURCES += \
 	src/main.cpp \
@@ -15,7 +14,9 @@ SOURCES += \
     src/viewer/SimplePGMWriter.cpp \
     src/viewer/VTKWriter.cpp \
     src/solver/navierStokesSolver.cpp \
-    src/Simulation.cpp
+    src/Simulation.cpp \
+	src/ui/MainWindow.cpp \
+    src/viewer/GLViewer.cpp
 
 HEADERS += \
 	src/solver/navierStokesSolver.h \
@@ -26,7 +27,10 @@ HEADERS += \
     src/viewer/SimplePGMWriter.h \
     src/viewer/VTKWriter.h \
     src/Definitions.h \
-    src/Simulation.h
+    src/Simulation.h \
+	src/ui/MainWindow.h \
+    src/Parameters.h \
+    src/viewer/GLViewer.h
 
 OTHER_FILES += \
     src/kernels/auxiliary.cl \

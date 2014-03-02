@@ -1,5 +1,10 @@
 #include "Viewer.h"
 
-Viewer::Viewer()
+//============================================================================
+Viewer::Viewer
+	(
+		Parameters* parameters
+	)
 {
+	_parameters = parameters;
 }

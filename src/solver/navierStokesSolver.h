@@ -2,8 +2,8 @@
 #define NAVIERSTOKESSOLVER_H
 
 #include <string>
-#include "../inputParser.h"
 #include "../Definitions.h"
+#include "../Parameters.h"
 
 //====================================================================
 /*! \class NavierStokesSolver

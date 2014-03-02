@@ -12,9 +12,14 @@
 //********************************************************************
 
 //============================================================================
-Simulation::Simulation ( Parameters* parameters )
+Simulation::Simulation ( Parameters* parameters, Viewer* viewer )
 {
 	_parameters = parameters;
+	_viewer = viewer;
+
+	_running = false;
+
+	_iterations = 0;
 
 
 	// TODO: stop using hardcoded flag
@@ -50,41 +55,49 @@ Simulation::~Simulation ( )
 }
 
 //============================================================================
-void Simulation::simulate ( Viewer* viewer )
+void Simulation::run ( )
 {
-	int n = 1;
+	std::cout << "Simulate!" << std::endl;
+	if( !_running )
+		_running = true;
 
-	while ( n < 1000 )
+	while( _running )
 	{
+
+		std::cout << "Simulating iteration " << _iterations << std::endl;
+
 		//#if VERBOSE
-			std::cout << "simulating frame " << n << std::endl;
+		//	std::cout << "simulating frame " << n << std::endl;
 		//#endif
 
 		// do simulation step
 		_solver->doSimulationStep( );
 
 		// update visualisation
-			// do fancy stuff with opengl
-
-		//#if VERBOSE
-		//	std::cout << "visualizing frame " << n << std::endl;
-		//#endif
-
-		viewer->renderFrame(
+		// todo: use flow field class instead of parameters
+		_viewer->renderFrame(
 				_solver->getU_CPU(),
 				_solver->getV_CPU(),
 				_solver->getP_CPU(),
-				_parameters->nx,
-				_parameters->ny,
-				n
+				_iterations
 			);
 
-		++n;
+		emit simulatedFrame();
+
+		++_iterations;
 	}
 }
 
+void Simulation::simulate()
+{
+	start();
+}
 
-
+//============================================================================
+void Simulation::stop ( )
+{
+	_running = false;
+}
 
 // -------------------------------------------------
 //	data access
@@ -107,3 +120,4 @@ REAL** Simulation::getP_CPU()
 {
 	return _solver->getP_CPU();
 }
+

@@ -6,14 +6,15 @@
 class VTKWriter : public Viewer
 {
 	public:
-		VTKWriter();
+		VTKWriter
+			(
+				Parameters* parameters
+			);
 
-		void renderFrame (
-				REAL** U,
-				REAL** V,
-				REAL** P,
-				int nx,
-				int ny,
+		void renderFrame  (
+				double** U,
+				double** V,
+				double** P,
 				int it
 			);
 };
