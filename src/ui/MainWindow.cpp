@@ -1,4 +1,5 @@
 #include "MainWindow.h"
+#include "../Definitions.h"
 
 #include <QApplication>
 #include <QDesktopWidget>
@@ -10,7 +11,7 @@ MainWindow::MainWindow
 	)
 {
 	_parameters = parameters;
-	//_viewer = new GLViewer( parameters, this );
+	_viewer = new GLViewer( parameters, this );
 
 	setWindowTitle( "Interactive Navier Stokes" );
 
@@ -24,7 +25,7 @@ MainWindow::MainWindow
 //============================================================================
 MainWindow::~MainWindow ( )
 {
-	//delete _button_run;
+
 }
 
 //============================================================================
@@ -43,16 +44,6 @@ void MainWindow::createUI ( )
 	_ui = new QWidget( this );
 	setCentralWidget( _ui );
 
-	// get initial size for GL viewer
-	int screen_width   = QApplication::desktop()->width();
-	int screen_height  = QApplication::desktop()->height();
-	int initial_width  = _parameters->nx > screen_width  ? screen_width  : _parameters->nx;
-	int initial_height = _parameters->ny > screen_height ? screen_height : _parameters->ny;
-
-	// resize OpenGL viewer
-	//_viewer->resize( initial_width, initial_height );
-
-
 	// create buttons
 	_button_run   = new QPushButton( "Run" );
 	_button_pause = new QPushButton( "Pause" );
@@ -60,7 +51,7 @@ void MainWindow::createUI ( )
 
 	// create window layout
 	_layout = new QVBoxLayout();
-	//_layout->addWidget( _viewer );
+	_layout->addWidget( _viewer );
 	_layout->addWidget( _button_run );
 	_layout->addWidget( _button_pause );
 

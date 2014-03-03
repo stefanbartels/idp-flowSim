@@ -42,6 +42,9 @@ MainWindow* window     = 0;
 
 int main ( int argc, char* argv[] )
 {
+	// support opengl in thread
+	QCoreApplication::setAttribute( Qt::AA_X11InitThreads );
+
 	QApplication application(argc, argv);
 	application.setApplicationName("Interactive Navier Stokes Simulation");
 
@@ -68,8 +71,8 @@ int main ( int argc, char* argv[] )
 
 	window = new MainWindow( &parameters );
 
-	//viewer = window->getViewer();
-	viewer = new VTKWriter( &parameters );
+	viewer = window->getViewer();
+	//viewer = new VTKWriter( &parameters );
 
 	//-----------------------
 	// create simulation
@@ -94,16 +97,23 @@ int main ( int argc, char* argv[] )
 	// start application
 	//-----------------------
 
+	// TODO: move connectins between gui elements and simulation somewhere else
 	QObject::connect(	window, SIGNAL( runSimulation() ),
 						simulation, SLOT( simulate() ) );
 	QObject::connect(	window, SIGNAL( stopSimulation() ),
 						simulation, SLOT( stop() ) );
 
+	// signal to stop simulation thread if application is stopped
+	QObject::connect(	&application, SIGNAL( aboutToQuit() ),
+						simulation, SLOT( stop() ) );
+
 	window->show();
 
-	//simulation->simulate();
-
 	int application_return_value = application.exec();
+
+	std::cout << "Waiting for threads..." << std::endl;
+
+	simulation->wait();
 
 	std::cout << "Return value: " << application_return_value << std::endl;
 
@@ -119,7 +129,7 @@ int main ( int argc, char* argv[] )
 
 void cleanup ( )
 {
-	SAVE_DELETE( simulation );
-	SAVE_DELETE( window );
-	SAVE_DELETE( viewer );
+	SAFE_DELETE( simulation );
+	SAFE_DELETE( window );
+	//SAFE_DELETE( viewer ); // Qt takes care of that already
 }

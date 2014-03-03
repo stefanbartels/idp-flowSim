@@ -55,7 +55,7 @@ NavierStokesGPU::~NavierStokesGPU ( )
 	// cleanup kernel source
 	for( std::vector<std::string*>::iterator it = _clSourceCode.begin(); it != _clSourceCode.end(); ++it )
 	{
-		SAVE_DELETE( *it );
+		SAFE_DELETE( *it );
 	}
 
 	// free buffer memory
