@@ -17,9 +17,9 @@ class Viewer
 
 		// TODO: give access to FlowField class
 		virtual void renderFrame  (
-				double** U,
-				double** V,
-				double** P,
+                REAL** U,
+                REAL** V,
+                REAL** P,
 				int it
 			) = 0;
 };

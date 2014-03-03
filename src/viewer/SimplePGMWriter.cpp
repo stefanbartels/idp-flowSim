@@ -15,9 +15,9 @@ SimplePGMWriter::SimplePGMWriter
 
 //============================================================================
 void SimplePGMWriter::renderFrame (
-		double** U,
-		double** V,
-		double** P,
+        REAL** U,
+        REAL** V,
+        REAL** P,
 		int it
 	)
 {

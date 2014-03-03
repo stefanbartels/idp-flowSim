@@ -12,9 +12,9 @@ class SimplePGMWriter : public Viewer
 			);
 
 		void renderFrame  (
-				double** U,
-				double** V,
-				double** P,
+                REAL** U,
+                REAL** V,
+                REAL** P,
 				int it
 			);
 };
