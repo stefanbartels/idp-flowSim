@@ -6,13 +6,19 @@
 
 //============================================================================
 GLViewer::GLViewer
-(
-	Parameters* parameters,
-	QWidget *parent
-) :
+	(
+		Parameters* parameters,
+		QWidget *parent
+	) :
 	QGLWidget( parent ),
 	Viewer( parameters )
 {
+	_doResize = false;
+	_width = _height = 0;
+
+	// deactivate automatic updates of GL context by main thread
+	setAutoBufferSwap( false );
+
 	/*// get initial size for GL viewer
 	int screen_width   = QApplication::desktop()->width();
 	int screen_height  = QApplication::desktop()->height();
@@ -21,8 +27,23 @@ GLViewer::GLViewer
 
 	// resize OpenGL viewer
 	resize( initial_width, initial_height ); */
+}
 
-	doneCurrent();
+//============================================================================
+void GLViewer::initialze ( )
+{
+	makeCurrent();
+
+	// set background color
+	glClearColor( 0.0, 0.0, 0.0, 1.0 );
+
+	// disable depth buffer
+	glDisable( GL_DEPTH_TEST );
+	glDisable( GL_LIGHTING );
+
+	glClear( GL_COLOR_BUFFER_BIT );
+
+	swapBuffers();
 }
 
 //============================================================================
@@ -33,38 +54,33 @@ void GLViewer::renderFrame (
 		int it
 	)
 {
-	//QMutexLocker locker( &mutex );
-
-	//makeCurrent();
-
-	std::cout << "rendering " << it << std::endl;
-
-	//updateGL();
-
-	//doneCurrent();
-}
-
-
-void GLViewer::initializeGL ( )
-{
-	// set background color
-	glClearColor( 0.7, 0.7, 0.7, 0.0 );
-
-	// disable depth buffer
-	glDisable( GL_DEPTH_TEST );
-	glDisable( GL_LIGHTING );
-
-	doneCurrent();
-}
-
-void GLViewer::resizeGL ( int width, int height )
-{
-	glViewport( 0, 0, (GLint)width, (GLint)height);
-}
-
-void GLViewer::paintGL ( )
-{
-	glClear( GL_COLOR_BUFFER_BIT );
+	if( _doResize )
+	{
+		glViewport( 0, 0, _width, _height );
+		_doResize = false;
+	}
 
 	// do visualization here
+
+
+	swapBuffers();
 }
+
+//============================================================================
+void GLViewer::resizeEvent ( QResizeEvent *event )
+{
+	// prevent Qt from calling resizeGL, so no makeCurrent() is called
+
+	_width  = event->size().width();
+	_height = event->size().height();
+	_doResize = true;
+}
+
+//============================================================================
+void GLViewer::paintEvent ( QPaintEvent* event )
+{
+	// prevent main thread from updating the GL context.
+	// rendering is done in the method renderFrame,
+	// called from the simulation thread
+}
+

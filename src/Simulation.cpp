@@ -51,19 +51,18 @@ Simulation::Simulation ( Parameters* parameters, Viewer* viewer )
 //============================================================================
 Simulation::~Simulation ( )
 {
-	SAFE_DELETE( _solver );
+	//SAFE_DELETE( _solver );
 }
 
 //============================================================================
 void Simulation::run ( )
 {
+	_viewer->initialze();
+
 	std::cout << "Simulate!" << std::endl;
-	if( !_running )
-		_running = true;
 
 	while( _running )
 	{
-
 		std::cout << "Simulating iteration " << _iterations << std::endl;
 
 		//#if VERBOSE
@@ -90,6 +89,7 @@ void Simulation::run ( )
 
 void Simulation::simulate()
 {
+	_running = true;
 	start();
 }
 

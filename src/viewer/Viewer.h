@@ -15,6 +15,8 @@ class Viewer
 			Parameters* parameters
 		);
 
+		virtual void initialze ( );
+
 		// TODO: give access to FlowField class
 		virtual void renderFrame  (
                 REAL** U,

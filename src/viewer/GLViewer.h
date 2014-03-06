@@ -3,7 +3,8 @@
 
 #include "Viewer.h"
 #include <QtOpenGL/QGLWidget>
-#include <QMutex>
+#include <QWidget>
+#include <QResizeEvent>
 
 class GLViewer : public QGLWidget, public Viewer
 {
@@ -11,13 +12,18 @@ class GLViewer : public QGLWidget, public Viewer
 
 	protected:
 
-		QMutex mutex;
+		bool _doResize;
+
+		int _width;
+		int _height;
 
 	public:
 		GLViewer (
 				Parameters* parameters,
 				QWidget* parent = 0
 			);
+
+		void initialze ( );
 
 		void renderFrame (
                 REAL** U,
@@ -27,9 +33,9 @@ class GLViewer : public QGLWidget, public Viewer
 			);
 
 	protected:
-		void initializeGL ( );
-		void resizeGL ( int width, int height );
-		void paintGL ( );
+		void resizeEvent ( QResizeEvent* event );
+		void paintEvent  ( QPaintEvent*  event );
+
 };
 
 #endif // GLVIEWER_H

@@ -8,3 +8,8 @@ Viewer::Viewer
 {
 	_parameters = parameters;
 }
+
+void Viewer::initialze ( )
+{
+
+}
