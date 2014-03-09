@@ -385,7 +385,7 @@ void NavierStokesGPU::doSimulationStep()
 	REAL residual = INFINITY;
 
 	int sor_it = 0;
-	for ( ; sor_it < _parameters->it_max && abs( residual ) > _parameters->epsilon; ++sor_it )
+	for ( ; sor_it < _parameters->it_max && fabs( residual ) > _parameters->epsilon; ++sor_it )
 	{
 		// do SOR step (includes residual computation)
 		residual =  SORPoisson();
@@ -559,12 +559,13 @@ void NavierStokesGPU::computeDeltaT ( )
 	// compute the three options for the min-function
 	REAL opt_a, opt_x, opt_y, min;
 
-	opt_a = ( _parameters->re / 2.0 ) * (
-				  1.0 / ( 1.0 / (_parameters->dx * _parameters->dx)
-				+ 1.0 / (_parameters->dy * _parameters->dy) )
+	opt_a =   ( _parameters->re / 2.0 )
+			* 1.0 / (
+				  1.0 / (_parameters->dx * _parameters->dx)
+				+ 1.0 / (_parameters->dy * _parameters->dy)
 			);
 	opt_x = _parameters->dx / fabs( results[0] ); // results[0] = u_max
-	opt_y = _parameters->dy / fabs( results[1] );// results[1] = v_max
+	opt_y = _parameters->dy / fabs( results[1] ); // results[1] = v_max
 
 	// get smallest value
 	min = opt_a < opt_x ? opt_a : opt_x;
