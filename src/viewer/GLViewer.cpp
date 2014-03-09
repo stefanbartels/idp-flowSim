@@ -168,7 +168,7 @@ void GLViewer::resizeEvent ( QResizeEvent *event )
 }
 
 //============================================================================
-void GLViewer::paintEvent ( QPaintEvent* event )
+void GLViewer::paintEvent ( QPaintEvent* )
 {
 	// prevent main thread from updating the GL context.
 	// rendering is done in the method renderFrame,

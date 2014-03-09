@@ -27,17 +27,14 @@ Simulation::Simulation ( Parameters* parameters, Viewer* viewer )
 	{
 		std::cout << "Simulating on GPU" << std::endl;
 
-		_solver = new NavierStokesGPU();
+		_solver = new NavierStokesGPU( parameters );
 	}
 	else
 	{
 		std::cout << "Simulating on CPU" << std::endl;
 
-		_solver = new NavierStokesCPU();
+		_solver = new NavierStokesCPU( parameters );
 	}
-
-	// TODO: do it another way
-	_solver->setParameters ( parameters );
 
 	// TODO: move check for valid obstacle map to inputParser
 	if( !_solver->setObstacleMap( parameters->obstacleMap ) )

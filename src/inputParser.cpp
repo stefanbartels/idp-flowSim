@@ -20,6 +20,8 @@ void InputParser::setDefaultParameters ( Parameters *parameters)
 	parameters->ylength			= 1.0;
 	parameters->nx				= 128;
 	parameters->ny				= 128;
+	parameters->dx				= 1.0 / 128.0;
+	parameters->dy				= 1.0 / 128.0;
 	parameters->dt				= 0.02;
 	parameters->tau				= 0.5;
 	parameters->it_max			= 100;
@@ -295,7 +297,9 @@ bool InputParser::readParameters
 		std::cerr << "No parameter file specified. Using default parameters." << std::endl;
 	}
 
-
+	// calculate cell dimensions
+	parameters->dx = parameters->xlength / (REAL)parameters->nx;
+	parameters->dy = parameters->ylength / (REAL)parameters->ny;
 
 	//-------------------------------
 	// read obstacle map

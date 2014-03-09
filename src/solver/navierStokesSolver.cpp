@@ -16,43 +16,15 @@
 // -------------------------------------------------
 
 //============================================================================
-void NavierStokesSolver::setParameters
-	(
-		Parameters *parameters
-	)
+NavierStokesSolver::NavierStokesSolver ( Parameters *parameters )
 {
-	_xlength = parameters->xlength;
-	_ylength = parameters->ylength;
+	_parameters = parameters;
+}
 
-	_nx = parameters->nx;
-	_ny = parameters->ny;
+//============================================================================
+NavierStokesSolver::~NavierStokesSolver ( )
+{
 
-	_dx = _xlength / (REAL) _nx;
-	_dy = _ylength / (REAL) _ny;
-
-	_dt = parameters->dt;
-	_tau = parameters->tau;
-
-	_it_max = parameters->it_max;
-
-	_epsilon = parameters->epsilon;
-	_omega = parameters->omega;
-	_gamma = parameters->gamma;
-
-	_re = parameters->re;
-	_gx = parameters->gx;
-	_gy = parameters->gy;
-
-	_ui = parameters->ui;
-	_vi = parameters->vi;
-	_pi = parameters->pi;
-
-	_wN = parameters->wN;
-	_wS = parameters->wS;
-	_wW = parameters->wW;
-	_wE = parameters->wE;
-
-	_problem = parameters->problem;
 }
 
 

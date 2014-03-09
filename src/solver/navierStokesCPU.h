@@ -41,7 +41,7 @@ class NavierStokesCPU : public NavierStokesSolver
 			//! @name constructor / destructor
 			//! @{
 
-		NavierStokesCPU ( );
+		NavierStokesCPU ( Parameters* parameters );
 
 		~NavierStokesCPU ( );
 

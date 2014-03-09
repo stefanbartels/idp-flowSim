@@ -77,7 +77,7 @@ class NavierStokesGPU : public NavierStokesSolver
 			//! @name constructor / destructor
 			//! @{
 
-		NavierStokesGPU ( );
+		NavierStokesGPU ( Parameters* parameters );
 
 		~NavierStokesGPU ( );
 

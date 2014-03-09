@@ -5,6 +5,14 @@
 #include <string>
 #include <stdlib.h>
 
+/*
+ * boundary conditions:
+ * 1 = free-slip
+ * 2 = no-slip
+ * 3 = outflow
+ * 4 = periodic
+ */
+
 struct Parameters
 {
 	// geometry data
@@ -13,6 +21,9 @@ struct Parameters
 
 	int			nx,				//! number of interior cells in x-direction
 				ny;				//! number of interior cells in y-direction
+
+	REAL		dx,				//! width of cells
+				dy;				//! height of cells
 
 	// time stepping data
 	REAL		dt,				//! time step size
@@ -30,6 +41,7 @@ struct Parameters
 				gx,				//! body force gx (e.g. gravity)
 				gy;				//! body force gy (e.g. gravity)
 
+	// TODO: use better names
 	REAL		ui,				//! initial velocity in x-direction
 				vi,				//! initial velocity in y-direction
 				pi;				//! initial pressure
