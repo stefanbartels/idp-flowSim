@@ -51,7 +51,7 @@ Simulation::Simulation ( Parameters* parameters, Viewer* viewer )
 //============================================================================
 Simulation::~Simulation ( )
 {
-	//SAFE_DELETE( _solver );
+	SAFE_DELETE( _solver );
 }
 
 //============================================================================

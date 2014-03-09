@@ -17,11 +17,22 @@ class GLViewer : public QGLWidget, public Viewer
 		int _width;
 		int _height;
 
+		GLuint _textureID;
+
+		GLubyte* _texture;
+
+
+
+		REAL _pressureMin;
+		REAL _pressureFactor;
+
 	public:
 		GLViewer (
 				Parameters* parameters,
 				QWidget* parent = 0
 			);
+
+		~GLViewer ( );
 
 		void initialze ( );
 
@@ -31,6 +42,8 @@ class GLViewer : public QGLWidget, public Viewer
                 REAL** P,
 				int it
 			);
+
+		void rescaleColors ( REAL** P );
 
 	protected:
 		void resizeEvent ( QResizeEvent* event );
