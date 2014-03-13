@@ -95,7 +95,7 @@ void NavierStokesGPU::initialize ( )
 	// set kernel arguments for initialisation
 	REAL initialBoundaryValue = 0.0;
 
-	cl::Kernel* kernel = _clManager->getKernel( setBoundaryAndInteriorKernel );
+	cl::Kernel* kernel = _clManager->getKernel( kernel::setBoundaryAndInterior );
 
 	kernel->setArg( 0, _U_g );
 	kernel->setArg( 1, sizeof(CL_REAL), &initialBoundaryValue ); // boundary value
@@ -105,19 +105,19 @@ void NavierStokesGPU::initialize ( )
 	kernel->setArg( 5, sizeof(int),     &_pitch );
 
 	// call kernel
-	_clManager->runRangeKernel ( setBoundaryAndInteriorKernel, cl::NullRange, _clRange, cl::NullRange );
+	_clManager->runRangeKernel ( kernel::setBoundaryAndInterior, cl::NullRange, _clRange, cl::NullRange );
 
 	// update arguments for V
 	kernel->setArg( 0, _V_g );
 	kernel->setArg( 2, sizeof(CL_REAL), &_parameters->vi ); // interior value
 
-	_clManager->runRangeKernel ( setBoundaryAndInteriorKernel, cl::NullRange, _clRange, cl::NullRange );
+	_clManager->runRangeKernel ( kernel::setBoundaryAndInterior, cl::NullRange, _clRange, cl::NullRange );
 
 
 	kernel->setArg( 0, _P_g );
 	kernel->setArg( 2, sizeof(CL_REAL), &_parameters->pi ); // interior value
 
-	_clManager->runRangeKernel ( setBoundaryAndInteriorKernel, cl::NullRange, _clRange, cl::NullRange );
+	_clManager->runRangeKernel ( kernel::setBoundaryAndInterior, cl::NullRange, _clRange, cl::NullRange );
 
 
 	//-----------------------
@@ -126,7 +126,7 @@ void NavierStokesGPU::initialize ( )
 
 	// todo: might not be neccessary
 
-	kernel = _clManager->getKernel( setKernel );
+	kernel = _clManager->getKernel( kernel::setKernel );
 
 	kernel->setArg( 0, _RHS_g );
 	kernel->setArg( 1, sizeof(CL_REAL), &initialBoundaryValue );
@@ -134,13 +134,13 @@ void NavierStokesGPU::initialize ( )
 	kernel->setArg( 3, sizeof(int),  &ny2 );
 	kernel->setArg( 4, sizeof(int),  &_pitch );
 
-	_clManager->runRangeKernel ( setKernel, cl::NullRange, _clRange, cl::NullRange );
+	_clManager->runRangeKernel ( kernel::setKernel, cl::NullRange, _clRange, cl::NullRange );
 
 	kernel->setArg( 0, _F_g );
-	_clManager->runRangeKernel ( setKernel, cl::NullRange, _clRange, cl::NullRange );
+	_clManager->runRangeKernel ( kernel::setKernel, cl::NullRange, _clRange, cl::NullRange );
 
 	kernel->setArg( 0, _G_g );
-	_clManager->runRangeKernel ( setKernel, cl::NullRange, _clRange, cl::NullRange );
+	_clManager->runRangeKernel ( kernel::setKernel, cl::NullRange, _clRange, cl::NullRange );
 
 
 
@@ -454,13 +454,13 @@ void NavierStokesGPU::setBoundaryConditions ( )
 		// kernel arguments are set in setKernelArguments()
 
 		// call kernel setBoundaryConditionsKernel
-		_clManager->runRangeKernel ( setBoundaryConditionsKernel, cl::NullRange, _clRange, cl::NullRange );
+		_clManager->runRangeKernel ( kernel::setBoundaryConditions, cl::NullRange, _clRange, cl::NullRange );
 
 		// wait for completion
 		_clQueue->finish();
 
 		// call kernel setArbitraryBoundaryConditionsKernel
-		_clManager->runRangeKernel ( setArbitraryBoundaryConditionsKernel, cl::NullRange, _clRange, cl::NullRange );
+		_clManager->runRangeKernel ( kernel::setArbitraryBoundaryConditions, cl::NullRange, _clRange, cl::NullRange );
 
 		// wait for completion
 		_clQueue->finish();
@@ -479,7 +479,7 @@ void NavierStokesGPU::setSpecificBoundaryConditions ( )
 	try
 	{
 		// the problem specific kernel is determined during kernel compilation
-		_clManager->runRangeKernel ( problemSpecificKernel, cl::NullRange, _clRange, cl::NullRange );
+		_clManager->runRangeKernel ( kernel::problemSpecific, cl::NullRange, _clRange, cl::NullRange );
 
 		// wait for completion
 		_clQueue->finish();
@@ -509,12 +509,12 @@ void NavierStokesGPU::computeDeltaT ( )
 		cl::Buffer results_g ( *_clContext, CL_MEM_WRITE_ONLY, sizeof(CL_REAL) * 2 );
 
 		// set result buffer as kernel argument
-		_clManager->getKernel( getUVMaximumKernel )->setArg( 2, results_g );
+		_clManager->getKernel( kernel::getUVMaximum )->setArg( 2, results_g );
 
 		// call min/max reduction kernel
 		// todo: determine optimal work size N: N = x^2, N<=max_work_size, SIZE<=max_work_size ? N>=SIZE
 		_clManager->runRangeKernel (
-					getUVMaximumKernel,
+					kernel::getUVMaximum,
 					cl::NullRange,
 					cl::NDRange( _clWorkgroupSize ),
 					cl::NDRange( _clWorkgroupSize )		// make sure that all GPU cores are in one workgroup for optimal reduction speed
@@ -554,23 +554,19 @@ void NavierStokesGPU::computeDeltaT ( )
 //============================================================================
 void NavierStokesGPU::computeFG ( )
 {
-	REAL alpha = 0.9; // todo: select alpha
-
 	try
 	{
 		// set missing kernel arguments
-		_clManager->getKernel( computeFKernel )->setArg( 5, sizeof(CL_REAL), &_parameters->dt );
-		_clManager->getKernel( computeFKernel )->setArg( 7, sizeof(CL_REAL), &alpha );
-		_clManager->getKernel( computeGKernel )->setArg( 5, sizeof(CL_REAL), &_parameters->dt );
-		_clManager->getKernel( computeGKernel )->setArg( 7, sizeof(CL_REAL), &alpha );
+		_clManager->getKernel( kernel::computeF )->setArg( 5, sizeof(CL_REAL), &_parameters->dt );
+		_clManager->getKernel( kernel::computeG )->setArg( 5, sizeof(CL_REAL), &_parameters->dt );
 
 		// todo: try combined kernel for F and G
 
 		// call kernel for F computation
-		_clManager->runRangeKernel ( computeFKernel, cl::NullRange, _clRange, cl::NullRange );
+		_clManager->runRangeKernel ( kernel::computeF, cl::NullRange, _clRange, cl::NullRange );
 
 		// call kernel for G computation
-		_clManager->runRangeKernel ( computeGKernel, cl::NullRange, _clRange, cl::NullRange );
+		_clManager->runRangeKernel ( kernel::computeG, cl::NullRange, _clRange, cl::NullRange );
 
 		// wait for completion
 		_clQueue->finish();
@@ -588,10 +584,10 @@ void NavierStokesGPU::computeRightHandSide ( )
 	try
 	{
 		// set missing kernel arguments
-		_clManager->getKernel( rightHandSideKernel )->setArg( 3, sizeof(CL_REAL), &_parameters->dt );
+		_clManager->getKernel( kernel::rightHandSide )->setArg( 3, sizeof(CL_REAL), &_parameters->dt );
 
 		// call kernel for RHS computation
-		_clManager->runRangeKernel ( rightHandSideKernel, cl::NullRange, _clRange, cl::NullRange );
+		_clManager->runRangeKernel ( kernel::rightHandSide, cl::NullRange, _clRange, cl::NullRange );
 
 		// wait for completion
 		_clQueue->finish();
@@ -626,20 +622,20 @@ REAL NavierStokesGPU::SORPoisson()
 		// todo: use correct range and offset for kernel call to exclude boundaries
 
 		// set red flag as kernel argument
-		_clManager->getKernel( gaussSeidelRedBlackKernel )->setArg( 5, sizeof(int), &red );
+		_clManager->getKernel( kernel::gaussSeidelRedBlack )->setArg( 5, sizeof(int), &red );
 
 		// call kernel for black cells
-		_clManager->runRangeKernel ( gaussSeidelRedBlackKernel, cl::NullRange, _clRange, cl::NullRange );
+		_clManager->runRangeKernel ( kernel::gaussSeidelRedBlack, cl::NullRange, _clRange, cl::NullRange );
 
 		// wait for completion
 		_clQueue->finish();
 
 		// set flag for red cells
 		red = 1;
-		_clManager->getKernel( gaussSeidelRedBlackKernel )->setArg( 5, sizeof(int), &red );
+		_clManager->getKernel( kernel::gaussSeidelRedBlack )->setArg( 5, sizeof(int), &red );
 
 		// call kernel for red cells
-		_clManager->runRangeKernel ( gaussSeidelRedBlackKernel, cl::NullRange, _clRange, cl::NullRange );
+		_clManager->runRangeKernel ( kernel::gaussSeidelRedBlack, cl::NullRange, _clRange, cl::NullRange );
 
 		// wait for completion
 		_clQueue->finish();
@@ -652,7 +648,7 @@ REAL NavierStokesGPU::SORPoisson()
 		// call pressureBoundaryConditionsKernel
 		// todo: use better range (1D wit max(nx,ny))
 
-		_clManager->runRangeKernel ( pressureBoundaryConditionsKernel, cl::NullRange, _clRange, cl::NullRange );
+		_clManager->runRangeKernel ( kernel::pressureBoundaryConditions, cl::NullRange, _clRange, cl::NullRange );
 
 		// wait for completion
 		_clQueue->finish();
@@ -668,12 +664,12 @@ REAL NavierStokesGPU::SORPoisson()
 		REAL result = 0.0;
 
 		// set output buffer as kernel argument
-		_clManager->getKernel( pressureResidualReductionKernel )->setArg( 2, result_g );
+		_clManager->getKernel( kernel::pressureResidualReduction )->setArg( 2, result_g );
 
 		// call pressureResidualReductionKernel
 		// todo: determine optimal work size N: N = x^2, N<=max_work_size, SIZE<=max_work_size ? N>=SIZE
 		_clManager->runRangeKernel (
-						pressureResidualReductionKernel,
+						kernel::pressureResidualReduction,
 						cl::NullRange,
 						cl::NDRange( _clWorkgroupSize ),
 						cl::NDRange( _clWorkgroupSize )		// make sure that all GPU cores are in one workgroup for optimal reduction speed
@@ -705,10 +701,10 @@ void NavierStokesGPU::adaptUV ( )
 	try
 	{
 		// set missing kernel arguments
-		_clManager->getKernel( updateUVKernel )->setArg( 6, sizeof(CL_REAL), &_parameters->dt );
+		_clManager->getKernel( kernel::updateUV )->setArg( 6, sizeof(CL_REAL), &_parameters->dt );
 
 		// call kernel for RHS computation
-		_clManager->runRangeKernel ( updateUVKernel, cl::NullRange, _clRange, cl::NullRange );
+		_clManager->runRangeKernel ( kernel::updateUV, cl::NullRange, _clRange, cl::NullRange );
 
 		// wait for completion
 		_clQueue->finish();
@@ -732,6 +728,8 @@ void NavierStokesGPU::setKernelArguments ( )
 	int nx = _parameters->nx + 2;
 	int ny = _parameters->ny + 2;
 
+	REAL alphaFG = 0.9; // TODO: select
+
 	// constant values for pressure equation
 	float dx2 = _parameters->dx * _parameters->dx;
 	float dy2 = _parameters->dy * _parameters->dy;
@@ -746,7 +744,7 @@ void NavierStokesGPU::setKernelArguments ( )
 		cl::Kernel* kernel;
 
 		// set kernel arguments for setBoundaryConditionsKernel
-		kernel = _clManager->getKernel( setBoundaryConditionsKernel );
+		kernel = _clManager->getKernel( kernel::setBoundaryConditions );
 		kernel->setArg( 0, _U_g );
 		kernel->setArg( 1, _V_g );
 		kernel->setArg( 2, sizeof(int), &(_parameters->wN) ); // northern boundary condition
@@ -757,7 +755,7 @@ void NavierStokesGPU::setKernelArguments ( )
 		kernel->setArg( 7, sizeof(int), &ny );
 
 		// set kernel arguments for setArbitraryBoundaryConditionsKernel
-		kernel = _clManager->getKernel( setArbitraryBoundaryConditionsKernel );
+		kernel = _clManager->getKernel( kernel::setArbitraryBoundaryConditions );
 		kernel->setArg( 0, _U_g );
 		kernel->setArg( 1, _V_g );
 		kernel->setArg( 2, _FLAG_g ); // northern boundary condition
@@ -766,13 +764,13 @@ void NavierStokesGPU::setKernelArguments ( )
 
 		// set kernel arguments for the problem specific boundary condition kernel
 		// TODO: skip this if no problem dependent kernel is specified
-		kernel = _clManager->getKernel( problemSpecificKernel );
+		kernel = _clManager->getKernel( kernel::problemSpecific );
 		kernel->setArg( 0, _U_g );
 		kernel->setArg( 1, sizeof(int), &nx );
 		kernel->setArg( 2, sizeof(int), &ny );
 
 		// kernel arguments for delta t computation (UV maximum)
-		kernel = _clManager->getKernel( getUVMaximumKernel );
+		kernel = _clManager->getKernel( kernel::getUVMaximum );
 		kernel->setArg( 0, _U_g );
 		kernel->setArg( 1, _V_g );
 		// argument 2: result buffer: { REAL u_max, REAL v_max }
@@ -782,7 +780,7 @@ void NavierStokesGPU::setKernelArguments ( )
 		kernel->setArg( 6, sizeof(int), &ny );
 
 		// kernel arguments for F and G computation
-		kernel = _clManager->getKernel( computeFKernel );
+		kernel = _clManager->getKernel( kernel::computeF );
 		kernel->setArg( 0,  _U_g );
 		kernel->setArg( 1,  _V_g );
 		kernel->setArg( 2,  _FLAG_g );
@@ -791,13 +789,13 @@ void NavierStokesGPU::setKernelArguments ( )
 		// todo: copied to device memory now or at kernel call time?
 		// kernel->setArg( 5, sizeof(CL_REAL), &_dt ); // set before kernel call
 		kernel->setArg( 6,  sizeof(CL_REAL), &(_parameters->re) );
-		// kernel->setArg( 7, sizeof(CL_REAL), &alpha ); // set before kernel call
+		kernel->setArg( 7,  sizeof(CL_REAL), &alphaFG );
 		kernel->setArg( 8,  sizeof(CL_REAL), &(_parameters->dx) );
 		kernel->setArg( 9,  sizeof(CL_REAL), &(_parameters->dy) );
 		kernel->setArg( 10, sizeof(int), &nx );
 		kernel->setArg( 11, sizeof(int), &ny );
 
-		kernel = _clManager->getKernel( computeGKernel );
+		kernel = _clManager->getKernel( kernel::computeG );
 		kernel->setArg( 0,  _U_g );
 		kernel->setArg( 1,  _V_g );
 		kernel->setArg( 2,  _FLAG_g );
@@ -805,14 +803,14 @@ void NavierStokesGPU::setKernelArguments ( )
 		kernel->setArg( 4,  sizeof(CL_REAL), &(_parameters->gy) );
 		// kernel->setArg( 5, sizeof(CL_REAL), &_dt ); // set before kernel call
 		kernel->setArg( 6,  sizeof(CL_REAL), &(_parameters->re) );
-		// kernel->setArg( 7, sizeof(CL_REAL), &alpha ); // set before kernel call
+		kernel->setArg( 7,  sizeof(CL_REAL), &alphaFG );
 		kernel->setArg( 8,  sizeof(CL_REAL), &(_parameters->dx) );
 		kernel->setArg( 9,  sizeof(CL_REAL), &(_parameters->dy) );
 		kernel->setArg( 10, sizeof(int), &nx );
 		kernel->setArg( 11, sizeof(int), &ny );
 
 		// kernel arguments for RHS computation
-		kernel = _clManager->getKernel( rightHandSideKernel );
+		kernel = _clManager->getKernel( kernel::rightHandSide );
 		kernel->setArg( 0, _F_g );
 		kernel->setArg( 1, _G_g );
 		kernel->setArg( 2, _RHS_g );
@@ -823,7 +821,7 @@ void NavierStokesGPU::setKernelArguments ( )
 		kernel->setArg( 7, sizeof(int), &ny );
 
 		// kernel arguments for gauß seidel step in pressure solving
-		kernel = _clManager->getKernel( gaussSeidelRedBlackKernel );
+		kernel = _clManager->getKernel( kernel::gaussSeidelRedBlack );
 		kernel->setArg( 0, _P_g );
 		kernel->setArg( 1, _FLAG_g );
 		kernel->setArg( 2, _RHS_g );
@@ -835,14 +833,14 @@ void NavierStokesGPU::setKernelArguments ( )
 		kernel->setArg( 8, sizeof(int), &ny );
 
 		// kernel arguments for updating pressure boundary conditions
-		kernel = _clManager->getKernel( pressureBoundaryConditionsKernel );
+		kernel = _clManager->getKernel( kernel::pressureBoundaryConditions );
 		kernel->setArg( 0, _P_g );
 		// kernel->setArg( 1, sizeof(int), &problemId ); // todo: id of the problem
 		kernel->setArg( 1, sizeof(int), &nx );
 		kernel->setArg( 2, sizeof(int), &ny );
 
 		// kernel arguments for pressure iteration residual computation
-		kernel = _clManager->getKernel( pressureResidualReductionKernel );
+		kernel = _clManager->getKernel( kernel::pressureResidualReduction );
 		kernel->setArg( 0, _P_g );
 		kernel->setArg( 1, _RHS_g );
 		// argument 2: result buffer: REAL sum
@@ -853,7 +851,7 @@ void NavierStokesGPU::setKernelArguments ( )
 		kernel->setArg( 7, sizeof(int), &ny );
 
 		// kernel arguments for UV update
-		kernel = _clManager->getKernel( updateUVKernel );
+		kernel = _clManager->getKernel( kernel::updateUV );
 		kernel->setArg( 0,  _P_g );
 		kernel->setArg( 1,  _F_g );
 		kernel->setArg( 2,  _G_g );

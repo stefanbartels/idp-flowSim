@@ -18,21 +18,23 @@
 //====================================================================
 //! Kernel Identifiers
 
+namespace kernel {
 enum KernelIDs
 {
-	setKernel                            = 0,
-	setBoundaryAndInteriorKernel         = 1,
-	setBoundaryConditionsKernel          = 2,
-	setArbitraryBoundaryConditionsKernel = 3,
-	problemSpecificKernel                = 4,
-	getUVMaximumKernel					 = 5,
-	computeFKernel                       = 6,
-	computeGKernel                       = 7,
-	rightHandSideKernel                  = 8,
-	gaussSeidelRedBlackKernel            = 9,
-	pressureBoundaryConditionsKernel     = 10,
-	pressureResidualReductionKernel      = 11,
-	updateUVKernel                       = 12
+	setKernel                      = 0,
+	setBoundaryAndInterior         = 1,
+	setBoundaryConditions          = 2,
+	setArbitraryBoundaryConditions = 3,
+	problemSpecific                = 4,
+	getUVMaximum                   = 5,
+	computeF                       = 6,
+	computeG                       = 7,
+	rightHandSide                  = 8,
+	gaussSeidelRedBlack            = 9,
+	pressureBoundaryConditions     = 10,
+	pressureResidualReduction      = 11,
+	updateUV                       = 12
+};
 };
 
 //====================================================================
