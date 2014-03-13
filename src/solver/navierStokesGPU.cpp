@@ -73,7 +73,7 @@ void NavierStokesGPU::init ( )
 {
 	int nx2 = _nx + 2;
 	int ny2 = _ny + 2;
-	int size = ( _nx + 2 ) * ( _ny * 2 );
+	int size = ( _nx + 2 ) * ( _ny + 2 );
 
 	// define global thread range
 	_clRange = cl::NDRange( nx2, ny2 );
