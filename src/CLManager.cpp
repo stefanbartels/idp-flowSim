@@ -107,7 +107,7 @@ void CLManager::loadKernels ( )
 	// load kernels
 	//-----------------------
 
-		_clKernels = std::vector<cl::Kernel>();
+		_clKernels = std::vector<cl::Kernel>( 12 );
 
 	#if VERBOSE
 		std::cout << "Binding kernels..." << std::endl;
@@ -116,45 +116,45 @@ void CLManager::loadKernels ( )
 	try
 	{
 		// auxiliary kernels [0],[1]
-		_clKernels.push_back( cl::Kernel( _clProgram, "setKernel" ) );
-		_clKernels.push_back( cl::Kernel( _clProgram, "setBoundaryAndInteriorKernel" ) );
+		_clKernels[setKernel] = cl::Kernel( _clProgram, "setKernel" );
+		_clKernels[setBoundaryAndInteriorKernel] = cl::Kernel( _clProgram, "setBoundaryAndInteriorKernel" );
 
 		// boundary condition kernels [2],[3]
-		_clKernels.push_back( cl::Kernel( _clProgram, "setBoundaryConditionsKernel"	) );
-		_clKernels.push_back( cl::Kernel( _clProgram, "setArbitraryBoundaryConditionsKernel" ) );
+		_clKernels[setBoundaryConditionsKernel] = cl::Kernel( _clProgram, "setBoundaryConditionsKernel"	);
+		_clKernels[setArbitraryBoundaryConditionsKernel] = cl::Kernel( _clProgram, "setArbitraryBoundaryConditionsKernel" );
 
 		// problem specific kernel [4]
 		if ( _parameters->problem == "moving_lid" )
 		{
-			_clKernels.push_back( cl::Kernel( _clProgram, "setMovingLidBoundaryConditionsKernel" ) );
+			_clKernels[problemSpecificKernel] = cl::Kernel( _clProgram, "setMovingLidBoundaryConditionsKernel" );
 		}
 		else if ( _parameters->problem == "left_inflow" )
 		{
-			_clKernels.push_back( cl::Kernel( _clProgram, "setLeftInflowBoundaryConditionsKernel" ) );
+			_clKernels[problemSpecificKernel] = cl::Kernel( _clProgram, "setLeftInflowBoundaryConditionsKernel" );
 		}
-		else
+		/*else
 		{
 			// add empty dummy kernel to prevent kernel list from being shifted
-			_clKernels.push_back( cl::Kernel() );
-		}
+			_clKernels[problemSpecificKernel] = cl::Kernel();
+		}*/
 
 		// kernel to find maximum UV value for delta t computation [5]
-		_clKernels.push_back( cl::Kernel( _clProgram, "getUVMaximumKernel" ) );
+		_clKernels[getUVMaximumKernel] = cl::Kernel( _clProgram, "getUVMaximumKernel" );
 
 		// kernels for F and G computation [6],[7]
-		_clKernels.push_back( cl::Kernel( _clProgram, "computeF" ) );
-		_clKernels.push_back( cl::Kernel( _clProgram, "computeG" ) );
+		_clKernels[computeFKernel] = cl::Kernel( _clProgram, "computeF" );
+		_clKernels[computeGKernel] = cl::Kernel( _clProgram, "computeG" );
 
 		// kernel for the right hand side of the pressure equation [8]
-		_clKernels.push_back( cl::Kernel( _clProgram, "rightHandSideKernel" ) );
+		_clKernels[rightHandSideKernel] = cl::Kernel( _clProgram, "rightHandSideKernel" );
 
 		// kernel for pressure equation step [9],[10],[11]
-		_clKernels.push_back( cl::Kernel( _clProgram, "gaussSeidelRedBlackKernel" ) );
-		_clKernels.push_back( cl::Kernel( _clProgram, "pressureBoundaryConditionsKernel" ) );
-		_clKernels.push_back( cl::Kernel( _clProgram, "pressureResidualReductionKernel" ) );
+		_clKernels[gaussSeidelRedBlackKernel] = cl::Kernel( _clProgram, "gaussSeidelRedBlackKernel" );
+		_clKernels[pressureBoundaryConditionsKernel] = cl::Kernel( _clProgram, "pressureBoundaryConditionsKernel" );
+		_clKernels[pressureResidualReductionKernel] = cl::Kernel( _clProgram, "pressureResidualReductionKernel" );
 
 		// kernel for velocity update [12]
-		_clKernels.push_back( cl::Kernel( _clProgram, "updateUVKernel" ) );
+		_clKernels[updateUVKernel] = cl::Kernel( _clProgram, "updateUVKernel" );
 	}
 	catch( cl::Error error )
 	{
