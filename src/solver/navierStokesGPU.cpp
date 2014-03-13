@@ -5,7 +5,6 @@
 
 #include "navierStokesGPU.h"
 
-#include <fstream>
 #include <iostream>
 #include <math.h>
 
@@ -18,47 +17,30 @@
 // -------------------------------------------------
 
 //============================================================================
-NavierStokesGPU::NavierStokesGPU ( Parameters* parameters )
-	: NavierStokesSolver( parameters )
+NavierStokesGPU::NavierStokesGPU
+	(
+		Parameters* parameters,
+		CLManager* clManager
+	)
+	: NavierStokesSolver ( parameters )
 {
+	_clManager = clManager;
+	_clContext = clManager->getContext();
+	_clQueue   = clManager->getQueue();
+
 	_pitch = 0;
-	_clWorkgroupSize = 0;
 
-	try
-	{
-		// create OpenCL platform
-		cl::Platform::get( &_clPlatforms );
-		_clPlatforms[0].getDevices( CL_DEVICE_TYPE_GPU, &_clDevices );
+	// load and compile kernels
+	_clManager->loadKernels();
 
-		// create context
-		_clContext = cl::Context( _clDevices );
-
-		// create command queue
-		_clQueue = cl::CommandQueue( _clContext, _clDevices[0] );
-
-		// define global thread range
-		_clRange = cl::NullRange;
-	}
-	catch( cl::Error error )
-	{
-		std::cerr << "CL ERROR: " << error.what() << "(" << error.err() << ")" << std::endl;
-		throw error;
-	}
+	// define global thread range
+	_clRange = cl::NDRange( _parameters->nx + 2, _parameters->ny + 2 );
+	_clWorkgroupSize = _clManager->getWorkgroupSize();
 }
 
 //============================================================================
 NavierStokesGPU::~NavierStokesGPU ( )
 {
-	#if VERBOSE
-		std::cout << "destructing NSGPU..." << std::endl;
-	#endif
-
-	// cleanup kernel source
-	for( std::vector<std::string*>::iterator it = _clSourceCode.begin(); it != _clSourceCode.end(); ++it )
-	{
-		SAFE_DELETE( *it );
-	}
-
 	// free buffer memory
 	freeHostMatrix( _U_host );
 	freeHostMatrix( _V_host );
@@ -70,21 +52,15 @@ NavierStokesGPU::~NavierStokesGPU ( )
 // -------------------------------------------------
 
 //============================================================================
-void NavierStokesGPU::init ( )
+void NavierStokesGPU::initialize ( )
 {
 	int nx2 = _parameters->nx + 2;
 	int ny2 = _parameters->ny + 2;
 	int size = ( _parameters->nx + 2 ) * ( _parameters->ny * 2 );
 
-	// define global thread range
-	_clRange = cl::NDRange( nx2, ny2 );
-
 	// calculate pitch
 	// todo
 	_pitch = _parameters->nx + 2;
-
-	// load and compile kernels
-	loadKernels();
 
 	//-----------------------
 	// allocate memory for matrices U, V, P, RHS, F, G
@@ -94,13 +70,14 @@ void NavierStokesGPU::init ( )
 		std::cout << "allocating device buffers..." << std::endl;
 	#endif
 
-	// todo: use pitched memory
-	_U_g   = cl::Buffer ( _clContext, CL_MEM_READ_WRITE, sizeof(CL_REAL) * size );
-	_V_g   = cl::Buffer ( _clContext, CL_MEM_READ_WRITE, sizeof(CL_REAL) * size );
-	_P_g   = cl::Buffer ( _clContext, CL_MEM_READ_WRITE, sizeof(CL_REAL) * size );
-	_RHS_g = cl::Buffer ( _clContext, CL_MEM_READ_WRITE, sizeof(CL_REAL) * size );
-	_F_g   = cl::Buffer ( _clContext, CL_MEM_READ_WRITE, sizeof(CL_REAL) * size );
-	_G_g   = cl::Buffer ( _clContext, CL_MEM_READ_WRITE, sizeof(CL_REAL) * size );
+	// TODO: use pitched memory
+	// TODO: implement an allocate buffer method in the cl manager?
+	_U_g   = cl::Buffer ( *_clContext, CL_MEM_READ_WRITE, sizeof(CL_REAL) * size );
+	_V_g   = cl::Buffer ( *_clContext, CL_MEM_READ_WRITE, sizeof(CL_REAL) * size );
+	_P_g   = cl::Buffer ( *_clContext, CL_MEM_READ_WRITE, sizeof(CL_REAL) * size );
+	_RHS_g = cl::Buffer ( *_clContext, CL_MEM_READ_WRITE, sizeof(CL_REAL) * size );
+	_F_g   = cl::Buffer ( *_clContext, CL_MEM_READ_WRITE, sizeof(CL_REAL) * size );
+	_G_g   = cl::Buffer ( *_clContext, CL_MEM_READ_WRITE, sizeof(CL_REAL) * size );
 
 	//_FLAG_g
 
@@ -118,34 +95,29 @@ void NavierStokesGPU::init ( )
 	// set kernel arguments for initialisation
 	REAL initialBoundaryValue = 0.0;
 
-	_clKernels[1].setArg( 0, _U_g );
-	_clKernels[1].setArg( 1, sizeof(CL_REAL), &initialBoundaryValue ); // boundary value
-	_clKernels[1].setArg( 2, sizeof(CL_REAL), &_parameters->ui ); // interior value
-	_clKernels[1].setArg( 3, sizeof(int),     &nx2 );
-	_clKernels[1].setArg( 4, sizeof(int),     &ny2 );
-	_clKernels[1].setArg( 5, sizeof(int),     &_pitch );
+	cl::Kernel* kernel = _clManager->getKernel(1);
+
+	kernel->setArg( 0, _U_g );
+	kernel->setArg( 1, sizeof(CL_REAL), &initialBoundaryValue ); // boundary value
+	kernel->setArg( 2, sizeof(CL_REAL), &_parameters->ui ); // interior value
+	kernel->setArg( 3, sizeof(int),     &nx2 );
+	kernel->setArg( 4, sizeof(int),     &ny2 );
+	kernel->setArg( 5, sizeof(int),     &_pitch );
 
 	// call kernel
-	_clQueue.enqueueNDRangeKernel (
-			_clKernels[1],
-			cl::NullRange,	// offset
-			_clRange,		// global
-			cl::NullRange	// local
-		);
+	_clManager->runRangeKernel ( 1, cl::NullRange, _clRange, cl::NullRange );
 
-
-	std::cout << "Range: " << _clRange[0] << "*" << _clRange[1] << std::endl;
 	// update arguments for V
-	_clKernels[1].setArg( 0, _V_g );
-	_clKernels[1].setArg( 2, sizeof(CL_REAL), &_parameters->vi ); // interior value
+	kernel->setArg( 0, _V_g );
+	kernel->setArg( 2, sizeof(CL_REAL), &_parameters->vi ); // interior value
 
-	_clQueue.enqueueNDRangeKernel ( _clKernels[1], cl::NullRange, _clRange, cl::NullRange );
+	_clManager->runRangeKernel ( 1, cl::NullRange, _clRange, cl::NullRange );
 
 
-	_clKernels[1].setArg( 0, _P_g );
-	_clKernels[1].setArg( 2, sizeof(CL_REAL), &_parameters->pi ); // interior value
+	kernel->setArg( 0, _P_g );
+	kernel->setArg( 2, sizeof(CL_REAL), &_parameters->pi ); // interior value
 
-	_clQueue.enqueueNDRangeKernel ( _clKernels[1], cl::NullRange, _clRange, cl::NullRange );
+	_clManager->runRangeKernel ( 1, cl::NullRange, _clRange, cl::NullRange );
 
 
 	//-----------------------
@@ -154,19 +126,21 @@ void NavierStokesGPU::init ( )
 
 	// todo: might not be neccessary
 
-	_clKernels[0].setArg( 0, _RHS_g );
-	_clKernels[0].setArg( 1, sizeof(CL_REAL), &initialBoundaryValue );
-	_clKernels[0].setArg( 2, sizeof(int),  &nx2 );
-	_clKernels[0].setArg( 3, sizeof(int),  &ny2 );
-	_clKernels[0].setArg( 4, sizeof(int),  &_pitch );
+	kernel = _clManager->getKernel(0);
 
-	_clQueue.enqueueNDRangeKernel ( _clKernels[0], cl::NullRange, _clRange, cl::NullRange );
+	kernel->setArg( 0, _RHS_g );
+	kernel->setArg( 1, sizeof(CL_REAL), &initialBoundaryValue );
+	kernel->setArg( 2, sizeof(int),  &nx2 );
+	kernel->setArg( 3, sizeof(int),  &ny2 );
+	kernel->setArg( 4, sizeof(int),  &_pitch );
 
-	_clKernels[0].setArg( 0, _F_g );
-	_clQueue.enqueueNDRangeKernel ( _clKernels[0], cl::NullRange, _clRange, cl::NullRange );
+	_clManager->runRangeKernel ( 0, cl::NullRange, _clRange, cl::NullRange );
 
-	_clKernels[0].setArg( 0, _G_g );
-	_clQueue.enqueueNDRangeKernel ( _clKernels[0], cl::NullRange, _clRange, cl::NullRange );
+	kernel->setArg( 0, _F_g );
+	_clManager->runRangeKernel ( 0, cl::NullRange, _clRange, cl::NullRange );
+
+	kernel->setArg( 0, _G_g );
+	_clManager->runRangeKernel ( 0, cl::NullRange, _clRange, cl::NullRange );
 
 
 
@@ -178,16 +152,16 @@ void NavierStokesGPU::init ( )
 		std::cout << "allocating host buffers..." << std::endl;
 	#endif
 
-	_U_host = allocHostMatrix ( _parameters->nx + 2, _parameters->ny + 2 );
-	_V_host = allocHostMatrix ( _parameters->nx + 2, _parameters->ny + 2 );
-	_P_host = allocHostMatrix ( _parameters->nx + 2, _parameters->ny + 2 );
+	_U_host = allocHostMatrix ( nx2, ny2 );
+	_V_host = allocHostMatrix ( nx2, ny2 );
+	_P_host = allocHostMatrix ( nx2, ny2 );
 
 
 	// set kernel arguments for frequently called kernels
 	setKernelArguments();
 
 	// wait for completion
-	_clQueue.finish();
+	_clQueue->finish();
 }
 
 //============================================================================
@@ -245,6 +219,7 @@ bool NavierStokesGPU::setObstacleMap
 				// cell is a boundary cell
 
 				// check for invalid boundary cell (between two fluid cells)
+				// TODO: do that in the parameter parser
 				if( ( map[y-1][x] && map[y+1][x] ) || ( map[y][x-1] && map[y][x+1] ) )
 					return false;
 
@@ -304,7 +279,7 @@ bool NavierStokesGPU::setObstacleMap
 	// allocate memory and copy to device
 	// todo: use pitched memory
 	_FLAG_g   = cl::Buffer (
-					_clContext,
+					*_clContext,
 					CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
 					nx2 * ny2 * sizeof( unsigned char ),
 					*flag
@@ -417,7 +392,7 @@ REAL **NavierStokesGPU::getU_CPU ( )
 {
 	// copy data from device to host
 	// beware: the host array has type REAL**
-	_clQueue.enqueueReadBuffer (
+	_clQueue->enqueueReadBuffer(
 				_U_g,		// device buffer
 				CL_TRUE,	// blocking
 				0,			// offset
@@ -425,7 +400,7 @@ REAL **NavierStokesGPU::getU_CPU ( )
 				*_U_host	// host buffer
 			);
 
-	_clQueue.finish();
+	_clQueue->finish();
 
 	return _U_host;
 }
@@ -435,7 +410,7 @@ REAL **NavierStokesGPU::getV_CPU ( )
 {
 	// copy data from device to host
 	// beware: the host array has type REAL**
-	_clQueue.enqueueReadBuffer (
+	_clQueue->enqueueReadBuffer (
 				_V_g,
 				CL_TRUE,
 				0,
@@ -443,7 +418,7 @@ REAL **NavierStokesGPU::getV_CPU ( )
 				*_V_host
 			);
 
-	_clQueue.finish();
+	_clQueue->finish();
 
 	return _V_host;
 }
@@ -453,7 +428,7 @@ REAL **NavierStokesGPU::getP_CPU ( )
 {
 	// copy data from device to host
 	// beware: the host array has type REAL**
-	_clQueue.enqueueReadBuffer (
+	_clQueue->enqueueReadBuffer (
 				_P_g,
 				CL_TRUE,
 				0,
@@ -461,7 +436,7 @@ REAL **NavierStokesGPU::getP_CPU ( )
 				*_P_host
 			);
 
-	_clQueue.finish();
+	_clQueue->finish();
 
 	return _P_host;
 }
@@ -479,16 +454,16 @@ void NavierStokesGPU::setBoundaryConditions ( )
 		// kernel arguments are set in setKernelArguments()
 
 		// call kernel setBoundaryConditionsKernel
-		_clQueue.enqueueNDRangeKernel ( _clKernels[2], cl::NullRange, _clRange, cl::NullRange );
+		_clManager->runRangeKernel ( 2, cl::NullRange, _clRange, cl::NullRange );
 
 		// wait for completion
-		_clQueue.finish();
+		_clQueue->finish();
 
 		// call kernel setArbitraryBoundaryConditionsKernel
-		_clQueue.enqueueNDRangeKernel ( _clKernels[3], cl::NullRange, _clRange, cl::NullRange );
+		_clManager->runRangeKernel ( 3, cl::NullRange, _clRange, cl::NullRange );
 
 		// wait for completion
-		_clQueue.finish();
+		_clQueue->finish();
 	}
 	catch( cl::Error error )
 	{
@@ -503,10 +478,10 @@ void NavierStokesGPU::setSpecificBoundaryConditions ( )
 	try
 	{
 		// the problem specific kernel is determined during kernel compilation
-		_clQueue.enqueueNDRangeKernel ( _clKernels[4], cl::NullRange, _clRange, cl::NullRange );
+		_clManager->runRangeKernel ( 4, cl::NullRange, _clRange, cl::NullRange );
 
 		// wait for completion
-		_clQueue.finish();
+		_clQueue->finish();
 	}
 	catch( cl::Error error )
 	{
@@ -530,25 +505,25 @@ void NavierStokesGPU::computeDeltaT ( )
 	{
 		// allocate memory for UV maximum result
 		// todo: move to constructor?
-		cl::Buffer results_g ( _clContext, CL_MEM_WRITE_ONLY, sizeof(CL_REAL) * 2 );
+		cl::Buffer results_g ( *_clContext, CL_MEM_WRITE_ONLY, sizeof(CL_REAL) * 2 );
 
 		// set result buffer as kernel argument
-		_clKernels[5].setArg( 2, results_g );
+		_clManager->getKernel(5)->setArg( 2, results_g );
 
 		// call min/max reduction kernel
 		// todo: determine optimal work size N: N = x^2, N<=max_work_size, SIZE<=max_work_size ? N>=SIZE
-		_clQueue.enqueueNDRangeKernel (
-					_clKernels[5],
+		_clManager->runRangeKernel (
+					5,
 					cl::NullRange,
 					cl::NDRange( _clWorkgroupSize ),
 					cl::NDRange( _clWorkgroupSize )		// make sure that all GPU cores are in one workgroup for optimal reduction speed
 				);
 
 		// wait for completion
-		_clQueue.finish();
+		_clQueue->finish();
 
 		// retrieve reduction result
-		_clQueue.enqueueReadBuffer( results_g, CL_TRUE, 0, sizeof(CL_REAL) * 2, results );
+		_clQueue->enqueueReadBuffer( results_g, CL_TRUE, 0, sizeof(CL_REAL) * 2, results );
 	}
 	catch( cl::Error error )
 	{
@@ -583,21 +558,21 @@ void NavierStokesGPU::computeFG ( )
 	try
 	{
 		// set missing kernel arguments
-		_clKernels[6].setArg( 5, sizeof(CL_REAL), &_parameters->dt );
-		_clKernels[6].setArg( 7, sizeof(CL_REAL), &alpha );
-		_clKernels[7].setArg( 5, sizeof(CL_REAL), &_parameters->dt );
-		_clKernels[7].setArg( 7, sizeof(CL_REAL), &alpha );
+		_clManager->getKernel(6)->setArg( 5, sizeof(CL_REAL), &_parameters->dt );
+		_clManager->getKernel(6)->setArg( 7, sizeof(CL_REAL), &alpha );
+		_clManager->getKernel(7)->setArg( 5, sizeof(CL_REAL), &_parameters->dt );
+		_clManager->getKernel(7)->setArg( 7, sizeof(CL_REAL), &alpha );
 
 		// todo: try combined kernel for F and G
 
 		// call kernel for F computation
-		_clQueue.enqueueNDRangeKernel ( _clKernels[6], cl::NullRange, _clRange, cl::NullRange );
+		_clManager->runRangeKernel ( 6, cl::NullRange, _clRange, cl::NullRange );
 
 		// call kernel for G computation
-		_clQueue.enqueueNDRangeKernel ( _clKernels[7], cl::NullRange, _clRange, cl::NullRange );
+		_clManager->runRangeKernel ( 7, cl::NullRange, _clRange, cl::NullRange );
 
 		// wait for completion
-		_clQueue.finish();
+		_clQueue->finish();
 	}
 	catch( cl::Error error )
 	{
@@ -612,13 +587,13 @@ void NavierStokesGPU::computeRightHandSide ( )
 	try
 	{
 		// set missing kernel arguments
-		_clKernels[8].setArg( 3, sizeof(CL_REAL), &_parameters->dt );
+		_clManager->getKernel(8)->setArg( 3, sizeof(CL_REAL), &_parameters->dt );
 
 		// call kernel for RHS computation
-		_clQueue.enqueueNDRangeKernel ( _clKernels[8], cl::NullRange, _clRange, cl::NullRange );
+		_clManager->runRangeKernel ( 8, cl::NullRange, _clRange, cl::NullRange );
 
 		// wait for completion
-		_clQueue.finish();
+		_clQueue->finish();
 	}
 	catch( cl::Error error )
 	{
@@ -650,23 +625,23 @@ REAL NavierStokesGPU::SORPoisson()
 		// todo: use correct range and offset for kernel call to exclude boundaries
 
 		// set red flag as kernel argument
-		_clKernels[9].setArg( 5, sizeof(int), &red );
+		_clManager->getKernel(9)->setArg( 5, sizeof(int), &red );
 
 		// call kernel for black cells
-		_clQueue.enqueueNDRangeKernel ( _clKernels[9], cl::NullRange, _clRange, cl::NullRange );
+		_clManager->runRangeKernel ( 9, cl::NullRange, _clRange, cl::NullRange );
 
 		// wait for completion
-		_clQueue.finish();
+		_clQueue->finish();
 
 		// set flag for red cells
 		red = 1;
-		_clKernels[9].setArg( 5, sizeof(int), &red );
+		_clManager->getKernel(9)->setArg( 5, sizeof(int), &red );
 
 		// call kernel for red cells
-		_clQueue.enqueueNDRangeKernel ( _clKernels[9], cl::NullRange, _clRange, cl::NullRange );
+		_clManager->runRangeKernel ( 9, cl::NullRange, _clRange, cl::NullRange );
 
 		// wait for completion
-		_clQueue.finish();
+		_clQueue->finish();
 
 
 		//-----------------------
@@ -676,10 +651,10 @@ REAL NavierStokesGPU::SORPoisson()
 		// call pressureBoundaryConditionsKernel
 		// todo: use better range (1D wit max(nx,ny))
 
-		_clQueue.enqueueNDRangeKernel ( _clKernels[10], cl::NullRange, _clRange, cl::NullRange );
+		_clManager->runRangeKernel ( 10, cl::NullRange, _clRange, cl::NullRange );
 
 		// wait for completion
-		_clQueue.finish();
+		_clQueue->finish();
 
 
 		//-----------------------
@@ -688,26 +663,26 @@ REAL NavierStokesGPU::SORPoisson()
 
 		// allocate output buffer
 		// todo: move to constructor?
-		cl::Buffer result_g ( _clContext, CL_MEM_WRITE_ONLY, sizeof(CL_REAL) );
+		cl::Buffer result_g ( *_clContext, CL_MEM_WRITE_ONLY, sizeof(CL_REAL) );
 		REAL result = 0.0;
 
 		// set output buffer as kernel argument
-		_clKernels[11].setArg( 2, result_g );
+		_clManager->getKernel(11)->setArg( 2, result_g );
 
 		// call pressureResidualReductionKernel
 		// todo: determine optimal work size N: N = x^2, N<=max_work_size, SIZE<=max_work_size ? N>=SIZE
-		_clQueue.enqueueNDRangeKernel (
-						_clKernels[11],
+		_clManager->runRangeKernel (
+						11,
 						cl::NullRange,
 						cl::NDRange( _clWorkgroupSize ),
 						cl::NDRange( _clWorkgroupSize )		// make sure that all GPU cores are in one workgroup for optimal reduction speed
 					);
 
 		// wait for completion
-		_clQueue.finish();
+		_clQueue->finish();
 
 		// get result
-		_clQueue.enqueueReadBuffer( result_g, CL_TRUE, 0, sizeof(CL_REAL) , &result );
+		_clQueue->enqueueReadBuffer( result_g, CL_TRUE, 0, sizeof(CL_REAL) , &result );
 
 		// compute residual
 		residual = sqrt( result / (_parameters->nx * _parameters->ny) );
@@ -729,13 +704,13 @@ void NavierStokesGPU::adaptUV ( )
 	try
 	{
 		// set missing kernel arguments
-		_clKernels[12].setArg( 6, sizeof(CL_REAL), &_parameters->dt );
+		_clManager->getKernel(12)->setArg( 6, sizeof(CL_REAL), &_parameters->dt );
 
 		// call kernel for RHS computation
-		_clQueue.enqueueNDRangeKernel ( _clKernels[12], cl::NullRange, _clRange, cl::NullRange );
+		_clManager->runRangeKernel ( 12, cl::NullRange, _clRange, cl::NullRange );
 
 		// wait for completion
-		_clQueue.finish();
+		_clQueue->finish();
 	}
 	catch( cl::Error error )
 	{
@@ -750,142 +725,11 @@ void NavierStokesGPU::adaptUV ( )
 // -------------------------------------------------
 
 //============================================================================
-void NavierStokesGPU::loadKernels ( )
-{
-	#if VERBOSE
-		std::cout << "Compiling kernels..." << std::endl;
-	#endif
-
-	// cl source codes
-	cl::Program::Sources source;
-
-	// load kernels from files
-	loadSource ( source, "kernels/auxiliary.cl" );
-	loadSource ( source, "kernels/boundaryConditions.cl" );
-	loadSource ( source, "kernels/deltaT.cl" );
-	loadSource ( source, "kernels/computeFG.cl" );
-	loadSource ( source, "kernels/rightHandSide.cl" );
-	loadSource ( source, "kernels/pressure.cl" ); // todo
-	loadSource ( source, "kernels/updateUV.cl" );
-
-	// create program
-	_clProgram = cl::Program( _clContext, source );
-
-	// compile opencl source
-	try
-	{
-		_clProgram.build( _clDevices );
-	}
-	catch( cl::Error error )
-	{
-		// display kernel compile errors
-		if( error.err() == CL_BUILD_PROGRAM_FAILURE )
-		{
-			std::cerr << "CL kernel build error:" << std::endl <<
-						 _clProgram.getBuildInfo<CL_PROGRAM_BUILD_LOG>( _clDevices[0] ) << std::endl;
-		}
-		else
-		{
-			std::cerr << "CL ERROR while building kernels: " << error.err() << std::endl;
-		}
-		throw error;
-	}
-
-	#if VERBOSE
-		std::cout << "Kernels compiled" << std::endl;
-	#endif
-
-	//-----------------------
-	// load kernels
-	//-----------------------
-
-		_clKernels = std::vector<cl::Kernel>();
-
-	#if VERBOSE
-		std::cout << "Binding kernels..." << std::endl;
-	#endif
-
-	try
-	{
-		// auxiliary kernels [0],[1]
-		_clKernels.push_back( cl::Kernel( _clProgram, "setKernel" ) );
-		_clKernels.push_back( cl::Kernel( _clProgram, "setBoundaryAndInteriorKernel" ) );
-
-		// boundary condition kernels [2],[3]
-		_clKernels.push_back( cl::Kernel( _clProgram, "setBoundaryConditionsKernel"	) );
-		_clKernels.push_back( cl::Kernel( _clProgram, "setArbitraryBoundaryConditionsKernel" ) );
-
-		// problem specific kernel [4]
-		if ( _parameters->problem == "moving_lid" )
-		{
-			_clKernels.push_back( cl::Kernel( _clProgram, "setMovingLidBoundaryConditionsKernel" ) );
-		}
-		else if ( _parameters->problem == "left_inflow" )
-		{
-			_clKernels.push_back( cl::Kernel( _clProgram, "setLeftInflowBoundaryConditionsKernel" ) );
-		}
-		else
-		{
-			// add empty dummy kernel to prevent kernel list from being shifted
-			_clKernels.push_back( cl::Kernel() );
-		}
-
-		// kernel to find maximum UV value for delta t computation [5]
-		_clKernels.push_back( cl::Kernel( _clProgram, "getUVMaximumKernel" ) );
-
-		// kernels for F and G computation [6],[7]
-		_clKernels.push_back( cl::Kernel( _clProgram, "computeF" ) );
-		_clKernels.push_back( cl::Kernel( _clProgram, "computeG" ) );
-
-		// kernel for the right hand side of the pressure equation [8]
-		_clKernels.push_back( cl::Kernel( _clProgram, "rightHandSideKernel" ) );
-
-		// kernel for pressure equation step [9],[10],[11]
-		_clKernels.push_back( cl::Kernel( _clProgram, "gaussSeidelRedBlackKernel" ) );
-		_clKernels.push_back( cl::Kernel( _clProgram, "pressureBoundaryConditionsKernel" ) );
-		_clKernels.push_back( cl::Kernel( _clProgram, "pressureResidualReductionKernel" ) );
-
-		// kernel for velocity update [12]
-		_clKernels.push_back( cl::Kernel( _clProgram, "updateUVKernel" ) );
-	}
-	catch( cl::Error error )
-	{
-		std::cerr << "CL ERROR while kernel binding: " << error.what() << "(" << error.err() << ")" << std::endl;
-		throw error;
-	}
-
-
-	// get work group size
-	_clWorkgroupSize = _clKernels[0].getWorkGroupInfo< CL_KERNEL_WORK_GROUP_SIZE >( _clDevices[0] );
-}
-
-//============================================================================
-void NavierStokesGPU::loadSource
-	(
-		cl::Program::Sources&	sources,
-		std::string				fileName
-	)
-{
-	// read file
-	std::ifstream cl_file( fileName.c_str() );
-
-	// using a pointer and new, because the strings have been deleted to soon and where damaged until compilation
-	// remember to delete them after compilation or in destructor!
-	std::string *cl_sourcecode = new std::string ( std::istreambuf_iterator<char>( cl_file ), (std::istreambuf_iterator<char>()) );
-	_clSourceCode.push_back( cl_sourcecode );
-
-	// add it to the source list
-	sources.push_back( std::make_pair( cl_sourcecode->c_str(), cl_sourcecode->length() ) );
-}
-
-//============================================================================
 void NavierStokesGPU::setKernelArguments ( )
 {
 	// domain size including boundaries
 	int nx = _parameters->nx + 2;
 	int ny = _parameters->ny + 2;
-
-	std::cout << "int: " << sizeof(int) << ", cluint: " << sizeof(cl_uint) << std::endl;
 
 	// constant values for pressure equation
 	float dx2 = _parameters->dx * _parameters->dx;
@@ -898,115 +742,128 @@ void NavierStokesGPU::setKernelArguments ( )
 
 	try
 	{
+		cl::Kernel* kernel;
+
 		// set kernel arguments for setBoundaryConditionsKernel
-		_clKernels[2].setArg( 0, _U_g );
-		_clKernels[2].setArg( 1, _V_g );
-		_clKernels[2].setArg( 2, sizeof(int), &(_parameters->wN) ); // northern boundary condition
-		_clKernels[2].setArg( 3, sizeof(int), &(_parameters->wE) ); // eastern boundary condition
-		_clKernels[2].setArg( 4, sizeof(int), &(_parameters->wS) ); // southern boundary condition
-		_clKernels[2].setArg( 5, sizeof(int), &(_parameters->wW) ); // western boundary condition
-		_clKernels[2].setArg( 6, sizeof(int), &nx );
-		_clKernels[2].setArg( 7, sizeof(int), &ny );
+		kernel = _clManager->getKernel(2);
+		kernel->setArg( 0, _U_g );
+		kernel->setArg( 1, _V_g );
+		kernel->setArg( 2, sizeof(int), &(_parameters->wN) ); // northern boundary condition
+		kernel->setArg( 3, sizeof(int), &(_parameters->wE) ); // eastern boundary condition
+		kernel->setArg( 4, sizeof(int), &(_parameters->wS) ); // southern boundary condition
+		kernel->setArg( 5, sizeof(int), &(_parameters->wW) ); // western boundary condition
+		kernel->setArg( 6, sizeof(int), &nx );
+		kernel->setArg( 7, sizeof(int), &ny );
 
 		// set kernel arguments for setArbitraryBoundaryConditionsKernel
-		_clKernels[3].setArg( 0, _U_g );
-		_clKernels[3].setArg( 1, _V_g );
-		_clKernels[3].setArg( 2, _FLAG_g ); // northern boundary condition
-		_clKernels[3].setArg( 3, sizeof(int), &nx );
-		_clKernels[3].setArg( 4, sizeof(int), &ny );
+		kernel = _clManager->getKernel(3);
+		kernel->setArg( 0, _U_g );
+		kernel->setArg( 1, _V_g );
+		kernel->setArg( 2, _FLAG_g ); // northern boundary condition
+		kernel->setArg( 3, sizeof(int), &nx );
+		kernel->setArg( 4, sizeof(int), &ny );
 
 		// set kernel arguments for the problem specific boundary condition kernel
 		// TODO: skip this if no problem dependent kernel is specified
-		_clKernels[4].setArg( 0, _U_g );
-		_clKernels[4].setArg( 1, sizeof(int), &nx );
-		_clKernels[4].setArg( 2, sizeof(int), &ny );
+		kernel = _clManager->getKernel(4);
+		kernel->setArg( 0, _U_g );
+		kernel->setArg( 1, sizeof(int), &nx );
+		kernel->setArg( 2, sizeof(int), &ny );
 
 		// kernel arguments for delta t computation (UV maximum)
-		_clKernels[5].setArg( 0, _U_g );
-		_clKernels[5].setArg( 1, _V_g );
+		kernel = _clManager->getKernel(5);
+		kernel->setArg( 0, _U_g );
+		kernel->setArg( 1, _V_g );
 		// argument 2: result buffer: { REAL u_max, REAL v_max }
-		_clKernels[5].setArg( 3, sizeof(CL_REAL) * _clWorkgroupSize, NULL); // dynamically allocated local shared memory for U
-		_clKernels[5].setArg( 4, sizeof(CL_REAL) * _clWorkgroupSize, NULL); // dynamically allocated local shared memory for V
-		_clKernels[5].setArg( 5, sizeof(int), &nx );
-		_clKernels[5].setArg( 6, sizeof(int), &ny );
+		kernel->setArg( 3, sizeof(CL_REAL) * _clWorkgroupSize, NULL); // dynamically allocated local shared memory for U
+		kernel->setArg( 4, sizeof(CL_REAL) * _clWorkgroupSize, NULL); // dynamically allocated local shared memory for V
+		kernel->setArg( 5, sizeof(int), &nx );
+		kernel->setArg( 6, sizeof(int), &ny );
 
 		// kernel arguments for F and G computation
-		_clKernels[6].setArg( 0,  _U_g );
-		_clKernels[6].setArg( 1,  _V_g );
-		_clKernels[6].setArg( 2,  _FLAG_g );
-		_clKernels[6].setArg( 3,  _F_g );
-		_clKernels[6].setArg( 4,  sizeof(CL_REAL), &(_parameters->gx) );
+		kernel = _clManager->getKernel(6);
+		kernel->setArg( 0,  _U_g );
+		kernel->setArg( 1,  _V_g );
+		kernel->setArg( 2,  _FLAG_g );
+		kernel->setArg( 3,  _F_g );
+		kernel->setArg( 4,  sizeof(CL_REAL), &(_parameters->gx) );
 		// todo: copied to device memory now or at kernel call time?
-		// _clKernels[6].setArg( 5, sizeof(CL_REAL), &_dt ); // set before kernel call
-		_clKernels[6].setArg( 6,  sizeof(CL_REAL), &(_parameters->re) );
-		// _clKernels[6].setArg( 7, sizeof(CL_REAL), &alpha ); // set before kernel call
-		_clKernels[6].setArg( 8,  sizeof(CL_REAL), &(_parameters->dx) );
-		_clKernels[6].setArg( 9,  sizeof(CL_REAL), &(_parameters->dy) );
-		_clKernels[6].setArg( 10, sizeof(int), &nx );
-		_clKernels[6].setArg( 11, sizeof(int), &ny );
+		// kernel->setArg( 5, sizeof(CL_REAL), &_dt ); // set before kernel call
+		kernel->setArg( 6,  sizeof(CL_REAL), &(_parameters->re) );
+		// kernel->setArg( 7, sizeof(CL_REAL), &alpha ); // set before kernel call
+		kernel->setArg( 8,  sizeof(CL_REAL), &(_parameters->dx) );
+		kernel->setArg( 9,  sizeof(CL_REAL), &(_parameters->dy) );
+		kernel->setArg( 10, sizeof(int), &nx );
+		kernel->setArg( 11, sizeof(int), &ny );
 
-		_clKernels[7].setArg( 0,  _U_g );
-		_clKernels[7].setArg( 1,  _V_g );
-		_clKernels[7].setArg( 2,  _FLAG_g );
-		_clKernels[7].setArg( 3,  _G_g );
-		_clKernels[7].setArg( 4,  sizeof(CL_REAL), &(_parameters->gy) );
-		// _clKernels[7].setArg( 5, sizeof(CL_REAL), &_dt ); // set before kernel call
-		_clKernels[7].setArg( 6,  sizeof(CL_REAL), &(_parameters->re) );
-		// _clKernels[7].setArg( 7, sizeof(CL_REAL), &alpha ); // set before kernel call
-		_clKernels[7].setArg( 8,  sizeof(CL_REAL), &(_parameters->dx) );
-		_clKernels[7].setArg( 9,  sizeof(CL_REAL), &(_parameters->dy) );
-		_clKernels[7].setArg( 10, sizeof(int), &nx );
-		_clKernels[7].setArg( 11, sizeof(int), &ny );
+		kernel = _clManager->getKernel(7);
+		kernel->setArg( 0,  _U_g );
+		kernel->setArg( 1,  _V_g );
+		kernel->setArg( 2,  _FLAG_g );
+		kernel->setArg( 3,  _G_g );
+		kernel->setArg( 4,  sizeof(CL_REAL), &(_parameters->gy) );
+		// kernel->setArg( 5, sizeof(CL_REAL), &_dt ); // set before kernel call
+		kernel->setArg( 6,  sizeof(CL_REAL), &(_parameters->re) );
+		// kernel->setArg( 7, sizeof(CL_REAL), &alpha ); // set before kernel call
+		kernel->setArg( 8,  sizeof(CL_REAL), &(_parameters->dx) );
+		kernel->setArg( 9,  sizeof(CL_REAL), &(_parameters->dy) );
+		kernel->setArg( 10, sizeof(int), &nx );
+		kernel->setArg( 11, sizeof(int), &ny );
 
 		// kernel arguments for RHS computation
-		_clKernels[8].setArg( 0, _F_g );
-		_clKernels[8].setArg( 1, _G_g );
-		_clKernels[8].setArg( 2, _RHS_g );
-		// _clKernels[8].setArg( 3, sizeof(CL_REAL), &_dt ); // set before kernel call
-		_clKernels[8].setArg( 4, sizeof(CL_REAL), &(_parameters->dx) );
-		_clKernels[8].setArg( 5, sizeof(CL_REAL), &(_parameters->dy) );
-		_clKernels[8].setArg( 6, sizeof(int), &nx );
-		_clKernels[8].setArg( 7, sizeof(int), &ny );
+		kernel = _clManager->getKernel(8);
+		kernel->setArg( 0, _F_g );
+		kernel->setArg( 1, _G_g );
+		kernel->setArg( 2, _RHS_g );
+		// kernel->setArg( 3, sizeof(CL_REAL), &_dt ); // set before kernel call
+		kernel->setArg( 4, sizeof(CL_REAL), &(_parameters->dx) );
+		kernel->setArg( 5, sizeof(CL_REAL), &(_parameters->dy) );
+		kernel->setArg( 6, sizeof(int), &nx );
+		kernel->setArg( 7, sizeof(int), &ny );
 
 		// kernel arguments for gauß seidel step in pressure solving
-		_clKernels[9].setArg( 0, _P_g );
-		_clKernels[9].setArg( 1, _FLAG_g );
-		_clKernels[9].setArg( 2, _RHS_g );
-		_clKernels[9].setArg( 3, sizeof(CL_REAL), &dx2 );
-		_clKernels[9].setArg( 4, sizeof(CL_REAL), &dy2 );
-		// _clKernels[9].setArg( 5, sizeof(int), &red ); // red/black flag, set before kernel call
-		_clKernels[9].setArg( 6, sizeof(CL_REAL), &constant_expr );
-		_clKernels[9].setArg( 7, sizeof(int), &nx );
-		_clKernels[9].setArg( 8, sizeof(int), &ny );
+		kernel = _clManager->getKernel(9);
+		kernel->setArg( 0, _P_g );
+		kernel->setArg( 1, _FLAG_g );
+		kernel->setArg( 2, _RHS_g );
+		kernel->setArg( 3, sizeof(CL_REAL), &dx2 );
+		kernel->setArg( 4, sizeof(CL_REAL), &dy2 );
+		// kernel->setArg( 5, sizeof(int), &red ); // red/black flag, set before kernel call
+		kernel->setArg( 6, sizeof(CL_REAL), &constant_expr );
+		kernel->setArg( 7, sizeof(int), &nx );
+		kernel->setArg( 8, sizeof(int), &ny );
 
 		// kernel arguments for updating pressure boundary conditions
-		_clKernels[10].setArg( 0, _P_g );
-		// _clKernels[10].setArg( 1, sizeof(int), &problemId ); // todo: id of the problem
-		_clKernels[10].setArg( 1, sizeof(int), &nx );
-		_clKernels[10].setArg( 2, sizeof(int), &ny );
+		kernel = _clManager->getKernel(10);
+		kernel->setArg( 0, _P_g );
+		// kernel->setArg( 1, sizeof(int), &problemId ); // todo: id of the problem
+		kernel->setArg( 1, sizeof(int), &nx );
+		kernel->setArg( 2, sizeof(int), &ny );
 
 		// kernel arguments for pressure iteration residual computation
-		_clKernels[11].setArg( 0, _P_g );
-		_clKernels[11].setArg( 1, _RHS_g );
+		kernel = _clManager->getKernel(11);
+		kernel->setArg( 0, _P_g );
+		kernel->setArg( 1, _RHS_g );
 		// argument 2: result buffer: REAL sum
-		_clKernels[11].setArg( 3, sizeof(CL_REAL) * _clWorkgroupSize, NULL); // dynamically allocated local shared memory for reduction
-		_clKernels[11].setArg( 4, sizeof(CL_REAL), &dx2 );
-		_clKernels[11].setArg( 5, sizeof(CL_REAL), &dy2 );
-		_clKernels[11].setArg( 6, sizeof(int), &nx );
-		_clKernels[11].setArg( 7, sizeof(int), &ny );
+		kernel->setArg( 3, sizeof(CL_REAL) * _clWorkgroupSize, NULL); // dynamically allocated local shared memory for reduction
+		kernel->setArg( 4, sizeof(CL_REAL), &dx2 );
+		kernel->setArg( 5, sizeof(CL_REAL), &dy2 );
+		kernel->setArg( 6, sizeof(int), &nx );
+		kernel->setArg( 7, sizeof(int), &ny );
 
 		// kernel arguments for UV update
-		_clKernels[12].setArg( 0,  _P_g );
-		_clKernels[12].setArg( 1,  _F_g );
-		_clKernels[12].setArg( 2,  _G_g );
-		_clKernels[12].setArg( 3,  _FLAG_g );
-		_clKernels[12].setArg( 4,  _U_g );
-		_clKernels[12].setArg( 5,  _V_g );
-		// _clKernels[12].setArg( 6, sizeof(CL_REAL), &_dt ); // set before kernel call
-		_clKernels[12].setArg( 7,  sizeof(CL_REAL), &(_parameters->dx) );
-		_clKernels[12].setArg( 8,  sizeof(CL_REAL), &(_parameters->dy) );
-		_clKernels[12].setArg( 9,  sizeof(int), &nx );
-		_clKernels[12].setArg( 10, sizeof(int), &ny );
+		kernel = _clManager->getKernel(12);
+		kernel->setArg( 0,  _P_g );
+		kernel->setArg( 1,  _F_g );
+		kernel->setArg( 2,  _G_g );
+		kernel->setArg( 3,  _FLAG_g );
+		kernel->setArg( 4,  _U_g );
+		kernel->setArg( 5,  _V_g );
+		// kernel->setArg( 6, sizeof(CL_REAL), &_dt ); // set before kernel call
+		kernel->setArg( 7,  sizeof(CL_REAL), &(_parameters->dx) );
+		kernel->setArg( 8,  sizeof(CL_REAL), &(_parameters->dy) );
+		kernel->setArg( 9,  sizeof(int), &nx );
+		kernel->setArg( 10, sizeof(int), &ny );
 	}
 	catch( cl::Error error )
 	{

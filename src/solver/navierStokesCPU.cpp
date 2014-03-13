@@ -44,7 +44,7 @@ NavierStokesCPU::~NavierStokesCPU()
 // -------------------------------------------------
 
 //============================================================================
-void NavierStokesCPU::init ( )
+void NavierStokesCPU::initialize ( )
 {
 	// allocate memory for matrices U, V, P, RHS, F, G
 

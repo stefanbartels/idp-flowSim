@@ -16,7 +16,8 @@ SOURCES += \
     src/solver/navierStokesSolver.cpp \
     src/Simulation.cpp \
 	src/ui/MainWindow.cpp \
-    src/viewer/GLViewer.cpp
+    src/viewer/GLViewer.cpp \
+    src/CLManager.cpp
 
 HEADERS += \
 	src/solver/navierStokesSolver.h \
@@ -30,7 +31,8 @@ HEADERS += \
     src/Simulation.h \
 	src/ui/MainWindow.h \
     src/Parameters.h \
-    src/viewer/GLViewer.h
+    src/viewer/GLViewer.h \
+    src/CLManager.h
 
 OTHER_FILES += \
     src/kernels/auxiliary.cl \

@@ -5,6 +5,7 @@
 #include "Parameters.h"
 #include "solver/navierStokesSolver.h"
 #include "viewer/Viewer.h"
+#include "CLManager.h"
 #include <QThread>
 
 //====================================================================
@@ -21,6 +22,8 @@ class Simulation : public QThread
 		NavierStokesSolver*	_solver;
 
 		Viewer*				_viewer;
+
+		CLManager*			_clManager;
 
 		bool                _running;
 		int					_iterations;

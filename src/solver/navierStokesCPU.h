@@ -55,7 +55,7 @@ class NavierStokesCPU : public NavierStokesSolver
 
 			//! \brief initialises the arrays U, V and P
 
-		void	init ( );
+		void	initialize ( );
 
 			//! \brief takes the obstacle map and creates geometry information for each cell
 			//! \param obstacle map (domain size)

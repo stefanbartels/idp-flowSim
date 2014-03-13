@@ -5,19 +5,9 @@
 //**    includes
 //********************************************************************
 
-#define __CL_ENABLE_EXCEPTIONS
-
 #include "navierStokesSolver.h"
+#include "../CLManager.h"
 
-#include <CL/cl.hpp>
-#include <CL/opencl.h>
-
-// uncommented, as all kernels use float at the moment
-//#if REAL // not working yet!
-//	#define CL_REAL cl_double
-//#else
-	#define CL_REAL cl_float
-//#endif
 
 //====================================================================
 /*! \class NavierStokesCpu
@@ -52,14 +42,21 @@ class NavierStokesGPU : public NavierStokesSolver
 				**_V_host,
 				**_P_host;
 
+
 		// OpenCL data
-		std::vector<cl::Platform>	_clPlatforms;
+		CLManager*			_clManager;			//! Pointer to the CL Manager
+		cl::NDRange			_clRange;			//! Range to use for kernels, size of the domain incl. boundaries
+		int					_clWorkgroupSize;	//! maximum size of a work group
+
+		cl::Context*		_clContext; // context and queue allow use of cl functions without extra methods in the manager
+		cl::CommandQueue*	_clQueue;
+
+
+/*		std::vector<cl::Platform>	_clPlatforms;
 		std::vector<cl::Device>		_clDevices;
 
-		cl::Context					_clContext;
-		cl::CommandQueue			_clQueue;
 
-		cl::NDRange					_clRange;
+
 
 		// kernels
 		std::vector<std::string*>	_clSourceCode;
@@ -67,7 +64,7 @@ class NavierStokesGPU : public NavierStokesSolver
 		cl::Program					_clProgram;
 
 		int							_clWorkgroupSize;	//! maximum size of a work group
-
+*/
 			//! @}
 
 	public:
@@ -77,7 +74,11 @@ class NavierStokesGPU : public NavierStokesSolver
 			//! @name constructor / destructor
 			//! @{
 
-		NavierStokesGPU ( Parameters* parameters );
+		NavierStokesGPU
+			(
+				Parameters* parameters,
+				CLManager*  clManager
+			);
 
 		~NavierStokesGPU ( );
 
@@ -91,7 +92,7 @@ class NavierStokesGPU : public NavierStokesSolver
 
 			//! \brief allocates and initialises simulation memory in GPU memory
 
-		void	init ( );
+		void	initialize ( );
 
 			//! \brief takes the obstacle map and creates geometry information for each cell
 			//! \param obstacle map (domain size)
@@ -186,12 +187,6 @@ class NavierStokesGPU : public NavierStokesSolver
 
 		void	loadKernels ( );
 
-			//! \brief loads the content of a cl source file to the source vector
-
-		void	loadSource (
-						cl::Program::Sources&	sources,
-						std::string				fileName
-					);
 
 			//! \brief sets kernel arguments for frequently called kernels
 

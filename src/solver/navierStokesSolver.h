@@ -54,7 +54,7 @@ class NavierStokesSolver
 
 		//! \brief allocates and initialises simulation memory
 
-	virtual void init ( ) = 0;
+	virtual void initialize ( ) = 0;
 
 	/*
 		//! \brief defines the arbitrary geometry

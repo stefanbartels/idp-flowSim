@@ -17,6 +17,8 @@ Simulation::Simulation ( Parameters* parameters, Viewer* viewer )
 	_parameters = parameters;
 	_viewer = viewer;
 
+	_clManager = 0;
+
 	_running = false;
 
 	_iterations = 0;
@@ -27,7 +29,9 @@ Simulation::Simulation ( Parameters* parameters, Viewer* viewer )
 	{
 		std::cout << "Simulating on GPU" << std::endl;
 
-		_solver = new NavierStokesGPU( parameters );
+		_clManager = new CLManager( parameters );
+
+		_solver = new NavierStokesGPU( parameters, _clManager );
 	}
 	else
 	{
@@ -42,13 +46,14 @@ Simulation::Simulation ( Parameters* parameters, Viewer* viewer )
 		throw "Obstacle map invalid. Make sure there are no boundary cells between two fluid cells!";
 	}
 
-	_solver->init();
+	_solver->initialize();
 }
 
 //============================================================================
 Simulation::~Simulation ( )
 {
 	SAFE_DELETE( _solver );
+	SAFE_DELETE( _clManager );
 }
 
 //============================================================================
@@ -60,11 +65,9 @@ void Simulation::run ( )
 
 	while( _running )
 	{
-		std::cout << "Simulating iteration " << _iterations << std::endl;
-
-		//#if VERBOSE
-		//	std::cout << "simulating frame " << n << std::endl;
-		//#endif
+		#if VERBOSE
+			std::cout << "Simulating iteration " << _iterations << std::endl;
+		#endif
 
 		// do simulation step
 		_solver->doSimulationStep( );
