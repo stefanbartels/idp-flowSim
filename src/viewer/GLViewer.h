@@ -23,8 +23,8 @@ class GLViewer : public QGLWidget, public Viewer
 
 
 
-		REAL _pressureMin;
-		REAL _pressureFactor;
+		REAL _minValue;
+		REAL _factor;
 
 	public:
 		GLViewer (
@@ -44,6 +44,7 @@ class GLViewer : public QGLWidget, public Viewer
 			);
 
 		void rescaleColors ( REAL** P );
+		void rescaleColors ( REAL** U, REAL** V );
 
 	protected:
 		void resizeEvent ( QResizeEvent* event );

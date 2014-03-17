@@ -3,6 +3,7 @@
 #include <iostream>
 #include <QApplication>
 #include <QDesktopWidget>
+#include <cmath>
 
 //============================================================================
 GLViewer::GLViewer
@@ -91,21 +92,40 @@ void GLViewer::renderFrame (
 		_doResize = false;
 	}
 
-	rescaleColors ( P );
+	//rescaleColors ( P );
+	rescaleColors ( U, V );
 
-	unsigned int idx = 0;
+	unsigned int idx;
+	GLubyte color;
 
 	for( unsigned int y = 0; y < _parameters->ny; ++y )
 	for( unsigned int x = 0; x < _parameters->nx; ++x )
 	{
-		// +1 for boundaries
-		GLubyte color = (GLubyte)( (P[y+1][x+1] - _pressureMin ) * _pressureFactor );
-
 		idx = (y * _parameters->nx + x) * 3;
 
-		_texture[idx]     = color;
-		_texture[idx + 1] = color;
-		_texture[idx + 2] = color;
+		if( !_parameters->obstacleMap[y+1][x+1] )
+		{
+			_texture[idx]     = 0;
+			_texture[idx + 1] = 0;
+			_texture[idx + 2] = 255;
+		}
+		else
+		{
+
+			color = (GLubyte)(
+					  (
+						  sqrt(
+							  U[y+1][x+1] * U[y+1][x+1]	// +1 for boundaries
+							+ V[y+1][x+1] * V[y+1][x+1]
+						  )
+						- _minValue )
+					* _factor );
+			// color = (GLubyte)( (P[y+1][x+1] - _minValue ) * _factor ); // pressure
+
+			_texture[idx]     = color;
+			_texture[idx + 1] = color;
+			_texture[idx + 2] = color;
+		}
 	}
 
 
@@ -143,18 +163,45 @@ void GLViewer::rescaleColors ( REAL** P )
 	// calculate factors to scale pressure values to 0-255
 	int size = (_parameters->nx + 2) * (_parameters->ny + 2);
 	REAL max = 0.0;
-	_pressureMin = 0.0;
+	_minValue = 0.0;
 
 	for ( int i = 0; i < size; ++i )
 	{
 		if ( (*P)[i] > max )
 			max = (*P)[i];
-		if ( (*P)[i] < _pressureMin )
-			_pressureMin = (*P)[i];
+		if ( (*P)[i] < _minValue )
+			_minValue = (*P)[i];
 	}
 
-	if ( max - _pressureMin != 0.0 )
-		_pressureFactor = 255.0 / ( max - _pressureMin );
+	if ( max - _minValue != 0.0 )
+		_factor = 255.0 / ( max - _minValue );
+}
+
+//============================================================================
+void GLViewer::rescaleColors ( REAL** U, REAL** V )
+{
+	// calculate factors to scale pressure values to 0-255
+	int size = (_parameters->nx + 2) * (_parameters->ny + 2);
+
+	REAL max = -INFINITY;
+	_minValue = 0.0;
+
+	REAL value;
+
+	for ( int i = 0; i < size; ++i )
+	{
+		value = (*U)[i] * (*U)[i] + (*V)[i] * (*V)[i];
+		if ( value > max )
+			max = value;
+		if ( value < _minValue )
+			_minValue = value;
+	}
+
+	max = sqrt( max );
+	_minValue = sqrt( _minValue );
+
+	if ( max - _minValue != 0.0 )
+		_factor = 255.0 / ( max - _minValue );
 }
 
 //============================================================================
