@@ -5,6 +5,7 @@
 #include "../viewer/GLViewer.h"
 #include "../viewer/Viewer.h"
 #include <QMainWindow>
+#include <QTime>
 
 #include <QPushButton>
 #include <QVBoxLayout>
@@ -26,6 +27,11 @@ class MainWindow : public QMainWindow
 		QPushButton* _button_pause;
 
 
+		// frames / second
+		QTime _time;
+		int _frames;
+
+
 	public:
 		// TODO: change Simulation to FlowField class
 		MainWindow
@@ -44,6 +50,8 @@ class MainWindow : public QMainWindow
 		// TODO: find better solution
 		void runSimulationSlot ( );
 		void stopSimulationSlot ( );
+
+		void simulatedFrame();
 
 	signals:
 		void runSimulation ( );

@@ -103,6 +103,9 @@ int main ( int argc, char* argv[] )
 	QObject::connect(	window, SIGNAL( stopSimulation() ),
 						simulation, SLOT( stop() ) );
 
+	QObject::connect(	simulation, SIGNAL( simulatedFrame() ),
+						window, SLOT( simulatedFrame() ) );
+
 	// signal to stop simulation thread if application is stopped
 	QObject::connect(	&application, SIGNAL( aboutToQuit() ),
 						simulation, SLOT( stop() ) );

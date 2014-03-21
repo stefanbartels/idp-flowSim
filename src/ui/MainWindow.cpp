@@ -4,6 +4,8 @@
 #include <QApplication>
 #include <QDesktopWidget>
 
+#include <iostream>
+
 //============================================================================
 MainWindow::MainWindow
 	(
@@ -70,13 +72,37 @@ void MainWindow::createUI ( )
 }
 
 //============================================================================
-void MainWindow::runSimulationSlot()
+void MainWindow::runSimulationSlot ( )
 {
+	_time   = QTime::currentTime();
+	_frames = 0;
+
 	emit runSimulation();
 }
 
 //============================================================================
-void MainWindow::stopSimulationSlot()
+void MainWindow::stopSimulationSlot ( )
 {
 	emit stopSimulation();
+}
+
+//============================================================================
+void MainWindow::simulatedFrame ( )
+{
+	// calculate frame time and fps
+	QTime current_time = QTime::currentTime();
+	++_frames;
+	int elapsed_time = (current_time.second() * 1000 + current_time.msec() ) - ( _time.second()*1000 + _time.msec() );
+
+	if( elapsed_time > 1000 )
+	{
+		setWindowTitle(   "Interactive Navier Stokes ("
+						+ QString::number( elapsed_time / _frames )
+						+ "ms/frame, "
+						+ QString::number( _frames )
+						+ " fps)" );
+
+		_frames = 0;
+		_time = current_time;
+	}
 }
