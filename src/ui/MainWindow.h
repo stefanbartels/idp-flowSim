@@ -51,7 +51,9 @@ class MainWindow : public QMainWindow
 		void runSimulationSlot ( );
 		void stopSimulationSlot ( );
 
-		void simulatedFrame();
+		//! \brief updates the UI after a timestep is simulated
+		//! \param number of iterations used to solve the pressure equation
+		void simulatedFrame ( int numPressureIterations );
 
 	signals:
 		void runSimulation ( );

@@ -49,7 +49,8 @@ class Simulation : public QThread
 		void stop ( );
 
 	signals:
-		void simulatedFrame ( );
+		// returning number of iterations used to solve pressure equation
+		void simulatedFrame ( int numPressureIterations );
 };
 
 #endif // SIMULATION_H

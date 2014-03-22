@@ -89,7 +89,10 @@ class NavierStokesSolver
 		//! @name execution
 		//! @{
 
-	virtual void doSimulationStep ( ) = 0;
+		//! \brief simulates the next timestep
+		//! \returns number of iterations used to solve the pressure equation
+
+	virtual int doSimulationStep ( ) = 0;
 
 		//! @}
 

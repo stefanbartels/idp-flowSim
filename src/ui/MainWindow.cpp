@@ -63,7 +63,6 @@ void MainWindow::createUI ( )
 	//--------------------------
 	// connect ui to simulation
 	//--------------------------
-	// TODO: find better solution
 
 	QObject::connect(	_button_run, SIGNAL( clicked() ),
 						this, SLOT( runSimulationSlot() ) );
@@ -87,7 +86,7 @@ void MainWindow::stopSimulationSlot ( )
 }
 
 //============================================================================
-void MainWindow::simulatedFrame ( )
+void MainWindow::simulatedFrame ( int numPressureIterations )
 {
 	// calculate frame time and fps
 	QTime current_time = QTime::currentTime();
@@ -100,7 +99,9 @@ void MainWindow::simulatedFrame ( )
 						+ QString::number( elapsed_time / _frames )
 						+ "ms/frame, "
 						+ QString::number( _frames )
-						+ " fps)" );
+						+ " fps, "
+						+ QString::number( numPressureIterations )
+						+ " iterations)");
 
 		_frames = 0;
 		_time = current_time;

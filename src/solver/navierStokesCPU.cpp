@@ -206,7 +206,7 @@ bool NavierStokesCPU::setObstacleMap
 // -------------------------------------------------
 
 //============================================================================
-void NavierStokesCPU::doSimulationStep ( )
+int NavierStokesCPU::doSimulationStep ( )
 {
 	// get delta_t
 	computeDeltaT();
@@ -225,7 +225,8 @@ void NavierStokesCPU::doSimulationStep ( )
 	// poisson overrelaxation loop
 	REAL residual = INFINITY;
 
-	for ( int it = 0; it < _parameters->it_max && fabs( residual ) > _parameters->epsilon; ++it )
+	int sor_iterations = 0;
+	for ( ; sor_iterations < _parameters->it_max && fabs( residual ) > _parameters->epsilon; ++sor_iterations )
 	{
 		// do SOR step (includes residual computation)
 		residual = SORPoisson();
@@ -233,6 +234,8 @@ void NavierStokesCPU::doSimulationStep ( )
 
 	// compute U(n+1) and V(n+1)
 	adaptUV();
+
+	return sor_iterations;
 }
 
 

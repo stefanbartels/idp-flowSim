@@ -71,7 +71,10 @@ class NavierStokesCPU : public NavierStokesSolver
 			//! @name execution
 			//! @{
 
-		void	doSimulationStep ( );
+			//! \brief simulates the next timestep
+			//! \returns number of iterations used to solve the pressure equation
+
+		int		doSimulationStep ( );
 
 			//! @}
 

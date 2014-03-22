@@ -61,7 +61,7 @@ void Simulation::run ( )
 {
 	_viewer->initialze();
 
-	std::cout << "Simulate!" << std::endl;
+	std::cout << "Simulating..." << std::endl;
 
 	while( _running )
 	{
@@ -70,7 +70,7 @@ void Simulation::run ( )
 		#endif
 
 		// do simulation step
-		_solver->doSimulationStep( );
+		int numPressureIterations = _solver->doSimulationStep( );
 
 		// update visualisation
 		// todo: use flow field class instead of parameters
@@ -81,7 +81,7 @@ void Simulation::run ( )
 				_iterations
 			);
 
-		emit simulatedFrame();
+		emit simulatedFrame( numPressureIterations );
 
 		++_iterations;
 	}
