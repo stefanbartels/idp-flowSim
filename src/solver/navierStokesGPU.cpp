@@ -28,14 +28,16 @@ NavierStokesGPU::NavierStokesGPU
 	_clContext = clManager->getContext();
 	_clQueue   = clManager->getQueue();
 
-	_pitch = 0;
-
 	// load and compile kernels
 	_clManager->loadKernels();
 
+	// calculate pitch
+	_pitch = _parameters->nx + 2 + 128 - ((_parameters->nx + 2) % 128 );
+
 	// define global thread range
-	_clRange = cl::NDRange( _parameters->nx + 2, _parameters->ny + 2 );
+	_clRange = cl::NDRange( _pitch, _parameters->ny + 2 );
 	_clWorkgroupSize = _clManager->getWorkgroupSize();
+	_clWorkgroupRange = cl::NullRange; //cl::NDRange( 4, _clManager->getPreferredWorkgroupSize() );
 }
 
 //============================================================================
@@ -56,11 +58,8 @@ void NavierStokesGPU::initialize ( )
 {
 	int nx2 = _parameters->nx + 2;
 	int ny2 = _parameters->ny + 2;
-	int size = ( _parameters->nx + 2 ) * ( _parameters->ny * 2 );
 
-	// calculate pitch
-	// todo
-	_pitch = _parameters->nx + 2;
+	int size = _pitch * ( _parameters->ny + 2 );
 
 	//-----------------------
 	// allocate memory for matrices U, V, P, RHS, F, G
@@ -152,9 +151,9 @@ void NavierStokesGPU::initialize ( )
 		std::cout << "allocating host buffers..." << std::endl;
 	#endif
 
-	_U_host = allocHostMatrix ( nx2, ny2 );
-	_V_host = allocHostMatrix ( nx2, ny2 );
-	_P_host = allocHostMatrix ( nx2, ny2 );
+	_U_host = allocHostMatrix ( _pitch, ny2 );
+	_V_host = allocHostMatrix ( _pitch, ny2 );
+	_P_host = allocHostMatrix ( _pitch, ny2 );
 
 
 	// set kernel arguments for frequently called kernels
@@ -188,12 +187,12 @@ bool NavierStokesGPU::setObstacleMap
 	flag = (unsigned char**)malloc( ny2 * sizeof( unsigned char* ) );
 
 	// the actual data array. allocation for all rows at once to get continuous memory
-	unsigned char* data = (unsigned char*)malloc( nx2 * ny2 * sizeof( unsigned char ) );
+	unsigned char* data = (unsigned char*)malloc( _pitch * ny2 * sizeof( unsigned char ) );
 
 	flag[0] = data;
 	for( int i = 1; i < ny2; ++i )
 	{
-		flag[i] = data + i * nx2;
+		flag[i] = data + i * _pitch;
 	}
 
 
@@ -281,7 +280,7 @@ bool NavierStokesGPU::setObstacleMap
 	_FLAG_g   = cl::Buffer (
 					*_clContext,
 					CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-					nx2 * ny2 * sizeof( unsigned char ),
+					_pitch * ny2 * sizeof( unsigned char ),
 					*flag
 				);
 
@@ -390,7 +389,7 @@ int NavierStokesGPU::doSimulationStep()
 // -------------------------------------------------
 
 //============================================================================
-REAL **NavierStokesGPU::getU_CPU ( )
+REAL** NavierStokesGPU::getU_CPU ( )
 {
 	// copy data from device to host
 	// beware: the host array has type REAL**
@@ -398,7 +397,7 @@ REAL **NavierStokesGPU::getU_CPU ( )
 				_U_g,		// device buffer
 				CL_TRUE,	// blocking
 				0,			// offset
-				sizeof(CL_REAL) * (_parameters->nx + 2) * (_parameters->ny + 2), // size
+				sizeof(CL_REAL) * _pitch * (_parameters->ny + 2), // size
 				*_U_host	// host buffer
 			);
 
@@ -408,7 +407,7 @@ REAL **NavierStokesGPU::getU_CPU ( )
 }
 
 //============================================================================
-REAL **NavierStokesGPU::getV_CPU ( )
+REAL** NavierStokesGPU::getV_CPU ( )
 {
 	// copy data from device to host
 	// beware: the host array has type REAL**
@@ -416,7 +415,7 @@ REAL **NavierStokesGPU::getV_CPU ( )
 				_V_g,
 				CL_TRUE,
 				0,
-				sizeof(CL_REAL) * (_parameters->nx + 2) * (_parameters->ny + 2),
+				sizeof(CL_REAL) * _pitch * (_parameters->ny + 2),
 				*_V_host
 			);
 
@@ -426,7 +425,7 @@ REAL **NavierStokesGPU::getV_CPU ( )
 }
 
 //============================================================================
-REAL **NavierStokesGPU::getP_CPU ( )
+REAL** NavierStokesGPU::getP_CPU ( )
 {
 	// copy data from device to host
 	// beware: the host array has type REAL**
@@ -434,7 +433,7 @@ REAL **NavierStokesGPU::getP_CPU ( )
 				_P_g,
 				CL_TRUE,
 				0,
-				sizeof(CL_REAL) * (_parameters->nx + 2) * (_parameters->ny + 2),
+				sizeof(CL_REAL) * _pitch * (_parameters->ny + 2),
 				*_P_host
 			);
 
@@ -627,7 +626,7 @@ REAL NavierStokesGPU::SORPoisson()
 		_clManager->getKernel( kernel::gaussSeidelRedBlack )->setArg( 5, sizeof(int), &red );
 
 		// call kernel for black cells
-		_clManager->runRangeKernel ( kernel::gaussSeidelRedBlack, cl::NullRange, _clRange, cl::NullRange );
+		_clManager->runRangeKernel ( kernel::gaussSeidelRedBlack, cl::NullRange, _clRange, _clWorkgroupRange );
 
 		// wait for completion
 		_clQueue->finish();
@@ -637,7 +636,7 @@ REAL NavierStokesGPU::SORPoisson()
 		_clManager->getKernel( kernel::gaussSeidelRedBlack )->setArg( 5, sizeof(int), &red );
 
 		// call kernel for red cells
-		_clManager->runRangeKernel ( kernel::gaussSeidelRedBlack, cl::NullRange, _clRange, cl::NullRange );
+		_clManager->runRangeKernel ( kernel::gaussSeidelRedBlack, cl::NullRange, _clRange, _clWorkgroupRange );
 
 		// wait for completion
 		_clQueue->finish();
@@ -650,7 +649,7 @@ REAL NavierStokesGPU::SORPoisson()
 		// call pressureBoundaryConditionsKernel
 		// todo: use better range (1D wit max(nx,ny))
 
-		_clManager->runRangeKernel ( kernel::pressureBoundaryConditions, cl::NullRange, _clRange, cl::NullRange );
+		_clManager->runRangeKernel ( kernel::pressureBoundaryConditions, cl::NullRange, _clRange, _clWorkgroupRange );
 
 		// wait for completion
 		_clQueue->finish();
@@ -755,6 +754,7 @@ void NavierStokesGPU::setKernelArguments ( )
 		kernel->setArg( 5, sizeof(int), &(_parameters->wW) ); // western boundary condition
 		kernel->setArg( 6, sizeof(int), &nx );
 		kernel->setArg( 7, sizeof(int), &ny );
+		kernel->setArg( 8, sizeof(int), &_pitch );
 
 		// set kernel arguments for setArbitraryBoundaryConditionsKernel
 		kernel = _clManager->getKernel( kernel::setArbitraryBoundaryConditions );
@@ -763,6 +763,7 @@ void NavierStokesGPU::setKernelArguments ( )
 		kernel->setArg( 2, _FLAG_g ); // northern boundary condition
 		kernel->setArg( 3, sizeof(int), &nx );
 		kernel->setArg( 4, sizeof(int), &ny );
+		kernel->setArg( 5, sizeof(int), &_pitch );
 
 		// set kernel arguments for the problem specific boundary condition kernel
 		// TODO: skip this if no problem dependent kernel is specified
@@ -770,6 +771,7 @@ void NavierStokesGPU::setKernelArguments ( )
 		kernel->setArg( 0, _U_g );
 		kernel->setArg( 1, sizeof(int), &nx );
 		kernel->setArg( 2, sizeof(int), &ny );
+		kernel->setArg( 3, sizeof(int), &_pitch );
 
 		// kernel arguments for delta t computation (UV maximum)
 		kernel = _clManager->getKernel( kernel::getUVMaximum );
@@ -780,6 +782,7 @@ void NavierStokesGPU::setKernelArguments ( )
 		kernel->setArg( 4, sizeof(CL_REAL) * _clWorkgroupSize, NULL); // dynamically allocated local shared memory for V
 		kernel->setArg( 5, sizeof(int), &nx );
 		kernel->setArg( 6, sizeof(int), &ny );
+		kernel->setArg( 7, sizeof(int), &_pitch );
 
 		// kernel arguments for F and G computation
 		kernel = _clManager->getKernel( kernel::computeF );
@@ -796,6 +799,7 @@ void NavierStokesGPU::setKernelArguments ( )
 		kernel->setArg( 9,  sizeof(CL_REAL), &(_parameters->dy) );
 		kernel->setArg( 10, sizeof(int), &nx );
 		kernel->setArg( 11, sizeof(int), &ny );
+		kernel->setArg( 12, sizeof(int), &_pitch );
 
 		kernel = _clManager->getKernel( kernel::computeG );
 		kernel->setArg( 0,  _U_g );
@@ -810,6 +814,7 @@ void NavierStokesGPU::setKernelArguments ( )
 		kernel->setArg( 9,  sizeof(CL_REAL), &(_parameters->dy) );
 		kernel->setArg( 10, sizeof(int), &nx );
 		kernel->setArg( 11, sizeof(int), &ny );
+		kernel->setArg( 12, sizeof(int), &_pitch );
 
 		// kernel arguments for RHS computation
 		kernel = _clManager->getKernel( kernel::rightHandSide );
@@ -821,6 +826,7 @@ void NavierStokesGPU::setKernelArguments ( )
 		kernel->setArg( 5, sizeof(CL_REAL), &(_parameters->dy) );
 		kernel->setArg( 6, sizeof(int), &nx );
 		kernel->setArg( 7, sizeof(int), &ny );
+		kernel->setArg( 8, sizeof(int), &_pitch );
 
 		// kernel arguments for gauß seidel step in pressure solving
 		kernel = _clManager->getKernel( kernel::gaussSeidelRedBlack );
@@ -833,6 +839,7 @@ void NavierStokesGPU::setKernelArguments ( )
 		kernel->setArg( 6, sizeof(CL_REAL), &constant_expr );
 		kernel->setArg( 7, sizeof(int), &nx );
 		kernel->setArg( 8, sizeof(int), &ny );
+		kernel->setArg( 9, sizeof(int), &_pitch );
 
 		// kernel arguments for updating pressure boundary conditions
 		kernel = _clManager->getKernel( kernel::pressureBoundaryConditions );
@@ -840,6 +847,7 @@ void NavierStokesGPU::setKernelArguments ( )
 		// kernel->setArg( 1, sizeof(int), &problemId ); // todo: id of the problem
 		kernel->setArg( 1, sizeof(int), &nx );
 		kernel->setArg( 2, sizeof(int), &ny );
+		kernel->setArg( 3, sizeof(int), &_pitch );
 
 		// kernel arguments for pressure iteration residual computation
 		kernel = _clManager->getKernel( kernel::pressureResidualReduction );
@@ -851,6 +859,7 @@ void NavierStokesGPU::setKernelArguments ( )
 		kernel->setArg( 5, sizeof(CL_REAL), &dy2 );
 		kernel->setArg( 6, sizeof(int), &nx );
 		kernel->setArg( 7, sizeof(int), &ny );
+		kernel->setArg( 8, sizeof(int), &_pitch );
 
 		// kernel arguments for UV update
 		kernel = _clManager->getKernel( kernel::updateUV );
@@ -865,6 +874,7 @@ void NavierStokesGPU::setKernelArguments ( )
 		kernel->setArg( 8,  sizeof(CL_REAL), &(_parameters->dy) );
 		kernel->setArg( 9,  sizeof(int), &nx );
 		kernel->setArg( 10, sizeof(int), &ny );
+		kernel->setArg( 11, sizeof(int), &_pitch );
 	}
 	catch( cl::Error error )
 	{

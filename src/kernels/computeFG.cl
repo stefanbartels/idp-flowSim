@@ -185,18 +185,19 @@ __kernel void computeF
 		float					dx,				// length delta x of on cell in x-direction
 		float					dy,				// length delta y of on cell in y-direction
 		int						nx,				// dimension in x direction (including boundaries)
-		int						ny				// dimension in y direction (including boundaries)
+		int						ny,				// dimension in y direction (including boundaries)
+		int						pitch
 	)
 {
 	const unsigned int x   = get_global_id( 0 );
 	const unsigned int y   = get_global_id( 1 );
-	const unsigned int idx = y * nx + x;
+	const unsigned int idx = y * pitch + x;
 
 	// todo: check guards
 	if( y > 0 &&
 		y < ny - 1 )
 	{
-		 if( x > 0 &&
+		if( x > 0 &&
 			x < nx - 1 )
 		{
 			// compute F between fluid cells only
@@ -207,10 +208,10 @@ __kernel void computeF
 					(
 						(
 							d2m_dx2 ( u_g, dx, idx ) +
-							d2m_dy2 ( u_g, dy, idx, nx )
+							d2m_dy2 ( u_g, dy, idx, pitch )
 						) / re
 						- du2_dx ( u_g, dx, alpha, idx )
-						- duv_dy ( u_g, v_g, dy, alpha, idx, nx )
+						- duv_dy ( u_g, v_g, dy, alpha, idx, pitch )
 						+ gx
 					);
 			}
@@ -220,7 +221,7 @@ __kernel void computeF
 				f_g[idx]   = u_g[idx];
 			}
 		}
-		else
+		else if( x < nx )
 		{
 			f_g[idx]   = u_g[idx];
 		}
@@ -245,12 +246,13 @@ __kernel void computeG
 		float					dx,				// length delta x of on cell in x-direction
 		float					dy,				// length delta y of on cell in y-direction
 		int						nx,				// dimension in x direction (including boundaries)
-		int						ny				// dimension in y direction (including boundaries)
+		int						ny,				// dimension in y direction (including boundaries)
+		int						pitch
 	)
 {
 	const unsigned int x   = get_global_id( 0 );
 	const unsigned int y   = get_global_id( 1 );
-	const unsigned int idx = y * nx + x;
+	const unsigned int idx = y * pitch + x;
 
 	// todo: check guards
 	if( x > 0 &&
@@ -260,17 +262,17 @@ __kernel void computeG
 			y < ny - 1 )
 		{
 			// compute G between fluid cells only
-			if( flag_g[idx] == C_F && flag_g[idx + nx] == C_F ) // second cell test for not to overwrite boundary values
+			if( flag_g[idx] == C_F && flag_g[idx + pitch] == C_F ) // second cell test for not to overwrite boundary values
 			{
 				g_g[idx] =
 					v_g[idx] + dt *
 					(
 						(
 							d2m_dx2 ( v_g, dx, idx ) +
-							d2m_dy2 ( v_g, dy, idx, nx )
+							d2m_dy2 ( v_g, dy, idx, pitch )
 						) / re
-						- dv2_dy ( v_g, dx, alpha, idx, nx )
-						- duv_dx ( u_g, v_g, dy, alpha, idx, nx )
+						- dv2_dy ( v_g, dx, alpha, idx, pitch )
+						- duv_dx ( u_g, v_g, dy, alpha, idx, pitch )
 						+ gy
 					);
 			}

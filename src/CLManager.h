@@ -65,7 +65,8 @@ class CLManager
 		std::vector<cl::Kernel>		_clKernels;
 		cl::Program					_clProgram;
 
-		int							_clWorkgroupSize;	//! maximum size of a work group
+		int							_clWorkgroupSize;			//! maximum size of a work group
+		int							_clPreferredWorkgroupSize;	//! preferred size of work groups (multiple)
 
 			//! @}
 
@@ -121,6 +122,10 @@ class CLManager
 			//! \brief Returns the size of a workgroup on the device
 
 		int getWorkgroupSize ( );
+
+			//! \brief Returns the preferred size of a workgroup on the used device
+
+		int getPreferredWorkgroupSize ( );
 
 			//! @}
 

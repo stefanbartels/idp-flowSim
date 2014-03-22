@@ -35,13 +35,13 @@ __kernel void setBoundaryConditionsKernel
 		int				wS,		// boundary condition for southern boundaries
 		int				wW,		// boundary condition for western boundaries
 		int				nx,		// dimension in x direction (including boundaries)
-		int				ny		// dimension in y direction (including boundaries)
-//		int				pitch
+		int				ny,		// dimension in y direction (including boundaries)
+		int				pitch
 	)
 {
 	const unsigned int x   = get_global_id( 0 );
 	const unsigned int y   = get_global_id( 1 );
-	const unsigned int idx = y * nx + x;
+	const unsigned int idx = y * pitch + x;
 
 	const unsigned nx_1 = nx - 1;
 	const unsigned nx_2 = nx - 2;
@@ -86,18 +86,18 @@ __kernel void setBoundaryConditionsKernel
 		{
 			if( wN == NO_SLIP )
 			{
-				u_g[ idx + nx  ] = -u_g[ idx ];
+				u_g[ idx + pitch  ] = -u_g[ idx ];
 				v_g[ idx ]       = 0.0;
 			}
 			else if( wN == FREE_SLIP )
 			{
-				u_g[ idx + nx ] = u_g[ idx ];
+				u_g[ idx + pitch ] = u_g[ idx ];
 				v_g[ idx ]      = 0.0;
 			}
 			else if( wN == OUTFLOW )
 			{
-				u_g[ idx + nx ] = u_g[ idx ];
-				v_g[ idx ]      = v_g[ idx - nx ];
+				u_g[ idx + pitch ] = u_g[ idx ];
+				v_g[ idx ]      = v_g[ idx - pitch ];
 			}
 		}
 
@@ -109,18 +109,18 @@ __kernel void setBoundaryConditionsKernel
 		{
 			if( wW == NO_SLIP )
 			{
-				u_g[ y*nx ] = 0.0;
-				v_g[ y*nx ] = -v_g[ y*nx + 1 ];
+				u_g[ y*pitch ] = 0.0;
+				v_g[ y*pitch ] = -v_g[ y*pitch + 1 ];
 			}
 			else if( wW == FREE_SLIP )
 			{
-				u_g[ y*nx ] = 0.0;
-				v_g[ y*nx ] = v_g[ y*nx + 1 ];
+				u_g[ y*pitch ] = 0.0;
+				v_g[ y*pitch ] = v_g[ y*pitch + 1 ];
 			}
 			else if( wW == OUTFLOW )
 			{
-				u_g[ y*nx ] = u_g[ y*nx + 1 ];
-				v_g[ y*nx ] = v_g[ y*nx + 1 ];
+				u_g[ y*pitch ] = u_g[ y*pitch + 1 ];
+				v_g[ y*pitch ] = v_g[ y*pitch + 1 ];
 			}
 		}
 
@@ -159,13 +159,13 @@ __kernel void setArbitraryBoundaryConditionsKernel
 		__global float*	v_g,
 		__global unsigned char* flag_g,
 		int				nx,
-		int				ny
-//		int				pitch
+		int				ny,
+		int				pitch
 	)
 {
 	const unsigned int x   = get_global_id( 0 );
 	const unsigned int y   = get_global_id( 1 );
-	const unsigned int idx = y * nx + x;
+	const unsigned int idx = y * pitch + x;
 
 	if	(
 			x > 0		&&
@@ -183,53 +183,53 @@ __kernel void setArbitraryBoundaryConditionsKernel
 		//        => check if it really doesn't matter
 
 		if( flag == B_N ) { // northern obstacle boundary => fluid in the north
-			u_g[ idx-1 ]  = -u_g[ idx+nx-1 ];
-			u_g[ idx ]    = -u_g[ idx+nx ];
+			u_g[ idx-1 ]  = -u_g[ idx+pitch-1 ];
+			u_g[ idx ]    = -u_g[ idx+pitch ];
 			v_g[ idx ]    = 0.0;
 		}
 		else if( flag == B_S ) { // fluid in the south
-			u_g[ idx-1 ]  = -u_g[ idx-nx-1 ];
-			u_g[ idx ]    = -u_g[ idx-nx ];
-			v_g[ idx-nx ] = 0.0;
+			u_g[ idx-1 ]  = -u_g[ idx-pitch-1 ];
+			u_g[ idx ]    = -u_g[ idx-pitch ];
+			v_g[ idx-pitch ] = 0.0;
 		}
 		else if( flag == B_W ) { // fluid in the west
 			u_g[ idx-1 ]  = 0.0;
-			v_g[ idx-nx ] = -v_g[ idx-nx-1 ];
+			v_g[ idx-pitch ] = -v_g[ idx-pitch-1 ];
 			v_g[ idx ]    = -v_g[ idx-1 ];
 		}
 		else if( flag == B_E ) { // fluid in the east
 			u_g[ idx ]    = 0.0;
-			v_g[ idx-nx ] = -v_g[ idx-nx+1 ];
+			v_g[ idx-pitch ] = -v_g[ idx-pitch+1 ];
 			v_g[ idx ]    = -v_g[ idx+1 ];
 		}
 
 		else if( flag == B_NW ) { // fluid in the north and west
-			u_g[ idx ]    = -u_g[ idx+nx ];
+			u_g[ idx ]    = -u_g[ idx+pitch ];
 			u_g[ idx-1 ]  = 0.0;
 
 			v_g[ idx ]    = 0.0;
-			v_g[ idx-nx ] = -v_g[ idx-nx-1 ];
+			v_g[ idx-pitch ] = -v_g[ idx-pitch-1 ];
 		}
 		else if( flag == B_NE ) { // fluid in the north and east
 			u_g[ idx ]    = 0.0;
-			u_g[ idx-1 ]  = -u_g[ idx+nx-1 ];
+			u_g[ idx-1 ]  = -u_g[ idx+pitch-1 ];
 
 			v_g[ idx ]    = 0.0;
-			v_g[ idx-nx ] = -v_g[ idx-nx+1 ];
+			v_g[ idx-pitch ] = -v_g[ idx-pitch+1 ];
 		}
 		else if( flag == B_SW ) { // fluid in the south and west
-			u_g[ idx ]    = -u_g[ idx-nx ];
+			u_g[ idx ]    = -u_g[ idx-pitch ];
 			u_g[ idx-1 ]  = 0.0;
 
 			v_g[ idx ]    = -v_g[ idx-1 ];
-			v_g[ idx-nx ] = 0.0;
+			v_g[ idx-pitch ] = 0.0;
 		}
 		else if( flag == B_SE ) { // fluid in the south and east
 			u_g[ idx ]    = 0.0;
-			u_g[ idx-1 ]  = -u_g[ idx-nx-1 ];
+			u_g[ idx-1 ]  = -u_g[ idx-pitch-1 ];
 
 			v_g[ idx ]    = -v_g[ idx+1 ];
-			v_g[ idx-nx ] = 0.0;
+			v_g[ idx-pitch ] = 0.0;
 		}
 	}
 }
@@ -253,13 +253,13 @@ __kernel void setMovingLidBoundaryConditionsKernel
 	(
 		__global float*	u_g,
 		int				nx,
-		int				ny
-//		int				pitch
+		int				ny,
+		int				pitch
 	)
 {
 	const unsigned int x   = get_global_id( 0 );
 	const unsigned int y   = get_global_id( 1 );
-	//const unsigned int idx = y * nx + x;
+	//const unsigned int idx = y * pitch + x;
 
 	if	(
 			y == 0	&&
@@ -267,7 +267,7 @@ __kernel void setMovingLidBoundaryConditionsKernel
 			x < nx
 		)
 	{
-		u_g[ x ] = 2.0 - u_g[ x + nx ];
+		u_g[ x ] = 2.0 - u_g[ x + pitch ];
 	}
 }
 
@@ -278,13 +278,13 @@ __kernel void setLeftInflowBoundaryConditionsKernel
 	(
 		__global float*	u_g,
 		int				nx,
-		int				ny
-//		int				pitch
+		int				ny,
+		int				pitch
 	)
 {
 	const unsigned int x   = get_global_id( 0 );
 	const unsigned int y   = get_global_id( 1 );
-	//const unsigned int idx = y * nx + x;
+	//const unsigned int idx = y * pitch + x;
 
 	if	(
 			x == 0	&&
@@ -292,6 +292,6 @@ __kernel void setLeftInflowBoundaryConditionsKernel
 			y < ny
 		)
 	{
-		u_g[ y * nx ] = 1.0;
+		u_g[ y * pitch ] = 1.0;
 	}
 }

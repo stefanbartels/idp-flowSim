@@ -20,6 +20,7 @@ CLManager::CLManager ( Parameters* parameters )
 	_parameters = parameters;
 
 	_clWorkgroupSize = 0;
+	_clPreferredWorkgroupSize = 0;
 
 	try
 	{
@@ -179,6 +180,11 @@ void CLManager::loadKernels ( )
 
 	// get work group size
 	_clWorkgroupSize = _clKernels[0].getWorkGroupInfo< CL_KERNEL_WORK_GROUP_SIZE >( _clDevices[0] );
+
+	// get preferred work group size multiple
+	_clPreferredWorkgroupSize = _clKernels[0].getWorkGroupInfo< CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE >( _clDevices[0] );
+
+	std::cout << "Preferred WG size: " << _clPreferredWorkgroupSize << std::endl;
 }
 
 //============================================================================
@@ -245,4 +251,10 @@ cl_int CLManager::finish ( )
 int CLManager::getWorkgroupSize ( )
 {
 	return _clWorkgroupSize;
+}
+
+//============================================================================
+int CLManager::getPreferredWorkgroupSize ( )
+{
+	return _clPreferredWorkgroupSize;
 }

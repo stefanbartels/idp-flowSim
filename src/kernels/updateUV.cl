@@ -22,12 +22,13 @@ __kernel void updateUVKernel
 		float					dx,				// length delta x of on cell in x-direction
 		float					dy,				// length delta y of on cell in y-direction
 		int						nx,				// dimension in x direction (including boundaries)
-		int						ny				// dimension in y direction (including boundaries)
+		int						ny,				// dimension in y direction (including boundaries)
+		int						pitch
 	)
 {
 	const unsigned int x   = get_global_id( 0 );
 	const unsigned int y   = get_global_id( 1 );
-	const unsigned int idx = y * nx + x;
+	const unsigned int idx = y * pitch + x;
 
 	float dt_dx = dt / dx;
 	float dt_dy = dt / dy;
@@ -45,9 +46,9 @@ __kernel void updateUVKernel
 		}
 
 		// update vertical velocity V
-		if ( y < ny - 2 && flag_g[idx] == C_F && flag_g[idx + nx] == C_F )
+		if ( y < ny - 2 && flag_g[idx] == C_F && flag_g[idx + pitch] == C_F )
 		{
-			v_g[idx] = g_g[idx] - dt_dy * ( p_g[idx + nx] - p_g[idx] );
+			v_g[idx] = g_g[idx] - dt_dy * ( p_g[idx + pitch] - p_g[idx] );
 		}
 	}
 }

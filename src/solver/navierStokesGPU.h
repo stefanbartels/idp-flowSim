@@ -46,6 +46,7 @@ class NavierStokesGPU : public NavierStokesSolver
 		// OpenCL data
 		CLManager*			_clManager;			//! Pointer to the CL Manager
 		cl::NDRange			_clRange;			//! Range to use for kernels, size of the domain incl. boundaries
+		cl::NDRange			_clWorkgroupRange;	//! Range of a workgroup
 		int					_clWorkgroupSize;	//! maximum size of a work group
 
 		cl::Context*		_clContext; // context and queue allow use of cl functions without extra methods in the manager

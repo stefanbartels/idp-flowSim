@@ -22,12 +22,13 @@ __kernel void getUVMaximumKernel
 		__local  float* u_s,			// dynamically allocated shared memory for workgroup
 		__local  float* v_s,			// dynamically allocated shared memory for workgroup
 		int				nx,				// dimension in x direction (including boundaries)
-		int				ny				// dimension in y direction (including boundaries)
+		int				ny,				// dimension in y direction (including boundaries)
+		int				pitch
 	)
 {
 	const unsigned int idx_global	= get_global_id(0);
 	const unsigned int idx_local	= get_local_id(0);
-	const unsigned int limit 		= nx * ny;
+	const unsigned int limit 		= pitch * ny;
 	const unsigned int local_size 	= get_local_size(0);
 
 	float local_max_u = -INFINITY;
@@ -42,11 +43,14 @@ __kernel void getUVMaximumKernel
 
 		while( i < limit )
 		{
-			temp = fabs( u_g[i] );
-			local_max_u = ( temp > local_max_u ) ? temp : local_max_u;	// todo: use fmax
+			if( i % pitch < nx)
+			{
+				temp = fabs( u_g[i] );
+				local_max_u = ( temp > local_max_u ) ? temp : local_max_u;	// todo: use fmax
 
-			temp = fabs( v_g[i] );
-			local_max_v = ( temp > local_max_v ) ? temp : local_max_v;	// todo: use fmax
+				temp = fabs( v_g[i] );
+				local_max_v = ( temp > local_max_v ) ? temp : local_max_v;	// todo: use fmax
+			}
 
 			i += local_size;
 		}

@@ -19,12 +19,13 @@ __kernel void rightHandSideKernel
 		float			dx,				// length delta x of on cell in x-direction
 		float			dy,				// length delta y of on cell in y-direction
 		int				nx,				// dimension in x direction (including boundaries)
-		int				ny				// dimension in y direction (including boundaries)
+		int				ny,				// dimension in y direction (including boundaries)
+		int				pitch
 	)
 {
 	const unsigned int x   = get_global_id( 0 );
 	const unsigned int y   = get_global_id( 1 );
-	const unsigned int idx = y * nx + x;
+	const unsigned int idx = y * pitch + x;
 
 	if( x > 0 &&
 		y > 0 &&
@@ -35,7 +36,7 @@ __kernel void rightHandSideKernel
 		rhs_g[idx] = ( 1.0 / dt ) *
 			(
 				( f_g[idx] - f_g[idx - 1 ] ) / dx +
-				( g_g[idx] - g_g[idx - nx] ) / dy
+				( g_g[idx] - g_g[idx - pitch] ) / dy
 			);
 	}
 }

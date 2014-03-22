@@ -31,12 +31,13 @@ __kernel void gaussSeidelRedBlackKernel
 		int						red,			// 1 for red, 0 for black
 		float					constant_expr,	// constant expression 1.0 / ( 2.0 / dx2 + 2.0 / dy2 )
 		int						nx,				// dimension in x direction (including boundaries)
-		int						ny				// dimension in y direction (including boundaries)
+		int						ny,				// dimension in y direction (including boundaries)
+		int						pitch
 	)
 {
 	const unsigned int x   = get_global_id( 0 );
 	const unsigned int y   = get_global_id( 1 );
-	const unsigned int idx = y * nx + x;
+	const unsigned int idx = y * pitch + x;
 
 	if( ((x + y) & 1) == red &&			// = ( (x + y) % 2 ) == red, but faster
 		x > 0 &&
@@ -44,48 +45,44 @@ __kernel void gaussSeidelRedBlackKernel
 		x < nx - 1 &&
 		y < ny - 1 )
 	{
-		// calculate pressure in fluid cells
-		if( flag_g[idx] == C_F )
+		switch ( flag_g[idx] )
 		{
-			p_g[idx] =
-				constant_expr * (
-					( p_g[idx - 1] + p_g[idx + 1] ) / dx2
-					+
-					( p_g[idx - nx] + p_g[idx + nx] ) / dy2
-					-
-					rhs_g[idx]
-				);
-		}
-		else
-		{
+			case C_F:
+				// calculate pressure in fluid cells
+				p_g[idx] =
+					constant_expr * (
+						( p_g[idx - 1] + p_g[idx + 1] ) / dx2
+						+
+						( p_g[idx - pitch] + p_g[idx + pitch] ) / dy2
+						-
+						rhs_g[idx]
+					);
+				break;
 			// set boundary pressure value for obstacle cells
-			switch ( flag_g[idx] )
-			{
-				case B_N:
-					p_g[idx] = p_g[idx + nx];
-					break;
-				case B_S:
-					p_g[idx] = p_g[idx - nx];
-					break;
-				case B_W:
-					p_g[idx] = p_g[idx - 1];
-					break;
-				case B_E:
-					p_g[idx] = p_g[idx + 1];
-					break;
-				case B_NW:
-					p_g[idx] = (p_g[idx - nx] + p_g[idx + 1]) / 2;
-					break;
-				case B_NE:
-					p_g[idx] = (p_g[idx + nx] + p_g[idx + 1]) / 2;
-					break;
-				case B_SW:
-					p_g[idx] = (p_g[idx - nx] + p_g[idx - 1]) / 2;
-					break;
-				case B_SE:
-					p_g[idx] = (p_g[idx + nx] + p_g[idx - 1]) / 2;
-					break;
-			}
+			case B_N:
+				p_g[idx] = p_g[idx + pitch];
+				break;
+			case B_S:
+				p_g[idx] = p_g[idx - pitch];
+				break;
+			case B_W:
+				p_g[idx] = p_g[idx - 1];
+				break;
+			case B_E:
+				p_g[idx] = p_g[idx + 1];
+				break;
+			case B_NW:
+				p_g[idx] = (p_g[idx - pitch] + p_g[idx + 1]) / 2;
+				break;
+			case B_NE:
+				p_g[idx] = (p_g[idx + pitch] + p_g[idx + 1]) / 2;
+				break;
+			case B_SW:
+				p_g[idx] = (p_g[idx - pitch] + p_g[idx - 1]) / 2;
+				break;
+			case B_SE:
+				p_g[idx] = (p_g[idx + pitch] + p_g[idx - 1]) / 2;
+				break;
 		}
 	}
 }
@@ -100,22 +97,23 @@ __kernel void pressureBoundaryConditionsKernel
 		__global float* p_g,			// pressure array
 		//int				problemId,		// id of the problem
 		int				nx,				// dimension in x direction (including boundaries)
-		int				ny				// dimension in y direction (including boundaries)
+		int				ny,				// dimension in y direction (including boundaries)
+		int				pitch
 	)
 {
 	const unsigned int x   = get_global_id( 0 );
 	const unsigned int y   = get_global_id( 1 );
-	const unsigned int idx = y * nx + x;
+	const unsigned int idx = y * pitch + x;
 
 	if(	x == 0 && y > 0 && y < ny-1 )
 	{
-		p_g[y*nx]			= p_g[1 + y*nx];
-		p_g[nx-1 + y*nx]	= p_g[nx-2 + y*nx];
+		p_g[y*pitch]			= p_g[1 + y*pitch];
+		p_g[nx-1 + y*pitch]	= p_g[nx-2 + y*pitch];
 	}
 	if(	y == 0 && x > 0 && x < nx-1 )
 	{
-		p_g[x]				= p_g[x + nx];
-		p_g[x + (ny-1)*nx]	= p_g[x + (ny-2)*nx];
+		p_g[x]				= p_g[x + pitch];
+		p_g[x + (ny-1)*pitch]	= p_g[x + (ny-2)*pitch];
 	}
 }
 
@@ -142,12 +140,13 @@ __kernel void pressureResidualReductionKernel
 		float			dx2,			// sqare of length delta x of on cell in x-direction
 		float			dy2,			// sqare of length delta y of on cell in y-direction
 		int				nx,				// dimension in x direction (including boundaries)
-		int				ny				// dimension in y direction (including boundaries)
+		int				ny,				// dimension in y direction (including boundaries)
+		int				pitch
 	)
 {
 	const unsigned int idx_global	= get_global_id(0);
 	const unsigned int idx_local	= get_local_id(0);
-	const unsigned int limit 		= nx * ny;
+	const unsigned int limit 		= pitch * ny;
 	const unsigned int local_size 	= get_local_size(0);
 
 	float local_sum = 0.0;
@@ -162,8 +161,8 @@ __kernel void pressureResidualReductionKernel
 
 		while( i < limit )
 		{
-			x = i % nx;
-			y = i / nx;
+			x = i % pitch;
+			y = i / pitch;
 
 			if( x > 0 &&
 				y > 0 &&
@@ -171,8 +170,8 @@ __kernel void pressureResidualReductionKernel
 				y < ny-1 ) // guards
 			{
 				temp =
-					  ( p_g[i +  1] - 2.0 * p_g[i] + p_g[i -  1] ) / dx2
-					+ ( p_g[i + nx] - 2.0 * p_g[i] + p_g[i - nx] ) / dy2
+					  ( p_g[i +     1] - 2.0 * p_g[i] + p_g[i -     1] ) / dx2
+					+ ( p_g[i + pitch] - 2.0 * p_g[i] + p_g[i - pitch] ) / dy2
 					- rhs_g[i];
 
 				local_sum += temp * temp;
