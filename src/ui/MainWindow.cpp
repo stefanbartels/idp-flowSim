@@ -48,10 +48,10 @@ void MainWindow::createUI ( )
 
 	// create buttons
 	_button_run   = new QPushButton( "Start Simulation" );
-	_label_info   = new QLabel( "<table width=\"100%\"><colgroup><col width=\"25%\" /><col /></colgroup>"\
-								"<tr><td></td><td>ms / frame</td></tr>"\
-								"<tr><td></td><td>FPS</td></tr>"\
+	_label_info   = new QLabel( "<table><tr><td width=\"60\"></td><td>ms / frame</td></tr>" \
+								"<tr><td></td><td>FPS</td></tr>" \
 								"<tr><td></td><td>Iterations per timestep</td></tr></table>" );
+	_label_info->setSizePolicy( QSizePolicy::Minimum, QSizePolicy::Fixed );
 
 
 	// create window layout
@@ -104,10 +104,9 @@ void MainWindow::simulatedFrame ( int numPressureIterations )
 
 	if( elapsed_time > 1000 )
 	{
-		_label_info->setText( "<table width=\"100%\">"\
-									"<tr><td>" + QString::number( (float)elapsed_time / _frames ) + "</td><td>ms / frame</td></tr>"\
-									"<tr><td>" + QString::number( _frames ) + "</td><td>FPS</td></tr>"\
-									"<tr><td>" + QString::number( numPressureIterations ) + "</td><td>Iterations per timestep</td></tr></table>" );
+		_label_info->setText( "<table><tr><td width=\"60\">" + QString::number( (float)elapsed_time / _frames ) + "</td><td>ms / frame</td></tr>"\
+							  "<tr><td>" + QString::number( _frames ) + "</td><td>FPS</td></tr>"\
+							  "<tr><td>" + QString::number( numPressureIterations ) + "</td><td>Iterations per timestep</td></tr></table>" );
 
 		_frames = 0;
 		_time = current_time;
