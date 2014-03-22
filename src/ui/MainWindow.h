@@ -8,6 +8,7 @@
 #include <QTime>
 
 #include <QPushButton>
+#include <QLabel>
 #include <QVBoxLayout>
 
 class MainWindow : public QMainWindow
@@ -25,6 +26,7 @@ class MainWindow : public QMainWindow
 
 		QPushButton* _button_run;
 		QPushButton* _button_pause;
+		QLabel*      _label_info;
 
 
 		// frames / second
@@ -48,15 +50,16 @@ class MainWindow : public QMainWindow
 
 	public slots:
 		// TODO: find better solution
-		void runSimulationSlot ( );
-		void stopSimulationSlot ( );
+		void simulationTriggerSlot ( );
+		void simulationStoppedSlot ( );
+		void simulationStartedSlot ( );
 
 		//! \brief updates the UI after a timestep is simulated
 		//! \param number of iterations used to solve the pressure equation
 		void simulatedFrame ( int numPressureIterations );
 
 	signals:
-		void runSimulation ( );
+		void simulationTrigger ( );
 
 		void stopSimulation ( );
 };

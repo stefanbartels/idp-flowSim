@@ -98,17 +98,19 @@ int main ( int argc, char* argv[] )
 	//-----------------------
 
 	// TODO: move connectins between gui elements and simulation somewhere else
-	QObject::connect(	window, SIGNAL( runSimulation() ),
-						simulation, SLOT( simulate() ) );
-	QObject::connect(	window, SIGNAL( stopSimulation() ),
-						simulation, SLOT( stop() ) );
+	QObject::connect(	window, SIGNAL( simulationTrigger() ),
+						simulation, SLOT( simulationTrigger() ) );
 
+	QObject::connect(	simulation, SIGNAL( simulationStarted() ),
+						window, SLOT( simulationStartedSlot() ) );
+	QObject::connect(	simulation, SIGNAL( simulationStopped() ),
+						window, SLOT( simulationStoppedSlot() ) );
 	QObject::connect(	simulation, SIGNAL( simulatedFrame( int ) ),
 						window, SLOT( simulatedFrame( int ) ) );
 
 	// signal to stop simulation thread if application is stopped
 	QObject::connect(	&application, SIGNAL( aboutToQuit() ),
-						simulation, SLOT( stop() ) );
+						simulation, SLOT( stopSimulation() ) );
 
 	window->show();
 

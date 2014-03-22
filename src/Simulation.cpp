@@ -87,16 +87,29 @@ void Simulation::run ( )
 	}
 }
 
-void Simulation::simulate()
+void Simulation::simulationTrigger()
 {
-	_running = true;
-	start();
+	if( _running )
+	{
+		_running = false;
+
+		emit simulationStopped();
+	}
+	else
+	{
+		_running = true;
+
+		emit simulationStarted();
+
+		start();
+	}
 }
 
 //============================================================================
-void Simulation::stop ( )
+void Simulation::stopSimulation ( )
 {
 	_running = false;
+	emit simulationStopped();
 }
 
 // -------------------------------------------------

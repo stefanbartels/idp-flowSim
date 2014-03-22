@@ -47,15 +47,18 @@ void MainWindow::createUI ( )
 	setCentralWidget( _ui );
 
 	// create buttons
-	_button_run   = new QPushButton( "Run" );
-	_button_pause = new QPushButton( "Pause" );
+	_button_run   = new QPushButton( "Start Simulation" );
+	_label_info   = new QLabel( "<table width=\"100%\"><colgroup><col width=\"25%\" /><col /></colgroup>"\
+								"<tr><td></td><td>ms / frame</td></tr>"\
+								"<tr><td></td><td>FPS</td></tr>"\
+								"<tr><td></td><td>Iterations per timestep</td></tr></table>" );
 
 
 	// create window layout
 	_layout = new QVBoxLayout();
 	_layout->addWidget( _viewer );
 	_layout->addWidget( _button_run );
-	_layout->addWidget( _button_pause );
+	_layout->addWidget( _label_info );
 
 	_ui->setLayout( _layout );
 
@@ -65,24 +68,30 @@ void MainWindow::createUI ( )
 	//--------------------------
 
 	QObject::connect(	_button_run, SIGNAL( clicked() ),
-						this, SLOT( runSimulationSlot() ) );
-	QObject::connect(	_button_pause, SIGNAL( clicked() ),
-						this, SLOT( stopSimulationSlot() ) );
+						this, SLOT( simulationTriggerSlot() ) );
 }
 
 //============================================================================
-void MainWindow::runSimulationSlot ( )
+void MainWindow::simulationTriggerSlot ( )
 {
 	_time   = QTime::currentTime();
 	_frames = 0;
 
-	emit runSimulation();
+	emit simulationTrigger();
 }
 
 //============================================================================
-void MainWindow::stopSimulationSlot ( )
+void MainWindow::simulationStartedSlot ( )
 {
-	emit stopSimulation();
+	//emit stopSimulation();
+	_button_run->setText( "Pause Simulation" );
+}
+
+//============================================================================
+void MainWindow::simulationStoppedSlot ( )
+{
+	//emit stopSimulation();
+	_button_run->setText( "Start Simulation" );
 }
 
 //============================================================================
@@ -91,17 +100,14 @@ void MainWindow::simulatedFrame ( int numPressureIterations )
 	// calculate frame time and fps
 	QTime current_time = QTime::currentTime();
 	++_frames;
-	int elapsed_time = (current_time.second() * 1000 + current_time.msec() ) - ( _time.second()*1000 + _time.msec() );
+	int elapsed_time = _time.msecsTo( current_time );
 
 	if( elapsed_time > 1000 )
 	{
-		setWindowTitle(   "Interactive Navier Stokes ("
-						+ QString::number( elapsed_time / _frames )
-						+ "ms/frame, "
-						+ QString::number( _frames )
-						+ " fps, "
-						+ QString::number( numPressureIterations )
-						+ " iterations)");
+		_label_info->setText( "<table width=\"100%\">"\
+									"<tr><td>" + QString::number( (float)elapsed_time / _frames ) + "</td><td>ms / frame</td></tr>"\
+									"<tr><td>" + QString::number( _frames ) + "</td><td>FPS</td></tr>"\
+									"<tr><td>" + QString::number( numPressureIterations ) + "</td><td>Iterations per timestep</td></tr></table>" );
 
 		_frames = 0;
 		_time = current_time;

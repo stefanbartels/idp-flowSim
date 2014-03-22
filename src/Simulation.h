@@ -44,12 +44,17 @@ class Simulation : public QThread
 		void run ( );
 
 	public slots:
-		void simulate ( );
+		void simulationTrigger ( );
 
-		void stop ( );
+		void stopSimulation ( );
 
 	signals:
-		// returning number of iterations used to solve pressure equation
+
+		void simulationStarted ( );
+		void simulationStopped ( );
+
+		//! \brief emitted when a time step is finished
+		//! \returns returning number of iterations used to solve pressure equation
 		void simulatedFrame ( int numPressureIterations );
 };
 
