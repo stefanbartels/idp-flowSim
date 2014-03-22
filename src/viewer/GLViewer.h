@@ -26,6 +26,9 @@ class GLViewer : public QGLWidget, public Viewer
 		REAL _minValue;
 		REAL _factor;
 
+		//! flag for rendering initial screen color
+		bool _isInitialized;
+
 	public:
 		GLViewer (
 				Parameters* parameters,
@@ -46,10 +49,12 @@ class GLViewer : public QGLWidget, public Viewer
 		void rescaleColors ( REAL** P );
 		void rescaleColors ( REAL** U, REAL** V );
 
+
+		QSize sizeHint ( ) const;
+
 	protected:
 		void resizeEvent ( QResizeEvent* event );
 		void paintEvent  ( QPaintEvent* );
-
 };
 
 #endif // GLVIEWER_H

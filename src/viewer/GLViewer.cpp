@@ -17,19 +17,12 @@ GLViewer::GLViewer
 	_doResize = false;
 	_width = _height = 0;
 
+	_isInitialized = 0;
+
 	_texture = new GLubyte[ _parameters->nx * _parameters->ny * 3 ]; // 3: RGB
 
 	// deactivate automatic updates of GL context by main thread
 	setAutoBufferSwap( false );
-
-	/*// get initial size for GL viewer
-	int screen_width   = QApplication::desktop()->width();
-	int screen_height  = QApplication::desktop()->height();
-	int initial_width  = _parameters->nx > screen_width  ? screen_width  : _parameters->nx;
-	int initial_height = _parameters->ny > screen_height ? screen_height : _parameters->ny;
-
-	// resize OpenGL viewer
-	resize( initial_width, initial_height ); */
 }
 
 //============================================================================
@@ -205,6 +198,18 @@ void GLViewer::rescaleColors ( REAL** U, REAL** V )
 }
 
 //============================================================================
+QSize GLViewer::sizeHint ( ) const
+{
+	// get native size for GL viewer
+	//int screen_width   = QApplication::desktop()->width();
+	//int screen_height  = QApplication::desktop()->height();
+	//int width  = _parameters->nx > screen_width  ? screen_width  : _parameters->nx;
+	//int height = _parameters->ny > screen_height ? screen_height : _parameters->ny;
+
+	return QSize( _parameters->nx, _parameters->ny );
+}
+
+//============================================================================
 void GLViewer::resizeEvent ( QResizeEvent *event )
 {
 	// prevent Qt from calling resizeGL, so no makeCurrent() is called
@@ -220,5 +225,15 @@ void GLViewer::paintEvent ( QPaintEvent* )
 	// prevent main thread from updating the GL context.
 	// rendering is done in the method renderFrame,
 	// called from the simulation thread
+
+	if( !_isInitialized )
+	{
+		// display black area at startup :)
+		_isInitialized = true;
+		makeCurrent();
+		glClearColor( 0.0, 0.0, 0.0, 1.0 );
+		swapBuffers();
+		doneCurrent();
+	}
 }
 
