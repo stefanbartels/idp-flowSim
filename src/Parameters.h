@@ -1,6 +1,10 @@
 #ifndef PARAMETERS_H
 #define PARAMETERS_H
 
+//********************************************************************
+//**    includes
+//********************************************************************
+
 #include "Definitions.h"
 #include <string>
 #include <stdlib.h>
@@ -13,8 +17,21 @@
  * 4 = periodic
  */
 
+//====================================================================
+/*! \struct VTKWriter
+	\brief Structure containing all parameters required for the
+	simulation
+*/
+//====================================================================
+
 struct Parameters
 {
+	// -------------------------------------------------
+	//	simulation parameters
+	// -------------------------------------------------
+		//! @name simulation parameters
+		//! @{
+
 	// geometry data
 	REAL		xlength,		//! domain size in x-direction
 				ylength;		//! domain size in y-direction
@@ -57,14 +74,20 @@ struct Parameters
 
 	bool**		obstacleMap;	//! map defining the obstacle positions.
 
+		//! @}
 
+	// -------------------------------------------------
+	//	constructor / destructor
+	// -------------------------------------------------
+		//! @name constructor / destructor
+		//! @{
 
-
-	// Constructor and destructor to free memory properly
 	Parameters ( )
 	{
 		obstacleMap = 0;
 	}
+
+		//! \brief required to free obstacle memory properly
 
 	~Parameters ( )
 	{
@@ -74,6 +97,7 @@ struct Parameters
 			free( obstacleMap );
 		}
 	}
+		//! @}
 };
 
 #endif // PARAMETERS_H

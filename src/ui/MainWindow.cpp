@@ -31,7 +31,7 @@ MainWindow::~MainWindow ( )
 }
 
 //============================================================================
-Viewer* MainWindow::getViewer()
+GLViewer* MainWindow::getViewer()
 {
 	return _viewer;
 }
@@ -83,14 +83,12 @@ void MainWindow::simulationTriggerSlot ( )
 //============================================================================
 void MainWindow::simulationStartedSlot ( )
 {
-	//emit stopSimulation();
 	_button_run->setText( "Pause Simulation" );
 }
 
 //============================================================================
 void MainWindow::simulationStoppedSlot ( )
 {
-	//emit stopSimulation();
 	_button_run->setText( "Start Simulation" );
 }
 

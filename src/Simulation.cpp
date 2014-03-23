@@ -61,7 +61,7 @@ void Simulation::run ( )
 {
 	_viewer->initialze();
 
-	std::cout << "Simulating..." << std::endl;
+	emit simulationStarted();
 
 	while( _running )
 	{
@@ -85,6 +85,8 @@ void Simulation::run ( )
 
 		++_iterations;
 	}
+
+	emit simulationStopped();
 }
 
 void Simulation::simulationTrigger()
@@ -92,15 +94,10 @@ void Simulation::simulationTrigger()
 	if( _running )
 	{
 		_running = false;
-
-		emit simulationStopped();
 	}
 	else
 	{
 		_running = true;
-
-		emit simulationStarted();
-
 		start();
 	}
 }
@@ -109,7 +106,6 @@ void Simulation::simulationTrigger()
 void Simulation::stopSimulation ( )
 {
 	_running = false;
-	emit simulationStopped();
 }
 
 // -------------------------------------------------

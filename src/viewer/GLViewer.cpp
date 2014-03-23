@@ -91,8 +91,8 @@ void GLViewer::renderFrame (
 	unsigned int idx;
 	GLubyte color;
 
-	for( unsigned int y = 0; y < _parameters->ny; ++y )
-	for( unsigned int x = 0; x < _parameters->nx; ++x )
+	for( int y = 0; y < _parameters->ny; ++y )
+	for( int x = 0; x < _parameters->nx; ++x )
 	{
 		idx = (y * _parameters->nx + x) * 3;
 
