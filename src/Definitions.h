@@ -7,7 +7,7 @@
 // use verbose setting for debugging
 #define VERBOSE false
 
-// thread block dimensions
+// thread block dimensions for GPU
 #define BW 16
 #define BH 16
 

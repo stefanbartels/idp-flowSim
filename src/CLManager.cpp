@@ -179,12 +179,13 @@ void CLManager::loadKernels ( )
 
 
 	// get work group size
-	_clWorkgroupSize = _clKernels[0].getWorkGroupInfo< CL_KERNEL_WORK_GROUP_SIZE >( _clDevices[0] );
+	_clWorkgroupSize = _clKernels[ kernel::setKernel ].getWorkGroupInfo< CL_KERNEL_WORK_GROUP_SIZE >( _clDevices[0] );
 
 	// get preferred work group size multiple
-	_clPreferredWorkgroupSize = _clKernels[0].getWorkGroupInfo< CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE >( _clDevices[0] );
+	_clPreferredWorkgroupSize = _clKernels[ kernel::setKernel ].getWorkGroupInfo< CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE >( _clDevices[0] );
 
-	std::cout << "Preferred WG size: " << _clPreferredWorkgroupSize << std::endl;
+	std::cout << "CL_KERNEL_WORK_GROUP_SIZE: "                    << _clWorkgroupSize          << std::endl;
+	std::cout << "CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE: " << _clPreferredWorkgroupSize << std::endl;
 }
 
 //============================================================================

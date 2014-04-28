@@ -32,12 +32,13 @@ NavierStokesGPU::NavierStokesGPU
 	_clManager->loadKernels();
 
 	// calculate pitch
-	_pitch = _parameters->nx + 2 + 128 - ((_parameters->nx + 2) % 128 );
+	_pitch = _parameters->nx + 2 + BW - ((_parameters->nx + 2) % BW );
+	int verticalPitch = _parameters->ny + 2 + BH - ((_parameters->ny + 2) % BH );
 
 	// define global thread range
-	_clRange = cl::NDRange( _pitch, _parameters->ny + 2 );
-	_clWorkgroupSize = _clManager->getWorkgroupSize();
-	_clWorkgroupRange = cl::NullRange; //cl::NDRange( 4, _clManager->getPreferredWorkgroupSize() );
+	_clRange = cl::NDRange( _pitch, verticalPitch, 1 );
+	//_clWorkgroupSize = _clManager->getWorkgroupSize();
+	_clWorkgroupRange = cl::NDRange( BW, BH, 1 ); //cl::NDRange( 4, _clManager->getPreferredWorkgroupSize() );
 }
 
 //============================================================================
@@ -626,7 +627,7 @@ REAL NavierStokesGPU::SORPoisson()
 		_clManager->getKernel( kernel::gaussSeidelRedBlack )->setArg( 5, sizeof(int), &red );
 
 		// call kernel for black cells
-		_clManager->runRangeKernel ( kernel::gaussSeidelRedBlack, cl::NullRange, _clRange, _clWorkgroupRange );
+		_clManager->runRangeKernel ( kernel::gaussSeidelRedBlack, cl::NullRange, _clRange, cl::NullRange ); //_clWorkgroupRange
 
 		// wait for completion
 		_clQueue->finish();
@@ -636,7 +637,7 @@ REAL NavierStokesGPU::SORPoisson()
 		_clManager->getKernel( kernel::gaussSeidelRedBlack )->setArg( 5, sizeof(int), &red );
 
 		// call kernel for red cells
-		_clManager->runRangeKernel ( kernel::gaussSeidelRedBlack, cl::NullRange, _clRange, _clWorkgroupRange );
+		_clManager->runRangeKernel ( kernel::gaussSeidelRedBlack, cl::NullRange, _clRange, cl::NullRange ); //_clWorkgroupRange
 
 		// wait for completion
 		_clQueue->finish();
@@ -649,7 +650,7 @@ REAL NavierStokesGPU::SORPoisson()
 		// call pressureBoundaryConditionsKernel
 		// todo: use better range (1D wit max(nx,ny))
 
-		_clManager->runRangeKernel ( kernel::pressureBoundaryConditions, cl::NullRange, _clRange, _clWorkgroupRange );
+		_clManager->runRangeKernel ( kernel::pressureBoundaryConditions, cl::NullRange, _clRange, cl::NullRange ); //_clWorkgroupRange
 
 		// wait for completion
 		_clQueue->finish();
