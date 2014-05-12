@@ -108,6 +108,14 @@ void Simulation::stopSimulation ( )
 	_running = false;
 }
 
+//============================================================================
+void Simulation::drawObstacle ( int x, int y, bool mode )
+{
+	// TODO: draw 2x2 pixel blocks only
+	// TODO: update solver internal obstacle map
+	_parameters->obstacleMap[y+1][x+1] = mode;
+}
+
 // -------------------------------------------------
 //	data access
 // -------------------------------------------------

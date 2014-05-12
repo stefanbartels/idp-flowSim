@@ -10,6 +10,8 @@
 #include <QWidget>
 #include <QResizeEvent>
 
+#include <QMutex>
+
 //====================================================================
 /*! \class GLViewer
 	\brief Class for visualizing the simulation results in a
@@ -28,17 +30,17 @@ class GLViewer : public QGLWidget, public Viewer
 			//! @name member variables
 			//! @{
 
-		bool _doResize;			//! flag indicating if the window size has changed since the last frame
-		int _width;				//! width of the GL window, allowing resizing the window inside the thread
-		int _height;			//! height of the GL window
+		bool     _doResize;			//! flag indicating if the window size has changed since the last frame
+		int      _width;				//! width of the GL window, allowing resizing the window inside the thread
+		int      _height;			//! height of the GL window
 
-		GLubyte* _texture;		//! OpenGL texture that is created out of the results
-		GLuint _textureID;		//! id of the OpenGL texture
+		GLubyte* _texture;			//! OpenGL texture that is created out of the results
+		GLuint   _textureID;		//! id of the OpenGL texture
 
-		REAL _minValue;			//! minimum value in the data to visualize. Required for rescaling the colors
-		REAL _factor;			//! rescaling factor
+		REAL     _minValue;			//! minimum value in the data to visualize. Required for rescaling the colors
+		REAL     _factor;			//! rescaling factor
 
-		bool _isInitialized;	//! flag for rendering initial screen color
+		bool     _isInitialized;	//! flag for rendering initial screen color
 
 			//! @}
 
@@ -109,7 +111,39 @@ class GLViewer : public QGLWidget, public Viewer
 
 			//! @}
 
+
+	signals:
+		// -------------------------------------------------
+		//	signals
+		// -------------------------------------------------
+			//! @name signals
+			//! @{
+
+			//! \brief emitted if drawing of obstacles is requested
+			//! \param x offset of the obstacle to draw
+			//! \param y offset of the obstacle to draw
+			//! \param drawing mode, true if a wall ist to be teared down instead of created
+
+		void drawObstacle( int x, int y, bool mode );
+
+			//! @}
+
+
 	protected:
+		// -------------------------------------------------
+		//	interaction methods
+		// -------------------------------------------------
+			//! @name auxiliary functions
+			//! @{
+
+			//! \brief handling mouse events for obstacle painting
+			//! \param Qt's mouse event
+
+			void mouseMoveEvent ( QMouseEvent* event );
+
+			//! @}
+
+
 		// -------------------------------------------------
 		//	auxiliary functions
 		// -------------------------------------------------
@@ -120,14 +154,14 @@ class GLViewer : public QGLWidget, public Viewer
 			//! for the color scaling of the pressure values
 			//! \param pointer to pressure array
 
-	void rescaleColors ( REAL** P );
+		void rescaleColors ( REAL** P );
 
 			//! \brief recalculates the minimum value and the scaling factor
 			//! for the color scaling of the velocity values
 			//! \param pointer to horizontal velocity array
 			//! \param pointer to vertical velocity array
 
-	void rescaleColors ( REAL** U, REAL** V );
+		void rescaleColors ( REAL** U, REAL** V );
 
 				//! @}
 
@@ -150,6 +184,8 @@ class GLViewer : public QGLWidget, public Viewer
 			//! \param Qt's paint event
 
 		void paintEvent  ( QPaintEvent* );
+
+
 
 			//! @}
 };

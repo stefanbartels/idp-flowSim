@@ -26,7 +26,7 @@ void cleanup ( );
 
 Parameters  parameters;
 Simulation* simulation = 0;
-Viewer*	    viewer     = 0;
+//Viewer*	    viewer     = 0;
 MainWindow* window     = 0;
 
 //********************************************************************
@@ -71,7 +71,6 @@ int main ( int argc, char* argv[] )
 
 	window = new MainWindow( &parameters );
 
-	viewer = window->getViewer();
 	//viewer = new VTKWriter( &parameters );
 
 	//-----------------------
@@ -83,7 +82,7 @@ int main ( int argc, char* argv[] )
 		// TODO: move check for valid obstacle map to inputParser
 		//       and remove this try/catch
 
-		simulation = new Simulation( &parameters, viewer );
+		simulation = new Simulation( &parameters, window->getViewer() );
 	}
 	catch( const char* error_message )
 	{
@@ -112,21 +111,30 @@ int main ( int argc, char* argv[] )
 	QObject::connect(	&application, SIGNAL( aboutToQuit() ),
 						simulation, SLOT( stopSimulation() ) );
 
+
+
+	// connect viewer and simulation for interactivity
+	QObject::connect(	window->getViewer(), SIGNAL( drawObstacle( int, int, bool ) ),
+						simulation, SLOT( drawObstacle( int, int, bool ) ) );
+
+
+
 	window->show();
 
-	int application_return_value = application.exec();
-
-	std::cout << "Waiting for threads..." << std::endl;
-
-	simulation->wait();
-
-	std::cout << "Return value: " << application_return_value << std::endl;
 
 	//-----------------------
 	// cleanup
 	//-----------------------
 
+	// catch return value, but wait for threads to finish
+	int application_return_value = application.exec();
+
+	std::cout << "Waiting for threads..." << std::endl;
+	simulation->wait();
+
 	cleanup();
+
+
 
 	return application_return_value;
 }

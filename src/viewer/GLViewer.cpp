@@ -91,6 +91,7 @@ void GLViewer::renderFrame (
 	unsigned int idx;
 	GLubyte color;
 
+
 	for( int y = 0; y < _parameters->ny; ++y )
 	for( int x = 0; x < _parameters->nx; ++x )
 	{
@@ -237,3 +238,34 @@ void GLViewer::paintEvent ( QPaintEvent* )
 	}
 }
 
+//============================================================================
+void GLViewer::mouseMoveEvent ( QMouseEvent *event )
+{
+	// rescale positions
+	// invert y position: texture is rendered head first
+
+	int x = (event->x() * _parameters->nx) / _width;
+	int y =  _parameters->ny - ((event->y() * _parameters->ny) / _height) - 1;
+
+
+	// guards
+	if(    x < 0 || x > _parameters->nx
+		|| y < 0 || y > _parameters->ny )
+	{
+		return;
+	}
+
+	// test for modifier keys
+	if( event->modifiers() & Qt::ShiftModifier )
+	{
+		// tear down walls if shift is pressed
+		//_parameters->obstacleMap[y+1][x+1] = true;
+		emit drawObstacle( x, y, true );
+	}
+	else
+	{
+		// paint wall on normal click
+		//_parameters->obstacleMap[y+1][x+1] = false;
+		emit drawObstacle( x, y, false );
+	}
+}
