@@ -297,7 +297,7 @@ bool NavierStokesGPU::setObstacleMap
 // -------------------------------------------------
 
 //============================================================================
-void NavierStokesGPU::doSimulationStep()
+int NavierStokesGPU::doSimulationStep()
 {
 	//-----------------------
 	// get delta_t
@@ -359,8 +359,8 @@ void NavierStokesGPU::doSimulationStep()
 
 	REAL residual = INFINITY;
 
-	int sor_it = 0;
-	for ( ; sor_it < _parameters->it_max && fabs( residual ) > _parameters->epsilon; ++sor_it )
+	int sor_iterations = 0;
+	for ( ; sor_iterations < _parameters->it_max && fabs( residual ) > _parameters->epsilon; ++sor_iterations )
 	{
 		// do SOR step (includes residual computation)
 		residual =  SORPoisson();
@@ -380,6 +380,8 @@ void NavierStokesGPU::doSimulationStep()
 	#endif
 
 	adaptUV();
+
+	return sor_iterations;
 }
 
 
