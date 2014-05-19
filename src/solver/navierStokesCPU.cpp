@@ -295,6 +295,43 @@ void NavierStokesCPU::drawObstacle
 				+ B_S * _parameters->obstacleMap[y+2][x+1]
 				+ B_W
 				+ B_E * _parameters->obstacleMap[y+1][x+2];
+
+		//-----------------------
+		// reset velocities
+		//-----------------------
+
+		_U[y][x]     = _V[y][x]     = 0.0;
+		_U[y][x+1]   = _V[y][x+1]   = 0.0;
+		_U[y+1][x]   = _V[y+1][x]   = 0.0;
+		_U[y+1][x+1] = _V[y+1][x+1] = 0.0;
+
+		// without reseting the results of the surrounding cells
+		// the results are quite unphysical
+		if( y > 1 )
+		{
+			_U[y-1][x]   = _V[y-1][x]   = 0.0;
+			_U[y-1][x+1] = _V[y-1][x+1] = 0.0;
+		}
+		_U[y+2][x]   = _V[y+2][x]   = 0.0;
+		_U[y+2][x+1] = _V[y+2][x+1] = 0.0;
+
+		if( x > 1 )
+		{
+			_U[y][x-1]   = _V[y][x-1]   = 0.0;
+			_U[y+1][x-1] = _V[y+1][x-1] = 0.0;
+		}
+
+		_U[y][x+2]   = _V[y][x+2]   = 0.0;
+		_U[y+1][x+2] = _V[y+1][x+2] = 0.0;
+
+		//-----------------------
+		// reset pressure
+		//-----------------------
+
+		_P[y][x]     = 0.0;
+		_P[y][x+1]   = 0.0;
+		_P[y+1][x]   = 0.0;
+		_P[y+1][x+1] = 0.0;
 	}
 }
 
