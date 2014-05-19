@@ -124,7 +124,7 @@ class GLViewer : public QGLWidget, public Viewer
 			//! \param y offset of the obstacle to draw
 			//! \param drawing mode, true if a wall ist to be teared down instead of created
 
-		void drawObstacle( int x, int y, bool mode );
+		void drawObstacle( int x, int y, bool delete_flag );
 
 			//! @}
 

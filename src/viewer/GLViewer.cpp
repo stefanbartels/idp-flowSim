@@ -249,16 +249,16 @@ void GLViewer::mouseMoveEvent ( QMouseEvent *event )
 
 
 	// guards
-	if(    x < 0 || x > _parameters->nx
-		|| y < 0 || y > _parameters->ny )
+	if(    x < 0 || x > _parameters->nx - 1
+		|| y < 0 || y > _parameters->ny - 1)
 	{
 		return;
 	}
 
 	// test for modifier keys
-	if( event->modifiers() & Qt::ShiftModifier )
+	if( event->buttons() == Qt::RightButton ) //event->modifiers() & Qt::ShiftModifier
 	{
-		// tear down walls if shift is pressed
+		// tear down walls if right mouse button is used
 		//_parameters->obstacleMap[y+1][x+1] = true;
 		emit drawObstacle( x, y, true );
 	}

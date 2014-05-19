@@ -240,23 +240,83 @@ int NavierStokesCPU::doSimulationStep ( )
 
 
 // -------------------------------------------------
+//	interaction
+// -------------------------------------------------
+
+//============================================================================
+void NavierStokesCPU::drawObstacle
+	(
+		int x,
+		int y,
+		bool delete_flag
+	)
+{
+	if( delete_flag )
+	{
+		std::cout << "obstacle removing not implemented yet!" << std::endl;
+		//_parameters->obstacleMap[y][x] = true;
+
+		// TODO: test cells adjacent to removed cells recursively
+	}
+	else
+	{
+		//-----------------------
+		// update obstacle flags
+		//-----------------------
+
+		// south west corner of painted square
+		_parameters->obstacleMap[y][x] = false;
+		_FLAG[y][x] = C_B
+				+ B_N
+				+ B_S * ( y > 1 ? _parameters->obstacleMap[y-1][x] : 1 )
+				+ B_W * ( x > 1 ? _parameters->obstacleMap[y][x-1] : 1 )
+				+ B_E;
+
+		// south east corner
+		_parameters->obstacleMap[y][x+1] = false;
+		_FLAG[y][x+1] = C_B
+				+ B_N
+				+ B_S * ( y > 1 ? _parameters->obstacleMap[y-1][x+1] : 1 )
+				+ B_W
+				+ B_E * _parameters->obstacleMap[y][x+2];
+
+		// north west corner
+		_parameters->obstacleMap[y+1][x] = false;
+		_FLAG[y+1][x] = C_B
+				+ B_N * _parameters->obstacleMap[y+2][x]
+				+ B_S
+				+ B_W * ( x > 1 ? _parameters->obstacleMap[y+1][x-1] : 1 )
+				+ B_E;
+
+		// north east corner
+		_parameters->obstacleMap[y+1][x+1] = false;
+		_FLAG[y+1][x+1] = C_B
+				+ B_N
+				+ B_S * _parameters->obstacleMap[y+2][x+1]
+				+ B_W
+				+ B_E * _parameters->obstacleMap[y+1][x+2];
+	}
+}
+
+
+// -------------------------------------------------
 //	data access
 // -------------------------------------------------
 
 //============================================================================
-REAL** NavierStokesCPU::getU_CPU()
+REAL** NavierStokesCPU::getU_CPU ( )
 {
 	return _U;
 }
 
 //============================================================================
-REAL** NavierStokesCPU::getV_CPU()
+REAL** NavierStokesCPU::getV_CPU ( )
 {
 	return _V;
 }
 
 //============================================================================
-REAL** NavierStokesCPU::getP_CPU()
+REAL** NavierStokesCPU::getP_CPU ( )
 {
 	return _P;
 }

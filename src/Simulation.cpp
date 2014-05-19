@@ -109,11 +109,9 @@ void Simulation::stopSimulation ( )
 }
 
 //============================================================================
-void Simulation::drawObstacle ( int x, int y, bool mode )
+void Simulation::drawObstacle ( int x, int y, bool delete_flag )
 {
-	// TODO: draw 2x2 pixel blocks only
-	// TODO: update solver internal obstacle map
-	_parameters->obstacleMap[y+1][x+1] = mode;
+	_solver->drawObstacle( x, y, delete_flag );
 }
 
 // -------------------------------------------------

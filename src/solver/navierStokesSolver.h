@@ -110,6 +110,28 @@ class NavierStokesSolver
 
 
 		// -------------------------------------------------
+		//	interaction
+		// -------------------------------------------------
+			//! @name interaction
+			//! @{
+
+			//! \brief inserts or removes obstacles
+			//! four cells will be marked as obstacles to prevent
+			//! obstacles from lying between two fluid cells
+			//! \param x offset of the obstacle to draw
+			//! \param y offset of the obstacle to draw
+			//! \param drawing mode, true if a wall ist to be teared down instead of created
+
+		virtual void drawObstacle (
+				int x,
+				int y,
+				bool delete_flag
+			) = 0;
+
+			//! @}
+
+
+		// -------------------------------------------------
 		//	auxiliary functions
 		// -------------------------------------------------
 			//! @name auxiliary functions

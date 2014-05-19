@@ -25,21 +25,23 @@ class NavierStokesGPU : public NavierStokesSolver
 			//! @{
 
 		// GPU arrays
-		cl::Buffer	_U_g,		//! velocity in x-direction
-					_V_g,		//! velocity in y-direction
-					_P_g,		//! pressure
-					_RHS_g,		//! right-hand side for pressure iteration
+		cl::Buffer	_U_g,				//! velocity in x-direction
+					_V_g,				//! velocity in y-direction
+					_P_g,				//! pressure
+					_RHS_g,				//! right-hand side for pressure iteration
 					_F_g,
 					_G_g,
-					_FLAG_g;	//! obstacle map
+					_FLAG_g;			//! obstacle map
 
 
-		int			_pitch;		//! pitch for GPU memory
+		int			_pitch;				//! pitch for GPU memory
 
 		// host arrays for data exchange
-		REAL	**_U_host,		//! pointer to host memory for horizontal velocity
-				**_V_host,		//! pointer to host memory for vertical velocity
-				**_P_host;		//! pointer to host memory for pressure
+		REAL	**_U_host,				//! pointer to host memory for horizontal velocity
+				**_V_host,				//! pointer to host memory for vertical velocity
+				**_P_host;				//! pointer to host memory for pressure
+
+		unsigned char **_FLAG_host;		//! pointer to host memory for obstacle flags
 
 
 		// OpenCL data
@@ -110,6 +112,28 @@ class NavierStokesGPU : public NavierStokesSolver
 
 
 		// -------------------------------------------------
+		//	interaction
+		// -------------------------------------------------
+			//! @name interaction
+			//! @{
+
+			//! \brief inserts or removes obstacles
+			//! four cells will be marked as obstacles to prevent
+			//! obstacles from lying between two fluid cells
+			//! \param x offset of the obstacle to draw
+			//! \param y offset of the obstacle to draw
+			//! \param drawing mode, true if a wall ist to be teared down instead of created
+
+		void drawObstacle (
+				int x,
+				int y,
+				bool delete_flag
+			);
+
+			//! @}
+
+
+		// -------------------------------------------------
 		//	data access
 		// -------------------------------------------------
 			//! @name data access
@@ -147,7 +171,7 @@ class NavierStokesGPU : public NavierStokesSolver
 
 		void	setBoundaryConditions ( );
 
-			//! \brief  TODO
+			//! \brief TODO
 
 		void	setSpecificBoundaryConditions ( );
 
