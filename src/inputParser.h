@@ -1,51 +1,14 @@
 #ifndef INPUTPARSER_H
 #define INPUTPARSER_H
 
-#include <string>
+//********************************************************************
+//**    includes
+//********************************************************************
+
 #include "Definitions.h"
-
-struct ProblemParameters
-{
-	// geometry data
-	REAL		xlength,		//! domain size in x-direction
-				ylength;		//! domain size in y-direction
-
-	int			nx,				//! number of interior cells in x-direction
-				ny;				//! number of interior cells in y-direction
-
-	// time stepping data
-	REAL		dt,				//! time step size
-				tau;			//! safety factor for time step size control
-
-	// pressure-iteration data
-	int			it_max;			//! maximal number of pressure iterations per time step
-
-	REAL		epsilon,		//! stopping tolerance eps for pressure iteration
-				omega,			//! relaxation parameter for SOR iteration
-				gamma;			//! upwind differencing factor
-
-	// problem dependent quantities
-	REAL		re,				//! Reynolds number Re
-				gx,				//! body force gx (e.g. gravity)
-				gy;				//! body force gy (e.g. gravity)
-
-	REAL		ui,				//! initial velocity in x-direction
-				vi,				//! initial velocity in y-direction
-				pi;				//! initial pressure
-
-	int			wN,				//! boundary condition along northern boundary
-				wS,				//! boundary condition along southern boundary
-				wW,				//! boundary condition along western boundary
-				wE;				//! boundary condition along eastern boundary
-
-	std::string	problem;		//! problem type
-
-	std::string	obstacleFile;	//! obstacle map file name
-};
-
-
-
-
+#include "Parameters.h"
+#include <string>
+#include <stdlib.h>
 
 //====================================================================
 /*! \class InputParser
@@ -56,26 +19,57 @@ struct ProblemParameters
 class InputParser
 {
 	public:
+		// -------------------------------------------------
+		//	static parameter handling functions
+		// -------------------------------------------------
+			//! @name static parameter handling functions
+			//! @{
 
-		static void setStandardParameters (
-				ProblemParameters*	parameters
+			//! \brief sets parameters to a default value
+			//! \param pointer to parameter structure to fill with the default values
+
+		static void setDefaultParameters
+			(
+				Parameters*	parameters
 			);
 
-		static bool readParameters (
-				ProblemParameters*	parameters,
-				char*				fileName
+			//! \brief parses the command line parameters and reads
+			//! the parameters from a given config file
+			//! \param number of command line arguments
+			//! \param array of command line arguments
+			//! \param pointer to parameter structure to fill with the imported values
+
+		static bool readParameters
+			(
+				int			argc,
+				char*		argv[],
+				Parameters*	parameters
 			);
 
-		static bool readObstacleMap (
+			//! \brief creates an obstacle map from a PGM image
+			//! \param obstacle map pointer. The memory will be allocated within the function
+			//! \param width of the simulation domain
+			//! \param height of the simulation domain
+			//! \param file name of the PGM file to read
+
+			//! \todo move check for valid map from solver to here!
+		static bool readObstacleMap
+			(
 				bool***		obstacleMap,
 				int			width,
 				int			height,
 				std::string	fileName
 			);
 
-		static void printParameters (
-				ProblemParameters*	parameters
+			//! \brief prints the parameters to console
+			//! \param pointer to parameter structure
+
+		static void printParameters
+			(
+				Parameters*	parameters
 			);
+
+			//! @}
 };
 
 #endif // INPUTPARSER_H

@@ -9,7 +9,7 @@
 
 //====================================================================
 /*! \class NavierStokesCpu
-    \brief Class for solving of Navier Stokes on CPU
+	\brief Class for solving the Navier Stokes equations on CPU
 */
 //====================================================================
 
@@ -34,14 +34,16 @@ class NavierStokesCPU : public NavierStokesSolver
 
 			//! @}
 
-    public:
+	public:
 		// -------------------------------------------------
 		//	constructor / destructor
 		// -------------------------------------------------
 			//! @name constructor / destructor
 			//! @{
 
-		NavierStokesCPU ( );
+			//! \param pointer to parameters struct
+
+		NavierStokesCPU ( Parameters* parameters );
 
 		~NavierStokesCPU ( );
 
@@ -53,17 +55,21 @@ class NavierStokesCPU : public NavierStokesSolver
 			//! @name initialisation
 			//! @{
 
-			//! \brief initialises the arrays U, V and P
+			//! \brief allocates and initialises simulation memory
 
-		void	init ( );
+		void	initialize ( );
 
 			//! \brief takes the obstacle map and creates geometry information for each cell
+			//! true stands for fluid cells and false for boundary cells
+			//! Maps must have no obstacle cell between two fluid cells to be valid.
+			//! An additional boundary will be applied.
 			//! \param obstacle map (domain size)
-			//! an additional boundary will be applied
+			//! \returns true if the obstacle map is valid, false otherwise
 
 		bool	setObstacleMap ( bool** map );
 
 			//! @}
+
 
 		// -------------------------------------------------
 		//	execution
@@ -71,7 +77,32 @@ class NavierStokesCPU : public NavierStokesSolver
 			//! @name execution
 			//! @{
 
-		void	doSimulationStep ( );
+			//! \brief simulates the next timestep
+			//! \returns number of iterations used to solve the pressure equation
+
+		int		doSimulationStep ( );
+
+			//! @}
+
+
+		// -------------------------------------------------
+		//	interaction
+		// -------------------------------------------------
+			//! @name interaction
+			//! @{
+
+			//! \brief inserts or removes obstacles
+			//! four cells will be marked as obstacles to prevent
+			//! obstacles from lying between two fluid cells
+			//! \param x offset of the obstacle to draw
+			//! \param y offset of the obstacle to draw
+			//! \param drawing mode, true if a wall ist to be teared down instead of created
+
+		void drawObstacle (
+				int x,
+				int y,
+				bool delete_flag
+			);
 
 			//! @}
 
@@ -82,13 +113,23 @@ class NavierStokesCPU : public NavierStokesSolver
 			//! @name data access
 			//! @{
 
+			//! \brief gives access to the horizontal velocity component
+			//! \returns pointer to horizontal velocity array
+
 		REAL** getU_CPU ( );
 
+			//! \brief gives access to the vertical velocity component
+			//! \returns pointer to vertical velocity array
+
 		REAL** getV_CPU ( );
+
+			//! \brief gives access to the pressure
+			//! \returns pointer to pressure array
 
 		REAL** getP_CPU ( );
 
 			//! @}
+
 
 	protected:
 		// -------------------------------------------------
@@ -129,7 +170,7 @@ class NavierStokesCPU : public NavierStokesSolver
 			//! \brief SOR iteration step for pressure Poisson equation
 			//! \returns residual
 
-		REAL	SORPoisson( );
+		REAL	SORPoisson ( );
 
 			//! \brief calculates new velocities
 
@@ -138,17 +179,10 @@ class NavierStokesCPU : public NavierStokesSolver
 			//! @}
 
 
-
-
-
-
-
-
-
 		// -------------------------------------------------
-		//	auxiliary functions for F & G
+		//	auxiliary functions for F & G computation
 		// -------------------------------------------------
-			//! @name auxiliary functions
+			//! @name auxiliary functions for F and G computations
 			//! @{
 
 		inline REAL d2m_dx2 ( REAL** M, int x, int y );

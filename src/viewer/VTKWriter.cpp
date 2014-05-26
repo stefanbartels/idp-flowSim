@@ -4,22 +4,26 @@
 #include <fstream>
 #include <iomanip>
 
-VTKWriter::VTKWriter()
+VTKWriter::VTKWriter
+	(
+		Parameters* parameters
+	) :
+	Viewer( parameters )
 {
 }
 
 //============================================================================
-void VTKWriter::renderFrame
-	(
-		REAL	**U,
-		REAL	**V,
-		REAL	**P,
-		int		nx,
-		int		ny,
-		int		it
+void VTKWriter::renderFrame (
+        REAL** U,
+        REAL** V,
+        REAL** P,
+		int it
 	)
 {
 	// www.vtk.org/VTK/img/file-formats.pdf‎
+
+	int nx = _parameters->nx;
+	int ny = _parameters->ny;
 
 	//-----------------------
 	// open file

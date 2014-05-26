@@ -14,12 +14,14 @@
 //********************************************************************
 
 //============================================================================
-void InputParser::setStandardParameters(ProblemParameters *parameters)
+void InputParser::setDefaultParameters ( Parameters *parameters)
 {
 	parameters->xlength			= 1.0;
 	parameters->ylength			= 1.0;
 	parameters->nx				= 128;
 	parameters->ny				= 128;
+	parameters->dx				= 1.0 / 128.0;
+	parameters->dy				= 1.0 / 128.0;
 	parameters->dt				= 0.02;
 	parameters->tau				= 0.5;
 	parameters->it_max			= 100;
@@ -38,235 +40,280 @@ void InputParser::setStandardParameters(ProblemParameters *parameters)
 	parameters->wE				= 2;
 	parameters->problem			= "moving_lid";
 	parameters->obstacleFile	= "";
+	parameters->obstacleMap		= 0;
 }
 
 //============================================================================
 bool InputParser::readParameters
 	(
-		ProblemParameters*	parameters,
-		char*				fileName
+		int			argc,
+		char*		argv[],
+		Parameters*	parameters
 	)
 {
-	// open input file
-	std::ifstream file( fileName );
+	// set default parameters
+	setDefaultParameters( parameters );
 
-	if ( file.fail() || !file.is_open() )
+	//-------------------------------
+	// parse command line parameters
+	//-------------------------------
+
+	char* parameterFileName;
+
+	if ( argc > 1 )
 	{
-		std::cerr << "Could not open parameter file \"" << fileName << "\"" << std::endl;
-		return false;
-	}
+		parameterFileName = argv[1];
 
-	std::string	buffer;
-	int			i_buffer;
-	REAL		d_buffer;
+		std::cout << "Problem parameter file: " << parameterFileName << std::endl;
 
-	int line = 0;
-	int numReadValues = 0;
+		//-------------------------------
+		// read parameter file
+		//-------------------------------
 
-	// parse file
+		std::ifstream file( parameterFileName );
 
-	// read word from file
-	file >> buffer;
-
-	while ( file.good() )
-	{
-		if ( buffer.substr( 0, 1 ) == "#" ) // comment
+		if ( file.fail() || !file.is_open() )
 		{
-		}
-
-		//=================================
-		// geometry data
-		//=================================
-		else if ( buffer == "xlength" )
-		{
-			file >> d_buffer;
-			parameters->xlength = d_buffer;
-			++numReadValues;
-		}
-		else if ( buffer == "ylength" )
-		{
-			file >> d_buffer;
-			parameters->ylength = d_buffer;
-			++numReadValues;
-		}
-		else if ( buffer == "grid_x" )
-		{
-			file >> i_buffer;
-			parameters->nx = i_buffer;
-			++numReadValues;
-		}
-		else if ( buffer == "grid_y" )
-		{
-			file >> i_buffer;
-			parameters->ny = i_buffer;
-			++numReadValues;
-		}
-
-		//=================================
-		// time stepping data
-		//=================================
-		else if ( buffer == "delta_t" )
-		{
-			file >> d_buffer;
-			parameters->dt = d_buffer;
-			++numReadValues;
-		}
-		else if ( buffer == "tau" )
-		{
-			file >> d_buffer;
-			parameters->tau = d_buffer;
-			++numReadValues;
-		}
-
-		//=================================
-		// pressure-iteration data
-		//=================================
-		else if ( buffer == "it_max" )
-		{
-			file >> i_buffer;
-			parameters->it_max = i_buffer;
-			++numReadValues;
-		}
-		else if ( buffer == "epsilon" )
-		{
-			file >> d_buffer;
-			parameters->epsilon = d_buffer;
-			++numReadValues;
-		}
-		else if ( buffer == "omega" )
-		{
-			file >> d_buffer;
-			parameters->omega = d_buffer;
-			++numReadValues;
-		}
-		else if ( buffer == "gamma" )
-		{
-			file >> d_buffer;
-			parameters->gamma = d_buffer;
-			++numReadValues;
-		}
-
-		//=================================
-		// problem dependent quantities
-		//=================================
-		else if ( buffer == "re" )
-		{
-			file >> d_buffer;
-			parameters->re = d_buffer;
-			++numReadValues;
-		}
-		else if ( buffer == "gravity_x" )
-		{
-			file >> d_buffer;
-			parameters->gx = d_buffer;
-			++numReadValues;
-		}
-		else if ( buffer == "gravity_y" )
-		{
-			file >> d_buffer;
-			parameters->gy = d_buffer;
-			++numReadValues;
-		}
-		else if ( buffer == "ui" )
-		{
-			file >> d_buffer;
-			parameters->ui = d_buffer;
-			++numReadValues;
-		}
-		else if ( buffer == "vi" )
-		{
-			file >> d_buffer;
-			parameters->vi = d_buffer;
-			++numReadValues;
-		}
-		else if ( buffer == "pi" )
-		{
-			file >> d_buffer;
-			parameters->pi = d_buffer;
-			++numReadValues;
-		}
-
-		//=================================
-		// boundary conditions
-		//=================================
-		else if ( buffer == "boundary_N" )
-		{
-			file >> i_buffer;
-			parameters->wN = i_buffer;
-			++numReadValues;
-		}
-		else if ( buffer == "boundary_S" )
-		{
-			file >> i_buffer;
-			parameters->wS = i_buffer;
-			++numReadValues;
-		}
-		else if ( buffer == "boundary_W" )
-		{
-			file >> i_buffer;
-			parameters->wW = i_buffer;
-			++numReadValues;
-		}
-		else if ( buffer == "boundary_E" )
-		{
-			file >> i_buffer;
-			parameters->wE = i_buffer;
-			++numReadValues;
-		}
-		else if ( buffer == "problem" )
-		{
-			std::string s_buffer;
-			file >> s_buffer;
-			parameters->problem = s_buffer;
-			++numReadValues;
-		}
-		else if ( buffer == "map" )
-		{
-			std::string s_buffer;
-			file >> s_buffer;
-			parameters->obstacleFile = s_buffer;
-			++numReadValues;
-		}
-		else // unknown parameter
-		{
-			std::cerr << "Unknown parameter \"" << buffer << "\". Please check yout input file!" << std::endl;
-			file.close();
+			std::cerr << "Could not open parameter file \"" << parameterFileName << "\"" << std::endl;
 			return false;
 		}
 
-		++line;
+		std::string	buffer;
+		int			i_buffer;
+		REAL		d_buffer;
 
-		// ignore rest of line
-		file.ignore(1000, '\n');
+		int line = 0;
+		int numReadValues = 0;
+
+		// parse file
 
 		// read word from file
 		file >> buffer;
+
+		while ( file.good() )
+		{
+			if ( buffer.substr( 0, 1 ) == "#" ) // comment
+			{
+			}
+
+			//=================================
+			// geometry data
+			//=================================
+			else if ( buffer == "xlength" )
+			{
+				file >> d_buffer;
+				parameters->xlength = d_buffer;
+				++numReadValues;
+			}
+			else if ( buffer == "ylength" )
+			{
+				file >> d_buffer;
+				parameters->ylength = d_buffer;
+				++numReadValues;
+			}
+			else if ( buffer == "grid_x" )
+			{
+				file >> i_buffer;
+				parameters->nx = i_buffer;
+				++numReadValues;
+			}
+			else if ( buffer == "grid_y" )
+			{
+				file >> i_buffer;
+				parameters->ny = i_buffer;
+				++numReadValues;
+			}
+
+			//=================================
+			// time stepping data
+			//=================================
+			else if ( buffer == "delta_t" )
+			{
+				file >> d_buffer;
+				parameters->dt = d_buffer;
+				++numReadValues;
+			}
+			else if ( buffer == "tau" )
+			{
+				file >> d_buffer;
+				parameters->tau = d_buffer;
+				++numReadValues;
+			}
+
+			//=================================
+			// pressure-iteration data
+			//=================================
+			else if ( buffer == "it_max" )
+			{
+				file >> i_buffer;
+				parameters->it_max = i_buffer;
+				++numReadValues;
+			}
+			else if ( buffer == "epsilon" )
+			{
+				file >> d_buffer;
+				parameters->epsilon = d_buffer;
+				++numReadValues;
+			}
+			else if ( buffer == "omega" )
+			{
+				file >> d_buffer;
+				parameters->omega = d_buffer;
+				++numReadValues;
+			}
+			else if ( buffer == "gamma" )
+			{
+				file >> d_buffer;
+				parameters->gamma = d_buffer;
+				++numReadValues;
+			}
+
+			//=================================
+			// problem dependent quantities
+			//=================================
+			else if ( buffer == "re" )
+			{
+				file >> d_buffer;
+				parameters->re = d_buffer;
+				++numReadValues;
+			}
+			else if ( buffer == "gravity_x" )
+			{
+				file >> d_buffer;
+				parameters->gx = d_buffer;
+				++numReadValues;
+			}
+			else if ( buffer == "gravity_y" )
+			{
+				file >> d_buffer;
+				parameters->gy = d_buffer;
+				++numReadValues;
+			}
+			else if ( buffer == "ui" )
+			{
+				file >> d_buffer;
+				parameters->ui = d_buffer;
+				++numReadValues;
+			}
+			else if ( buffer == "vi" )
+			{
+				file >> d_buffer;
+				parameters->vi = d_buffer;
+				++numReadValues;
+			}
+			else if ( buffer == "pi" )
+			{
+				file >> d_buffer;
+				parameters->pi = d_buffer;
+				++numReadValues;
+			}
+
+			//=================================
+			// boundary conditions
+			//=================================
+			else if ( buffer == "boundary_N" )
+			{
+				file >> i_buffer;
+				parameters->wN = i_buffer;
+				++numReadValues;
+			}
+			else if ( buffer == "boundary_S" )
+			{
+				file >> i_buffer;
+				parameters->wS = i_buffer;
+				++numReadValues;
+			}
+			else if ( buffer == "boundary_W" )
+			{
+				file >> i_buffer;
+				parameters->wW = i_buffer;
+				++numReadValues;
+			}
+			else if ( buffer == "boundary_E" )
+			{
+				file >> i_buffer;
+				parameters->wE = i_buffer;
+				++numReadValues;
+			}
+			else if ( buffer == "problem" )
+			{
+				std::string s_buffer;
+				file >> s_buffer;
+				parameters->problem = s_buffer;
+				++numReadValues;
+			}
+			else if ( buffer == "map" )
+			{
+				std::string s_buffer;
+				file >> s_buffer;
+				parameters->obstacleFile = s_buffer;
+				++numReadValues;
+			}
+			else // unknown parameter
+			{
+				std::cerr << "Unknown parameter \"" << buffer << "\". Please check yout input file!" << std::endl;
+				file.close();
+				return false;
+			}
+
+			++line;
+
+			// ignore rest of line
+			file.ignore(1000, '\n');
+
+			// read word from file
+			file >> buffer;
+		}
+
+		if ( !file.eof() )
+		{
+			std::cerr << "Aborted parameter parsing after line " << line << "." << std::endl;
+			// return false;
+		}
+
+		if ( file.bad() )
+		{
+			std::cerr << "Parameter file corrupted." << std::endl;
+			return false;
+		}
+
+		file.close();
+
+		// no values found? => no valid parameter file
+		if ( numReadValues == 0 )
+		{
+			std::cerr << "No valid parameter file." << std::endl;
+			return false;
+		}
+		// not all values given? =>	using standard values for missing parameters
+		else if ( numReadValues < 22 )
+		{
+			std::cerr << "Using standard values for missing parameters. Please check yout input file!" << std::endl;
+		}
+
+	}
+	else
+	{
+		std::cerr << "No parameter file specified. Using default parameters." << std::endl;
 	}
 
-	if ( !file.eof() )
-	{
-		std::cerr << "Aborted parameter parsing after line " << line << "." << std::endl;
-		// return false;
-	}
+	// calculate cell dimensions
+	parameters->dx = parameters->xlength / (REAL)parameters->nx;
+	parameters->dy = parameters->ylength / (REAL)parameters->ny;
 
-	if ( file.bad() )
+	//-------------------------------
+	// read obstacle map
+	//-------------------------------
+
+	if ( !readObstacleMap(
+			 &(parameters->obstacleMap),
+			 parameters->nx,
+			 parameters->ny,
+			 parameters->obstacleFile )
+		 )
 	{
-		std::cerr << "Parameter file corrupted." << std::endl;
+		std::cerr << "Error reading obstacle map." << std::endl;
 		return false;
-	}
-
-	file.close();
-
-	// no values found? => no valid parameter file
-	if ( numReadValues == 0 )
-	{
-		std::cerr << "No valid parameter file." << std::endl;
-		return false;
-	}
-	// not all values given? =>	using standard values for missing parameters
-	else if ( numReadValues < 22 )
-	{
-		std::cerr << "Using standard values for missing parameters. Please check yout input file!" << std::endl;
 	}
 
 	// done
@@ -522,7 +569,7 @@ bool InputParser::readObstacleMap
 //============================================================================
 void InputParser::printParameters
 	(
-		ProblemParameters *parameters
+		Parameters *parameters
 	)
 {
 	std::cout << "====================" << std::endl << "Parameter set:" << std::endl;

@@ -2,62 +2,62 @@
 //**    includes
 //********************************************************************
 
+#include "Simulation.h"
+#include "inputParser.h"
+#include "ui/MainWindow.h"
+
+//#include "viewer/SimplePGMWriter.h"
+#include "viewer/VTKWriter.h"
+
+
 #include <stdlib.h>
 #include <iostream>
+#include <QApplication>
 
-#include "viewer/SimplePGMWriter.h"
-#include "viewer/VTKWriter.h"
-#include "inputParser.h"
+//********************************************************************
+//**    forward declarations
+//********************************************************************
 
-#if USE_GPU
-	#include "solver/navierStokesGPU.h"
-#else
-	#include "solver/navierStokesCPU.h"
-#endif
+void cleanup ( );
+
+//********************************************************************
+//**    global variables
+//********************************************************************
+
+Parameters  parameters;
+Simulation* simulation = 0;
+//Viewer*	    viewer     = 0;
+MainWindow* window     = 0;
 
 //********************************************************************
 //**    implementation
 //********************************************************************
 
+/* TODO:
+ *
+ * - program started with fixed domain size and flow parameters,
+ *   specified in config file
+ *    => allow start without config file and with dynamic initialization
+ */
+
 int main ( int argc, char* argv[] )
 {
+	// support opengl in thread
+	QCoreApplication::setAttribute( Qt::AA_X11InitThreads );
+
+	QApplication application(argc, argv);
+	application.setApplicationName("Interactive Navier Stokes Simulation");
+
 	//-----------------------
 	// read parameters
 	//-----------------------
 
-	// set default problem parameters
-	ProblemParameters parameters;
-	InputParser::setStandardParameters ( &parameters );
+	// TODO: make parameter file not compulsory but loadable via gui
 
-	char* parameterFileName;
-
-	// parse command line arguments
-	// only one until now: parameter file name
-
-	// parameter file
-	if ( argc > 1 )
+	// parse command line arguments and read parameter file
+	if ( !InputParser::readParameters ( argc, argv, &parameters ) )
 	{
-		parameterFileName = argv[1];
-
-		std::cout << "Problem parameter file: " << parameterFileName << std::endl;
-
-		if ( !InputParser::readParameters ( &parameters, parameterFileName ) )
-		{
-			std::cerr << "Error reading parameter file." << std::endl << "Exiting..." << std:: endl;
-			return 1;
-		}
-	}
-	else
-	{
-		std::cerr << "No parameter file specified. Using default parameters." << std::endl;
-	}
-
-	// read obstacle map
-	bool** obstacleMap = 0;
-
-	if ( !InputParser::readObstacleMap( &obstacleMap, parameters.nx, parameters.ny, parameters.obstacleFile ) )
-	{
-		std::cerr << "Error reading obstacle map." << std::endl << "Exiting..." << std::endl;
+		std::cerr << "Error reading parameter file." << std::endl << "Exiting..." << std:: endl;
 		return 1;
 	}
 
@@ -66,91 +66,83 @@ int main ( int argc, char* argv[] )
 
 
 	//-----------------------
-	// create gui, solver and viewer objects and pass parameters
+	// create viewer and gui
 	//-----------------------
 
-	NavierStokesSolver* solver;
+	window = new MainWindow( &parameters );
 
-	#if USE_GPU
-		std::cout << "Simulating on GPU" << std::endl;
+	//viewer = new VTKWriter( &parameters );
 
-		solver = new NavierStokesGPU();
-	#else
-		std::cout << "Simulating on CPU" << std::endl;
+	//-----------------------
+	// create simulation
+	//-----------------------
 
-		solver = new NavierStokesCPU();
-	#endif
-
-	solver->setParameters ( &parameters );
-	if( !solver->setObstacleMap( obstacleMap ) )
+	try
 	{
-		std::cerr << "Obstacle map invalid. Make sure there are no boundary cells between two fluid cells!" << std::endl
-				  << "Exiting..." << std::endl;
+		// TODO: move check for valid obstacle map to inputParser
+		//       and remove this try/catch
+
+		simulation = new Simulation( &parameters, window->getViewer() );
+	}
+	catch( const char* error_message )
+	{
+		std::cerr << "Error during simulation setup:\n " << error_message << "\nExiting..." << std::endl;
+		cleanup();
 		return 1;
 	}
 
-	Viewer* viewer = new VTKWriter();
-
-	// todo: link gui, solver, viewer
-
-	// todo: start gui in thread
-
 
 	//-----------------------
-	// simulation/visualisation loop
+	// start application
 	//-----------------------
 
-	solver->init();
+	// TODO: move connectins between gui elements and simulation somewhere else
+	QObject::connect(	window, SIGNAL( simulationTrigger() ),
+						simulation, SLOT( simulationTrigger() ) );
 
-	int n = 0;
+	QObject::connect(	simulation, SIGNAL( simulationStarted() ),
+						window, SLOT( simulationStartedSlot() ) );
+	QObject::connect(	simulation, SIGNAL( simulationStopped() ),
+						window, SLOT( simulationStoppedSlot() ) );
+	QObject::connect(	simulation, SIGNAL( simulatedFrame( int ) ),
+						window, SLOT( simulatedFrame( int ) ) );
 
-	// plot initial state
-	viewer->renderFrame(
-			solver->getU_CPU(),
-			solver->getV_CPU(),
-			solver->getP_CPU(),
-			parameters.nx,
-			parameters.ny,
-			n++
-		);
+	// signal to stop simulation thread if application is stopped
+	QObject::connect(	&application, SIGNAL( aboutToQuit() ),
+						simulation, SLOT( stopSimulation() ) );
 
-	while ( n < 1000 )
-	{
-		//#if VERBOSE
-			std::cout << "simulating frame " << n << std::endl;
-		//#endif
 
-		// do simulation step
-		solver->doSimulationStep( );
 
-		// update visualisation
-			// do fancy stuff with opengl
+	// connect viewer and simulation for interactivity
+	QObject::connect(	window->getViewer(), SIGNAL( drawObstacle( int, int, bool ) ),
+						simulation, SLOT( drawObstacle( int, int, bool ) ) );
 
-		//#if VERBOSE
-		//	std::cout << "visualizing frame " << n << std::endl;
-		//#endif
 
-		viewer->renderFrame(
-				solver->getU_CPU(),
-				solver->getV_CPU(),
-				solver->getP_CPU(),
-				parameters.nx,
-				parameters.ny,
-				n
-			);
 
-		++n;
-	}
+	window->show();
+
 
 	//-----------------------
 	// cleanup
 	//-----------------------
 
-	SAVE_DELETE( solver );
-	SAVE_DELETE( viewer );
+	// catch return value, but wait for threads to finish
+	int application_return_value = application.exec();
 
-	free( obstacleMap[0] );
-	free( obstacleMap );
+	std::cout << "Waiting for threads..." << std::endl;
+	simulation->wait();
 
-    return 0;
+	cleanup();
+
+
+
+	return application_return_value;
+}
+
+
+void cleanup ( )
+{
+	SAFE_DELETE( simulation );
+	SAFE_DELETE( window );
+	//SAFE_DELETE( viewer ); // Qt takes care of that already
 }

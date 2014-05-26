@@ -51,7 +51,7 @@
 
 
 
-#define SAVE_DELETE( object ) \
+#define SAFE_DELETE( object ) \
 	if( object )			  \
 	{						  \
 		delete object;		  \

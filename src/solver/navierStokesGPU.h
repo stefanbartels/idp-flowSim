@@ -5,23 +5,12 @@
 //**    includes
 //********************************************************************
 
-#define __CL_ENABLE_EXCEPTIONS
-
 #include "navierStokesSolver.h"
-
-#include <CL/cl.hpp>
-#include <CL/opencl.h>
-
-// uncommented, as all kernels use float at the moment
-//#if REAL // not working yet!
-//	#define CL_REAL cl_double
-//#else
-	#define CL_REAL cl_float
-//#endif
+#include "../CLManager.h"
 
 //====================================================================
-/*! \class NavierStokesCpu
-    \brief Class for solving of Navier Stokes on GPU
+/*! \class NavierStokesGpu
+	\brief Class for solving the Navier Stokes equations on GPU
 	\todo optimize device memory, for example u,v and flag as constant memory
 */
 //====================================================================
@@ -36,37 +25,33 @@ class NavierStokesGPU : public NavierStokesSolver
 			//! @{
 
 		// GPU arrays
-		cl::Buffer	_U_g,		//! velocity in x-direction
-					_V_g,		//! velocity in y-direction
-					_P_g,		//! pressure
-					_RHS_g,		//! right-hand side for pressure iteration
+		cl::Buffer	_U_g,				//! velocity in x-direction
+					_V_g,				//! velocity in y-direction
+					_P_g,				//! pressure
+					_RHS_g,				//! right-hand side for pressure iteration
 					_F_g,
 					_G_g,
-					_FLAG_g;	//! obstacle map
+					_FLAG_g;			//! obstacle map
 
 
-		int			_pitch;		//! pitch for GPU arrays
+		int			_pitch;				//! pitch for GPU memory
 
 		// host arrays for data exchange
-		REAL	**_U_host,
-				**_V_host,
-				**_P_host;
+		REAL	**_U_host,				//! pointer to host memory for horizontal velocity
+				**_V_host,				//! pointer to host memory for vertical velocity
+				**_P_host;				//! pointer to host memory for pressure
+
+		unsigned char **_FLAG_host;		//! pointer to host memory for obstacle flags
+
 
 		// OpenCL data
-		std::vector<cl::Platform>	_clPlatforms;
-		std::vector<cl::Device>		_clDevices;
+		CLManager*			_clManager;			//! pointer to the CL Manager
+		cl::NDRange			_clRange;			//! range to use for kernels, size of the domain incl. boundaries
+		int					_clWorkgroupSize;	//! maximum size of a work group
 
-		cl::Context					_clContext;
-		cl::CommandQueue			_clQueue;
-
-		cl::NDRange					_clRange;
-
-		// kernels
-		std::vector<std::string*>	_clSourceCode;
-		std::vector<cl::Kernel>		_clKernels;
-		cl::Program					_clProgram;
-
-		int							_clWorkgroupSize;	//! maximum size of a work group
+			// context and queue allow use of cl functions without extra methods in the manager
+		cl::Context*		_clContext;			//! pointer to CL context
+		cl::CommandQueue*	_clQueue;			//! pointer to CL queue
 
 			//! @}
 
@@ -77,7 +62,14 @@ class NavierStokesGPU : public NavierStokesSolver
 			//! @name constructor / destructor
 			//! @{
 
-		NavierStokesGPU ( );
+			//! \param pointer to parameters struct
+			//! \param pointer to cl manager object
+
+		NavierStokesGPU
+			(
+				Parameters* parameters,
+				CLManager*  clManager
+			);
 
 		~NavierStokesGPU ( );
 
@@ -89,13 +81,16 @@ class NavierStokesGPU : public NavierStokesSolver
 			//! @name initialisation
 			//! @{
 
-			//! \brief allocates and initialises simulation memory in GPU memory
+			//! \brief allocates and initialises simulation memory
 
-		void	init ( );
+		void	initialize ( );
 
 			//! \brief takes the obstacle map and creates geometry information for each cell
+			//! true stands for fluid cells and false for boundary cells
+			//! Maps must have no obstacle cell between two fluid cells to be valid.
+			//! An additional boundary will be applied.
 			//! \param obstacle map (domain size)
-			//! an additional boundary will be applied
+			//! \returns true if the obstacle map is valid, false otherwise
 
 		bool	setObstacleMap ( bool** map );
 
@@ -108,7 +103,32 @@ class NavierStokesGPU : public NavierStokesSolver
 			//! @name execution
 			//! @{
 
-		void	doSimulationStep ( );
+			//! \brief simulates the next timestep
+			//! \returns number of iterations used to solve the pressure equation
+
+		int		doSimulationStep ( );
+
+			//! @}
+
+
+		// -------------------------------------------------
+		//	interaction
+		// -------------------------------------------------
+			//! @name interaction
+			//! @{
+
+			//! \brief inserts or removes obstacles
+			//! four cells will be marked as obstacles to prevent
+			//! obstacles from lying between two fluid cells
+			//! \param x offset of the obstacle to draw
+			//! \param y offset of the obstacle to draw
+			//! \param drawing mode, true if a wall ist to be teared down instead of created
+
+		void drawObstacle (
+				int x,
+				int y,
+				bool delete_flag
+			);
 
 			//! @}
 
@@ -119,9 +139,21 @@ class NavierStokesGPU : public NavierStokesSolver
 			//! @name data access
 			//! @{
 
+			//! \brief gives access to the horizontal velocity component
+			//! The velocity is copied from device to host memory before returned.
+			//! \returns pointer to horizontal velocity array
+
 		REAL** getU_CPU ( );
 
+			//! \brief gives access to the vertical velocity component
+			//! The velocity is copied from device to host memory before returned.
+			//! \returns pointer to vertical velocity array
+
 		REAL** getV_CPU ( );
+
+			//! \brief gives access to the pressure
+			//! The pressure is copied from device to host memory before returned.
+			//! \returns pointer to pressure array
 
 		REAL** getP_CPU ( );
 
@@ -139,7 +171,7 @@ class NavierStokesGPU : public NavierStokesSolver
 
 		void	setBoundaryConditions ( );
 
-			//! \brief  TODO
+			//! \brief TODO
 
 		void	setSpecificBoundaryConditions ( );
 
@@ -167,7 +199,7 @@ class NavierStokesGPU : public NavierStokesSolver
 			//! \brief SOR iteration step for pressure Poisson equation
 			//! \returns residual
 
-		REAL		SORPoisson ( );
+		REAL	SORPoisson ( );
 
 			//! \brief calculates new velocities
 
@@ -186,12 +218,6 @@ class NavierStokesGPU : public NavierStokesSolver
 
 		void	loadKernels ( );
 
-			//! \brief loads the content of a cl source file to the source vector
-
-		void	loadSource (
-						cl::Program::Sources&	sources,
-						std::string				fileName
-					);
 
 			//! \brief sets kernel arguments for frequently called kernels
 
