@@ -414,11 +414,155 @@ void NavierStokesGPU::drawObstacle
 	}
 	else
 	{
-		std::cout << "obstacle painting on GPU not implemented yet!" << std::endl;
-		/// TODO:
-		/// TRY ON CPU FIRST!
-		/// UPDATE SURROUNDING CELL FLAGS
-		/// COPY UPDATED FLAGS TO DEVICE
+		//std::cout << "obstacle painting on GPU not implemented yet!" << std::endl;
+
+		//-----------------------
+		// update obstacle flags
+		//-----------------------
+
+		// south west corner of painted square
+		_parameters->obstacleMap[y][x] = false;
+		_FLAG_host[y][x] = C_B
+				+ B_N
+				+ B_S * ( y > 1 ? _parameters->obstacleMap[y-1][x] : 1 )
+				+ B_W * ( x > 1 ? _parameters->obstacleMap[y][x-1] : 1 )
+				+ B_E;
+
+		// south east corner
+		_parameters->obstacleMap[y][x+1] = false;
+		_FLAG_host[y][x+1] = C_B
+				+ B_N
+				+ B_S * ( y > 1 ? _parameters->obstacleMap[y-1][x+1] : 1 )
+				+ B_W
+				+ B_E * _parameters->obstacleMap[y][x+2];
+
+		// north west corner
+		_parameters->obstacleMap[y+1][x] = false;
+		_FLAG_host[y+1][x] = C_B
+				+ B_N * _parameters->obstacleMap[y+2][x]
+				+ B_S
+				+ B_W * ( x > 1 ? _parameters->obstacleMap[y+1][x-1] : 1 )
+				+ B_E;
+
+		// north east corner
+		_parameters->obstacleMap[y+1][x+1] = false;
+		_FLAG_host[y+1][x+1] = C_B
+				+ B_N
+				+ B_S * _parameters->obstacleMap[y+2][x+1]
+				+ B_W
+				+ B_E * _parameters->obstacleMap[y+1][x+2];
+
+		//-----------------------
+		// reset velocities
+		//-----------------------
+
+		_U_host[y][x]     = _V_host[y][x]     = 0.0;
+		_U_host[y][x+1]   = _V_host[y][x+1]   = 0.0;
+		_U_host[y+1][x]   = _V_host[y+1][x]   = 0.0;
+		_U_host[y+1][x+1] = _V_host[y+1][x+1] = 0.0;
+
+		// without reseting the results of the surrounding cells
+		// the results are quite unphysical
+		if( y > 1 )
+		{
+			_U_host[y-1][x]   = _V_host[y-1][x]   = 0.0;
+			_U_host[y-1][x+1] = _V_host[y-1][x+1] = 0.0;
+		}
+		_U_host[y+2][x]   = _V_host[y+2][x]   = 0.0;
+		_U_host[y+2][x+1] = _V_host[y+2][x+1] = 0.0;
+
+		if( x > 1 )
+		{
+			_U_host[y][x-1]   = _V_host[y][x-1]   = 0.0;
+			_U_host[y+1][x-1] = _V_host[y+1][x-1] = 0.0;
+		}
+
+		_U_host[y][x+2]   = _V_host[y][x+2]   = 0.0;
+		_U_host[y+1][x+2] = _V_host[y+1][x+2] = 0.0;
+
+		//-----------------------
+		// reset pressure
+		//-----------------------
+
+		_P_host[y][x]     = 0.0;
+		_P_host[y][x+1]   = 0.0;
+		_P_host[y+1][x]   = 0.0;
+		_P_host[y+1][x+1] = 0.0;
+
+
+
+		//-----------------------
+		// copy to device
+		//-----------------------
+
+		// copy flags, velocities and pressure to device memory
+
+		/*cl::size_t<3> origin, region;
+
+		origin[0] = x;
+		origin[1] = y;
+		origin[2] = 0;
+
+		region[0] = 2;
+		region[1] = 2;
+		region[2] = 0;*/
+
+		cl::Event event;
+
+		/*_clQueue->enqueueWriteBufferRect(
+				_FLAG_g,				// target buffer
+				CL_TRUE,					// blocking write
+				origin,					// offset in target buffer
+				origin,					// offset in source buffer
+				region,					// dimensions of region to copy
+				_parameters->nx + 2,	// buffer row pitch
+				0,						// buffer slice pitch (3D)
+				_parameters->nx + 2,	// host row pitch
+				0,						// host slice pitch (3D)
+				*_FLAG_host,				// pointer to host source memory
+				NULL,
+				&event
+			);*/
+
+		// TODO: use writeBufferRect instead of copy whole buffers
+		_clQueue->enqueueWriteBuffer(
+				_FLAG_g,
+				CL_TRUE,
+				0,
+				(_parameters->nx + 2) * (_parameters->ny + 2) * sizeof( unsigned char ),
+				*_FLAG_host,
+				NULL,
+				&event
+			);
+		_clQueue->enqueueWriteBuffer(
+				_U_g,
+				CL_TRUE,
+				0,
+				(_parameters->nx + 2) * (_parameters->ny + 2) * sizeof( CL_REAL ),
+				*_U_host,
+				NULL,
+				&event
+			);
+		_clQueue->enqueueWriteBuffer(
+				_V_g,
+				CL_TRUE,
+				0,
+				(_parameters->nx + 2) * (_parameters->ny + 2) * sizeof( CL_REAL ),
+				*_V_host,
+				NULL,
+				&event
+			);
+		_clQueue->enqueueWriteBuffer(
+				_P_g,
+				CL_TRUE,
+				0,
+				(_parameters->nx + 2) * (_parameters->ny + 2) * sizeof( CL_REAL ),
+				*_P_host,
+				NULL,
+				&event
+			);
+
+		event.wait();
 	}
 }
 

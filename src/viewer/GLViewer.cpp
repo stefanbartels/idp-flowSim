@@ -97,7 +97,7 @@ void GLViewer::renderFrame (
 	{
 		idx = (y * _parameters->nx + x) * 3;
 
-		if( !_parameters->obstacleMap[y+1][x+1] )
+		 if( !_parameters->obstacleMap[y+1][x+1] )
 		{
 			_texture[idx]     = 0;
 			_texture[idx + 1] = 0;
