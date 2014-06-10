@@ -61,7 +61,7 @@ void Simulation::run ( )
 {
 	_viewer->initialze();
 
-	std::cout << "Simulating..." << std::endl;
+	emit simulationStarted();
 
 	while( _running )
 	{
@@ -85,18 +85,33 @@ void Simulation::run ( )
 
 		++_iterations;
 	}
+
+	emit simulationStopped();
 }
 
-void Simulation::simulate()
+void Simulation::simulationTrigger()
 {
-	_running = true;
-	start();
+	if( _running )
+	{
+		_running = false;
+	}
+	else
+	{
+		_running = true;
+		start();
+	}
 }
 
 //============================================================================
-void Simulation::stop ( )
+void Simulation::stopSimulation ( )
 {
 	_running = false;
+}
+
+//============================================================================
+void Simulation::drawObstacle ( int x, int y, bool delete_flag )
+{
+	_solver->drawObstacle( x, y, delete_flag );
 }
 
 // -------------------------------------------------

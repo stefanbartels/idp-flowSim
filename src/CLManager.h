@@ -1,6 +1,10 @@
 #ifndef CLMANAGER_H
 #define CLMANAGER_H
 
+//********************************************************************
+//**    includes
+//********************************************************************
+
 #define __CL_ENABLE_EXCEPTIONS
 
 #include "Definitions.h"
@@ -8,7 +12,11 @@
 #include <CL/cl.hpp>
 #include <CL/opencl.h>
 
-// uncommented, as all kernels use float at the moment
+//********************************************************************
+//**    additional types
+//********************************************************************
+
+// all kernels use float at the moment
 //#if REAL // not working yet!
 //	#define CL_REAL cl_double
 //#else
@@ -18,28 +26,29 @@
 //====================================================================
 //! Kernel Identifiers
 
-namespace kernel {
-enum KernelIDs
+namespace kernel
 {
-	setKernel                      = 0,
-	setBoundaryAndInterior         = 1,
-	setBoundaryConditions          = 2,
-	setArbitraryBoundaryConditions = 3,
-	problemSpecific                = 4,
-	getUVMaximum                   = 5,
-	computeF                       = 6,
-	computeG                       = 7,
-	rightHandSide                  = 8,
-	gaussSeidelRedBlack            = 9,
-	pressureBoundaryConditions     = 10,
-	pressureResidualReduction      = 11,
-	updateUV                       = 12
-};
-};
+	enum KernelIDs
+	{
+		setKernel                      = 0,
+		setBoundaryAndInterior         = 1,
+		setBoundaryConditions          = 2,
+		setArbitraryBoundaryConditions = 3,
+		problemSpecific                = 4,
+		getUVMaximum                   = 5,
+		computeF                       = 6,
+		computeG                       = 7,
+		rightHandSide                  = 8,
+		gaussSeidelRedBlack            = 9,
+		pressureBoundaryConditions     = 10,
+		pressureResidualReduction      = 11,
+		updateUV                       = 12
+	};
+}
 
 //====================================================================
 /*! \class CLManager
-	\brief Class handling the CL methods
+	\brief Class handling the CL setup
 */
 //====================================================================
 class CLManager
@@ -51,7 +60,7 @@ class CLManager
 			//! @name member variables
 			//! @{
 
-		Parameters*					_parameters;
+		Parameters*					_parameters;		//! pointer to the set of simulation parameters
 
 		// OpenCL data
 		std::vector<cl::Platform>	_clPlatforms;
@@ -77,6 +86,8 @@ class CLManager
 			//! @name constructor / destructor
 			//! @{
 
+			//! \param pointer to parameters struct
+
 		CLManager ( Parameters* parameters );
 
 		~CLManager ( );
@@ -94,6 +105,8 @@ class CLManager
 		void	loadKernels ( );
 
 			//! \brief loads the content of a cl source file to the source vector
+			//! \param set of sources to add the loaded file to
+			//! \param source code file to read
 
 		void	loadSource (
 						cl::Program::Sources&	sources,
@@ -153,7 +166,6 @@ class CLManager
 			//! \brief Blocks until all queued kernels have finished
 
 		cl_int finish ( );
-
 
 			//! @}
 };

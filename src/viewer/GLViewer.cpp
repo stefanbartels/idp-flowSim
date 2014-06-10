@@ -91,12 +91,13 @@ void GLViewer::renderFrame (
 	unsigned int idx;
 	GLubyte color;
 
-	for( unsigned int y = 0; y < _parameters->ny; ++y )
-	for( unsigned int x = 0; x < _parameters->nx; ++x )
+
+	for( int y = 0; y < _parameters->ny; ++y )
+	for( int x = 0; x < _parameters->nx; ++x )
 	{
 		idx = (y * _parameters->nx + x) * 3;
 
-		if( !_parameters->obstacleMap[y+1][x+1] )
+		 if( !_parameters->obstacleMap[y+1][x+1] )
 		{
 			_texture[idx]     = 0;
 			_texture[idx + 1] = 0;
@@ -237,3 +238,34 @@ void GLViewer::paintEvent ( QPaintEvent* )
 	}
 }
 
+//============================================================================
+void GLViewer::mouseMoveEvent ( QMouseEvent *event )
+{
+	// rescale positions
+	// invert y position: texture is rendered head first
+
+	int x = (event->x() * _parameters->nx) / _width;
+	int y =  _parameters->ny - ((event->y() * _parameters->ny) / _height) - 1;
+
+
+	// guards
+	if(    x < 0 || x > _parameters->nx - 1
+		|| y < 0 || y > _parameters->ny - 1)
+	{
+		return;
+	}
+
+	// test for modifier keys
+	if( event->buttons() == Qt::RightButton ) //event->modifiers() & Qt::ShiftModifier
+	{
+		// tear down walls if right mouse button is used
+		//_parameters->obstacleMap[y+1][x+1] = true;
+		emit drawObstacle( x, y, true );
+	}
+	else
+	{
+		// paint wall on normal click
+		//_parameters->obstacleMap[y+1][x+1] = false;
+		emit drawObstacle( x, y, false );
+	}
+}

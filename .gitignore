@@ -1,6 +1,8 @@
 bin/
 bin_debug/
+docs/html/
 *.pro.user
 *.o
 *~
 *.bak
+docs/html/

@@ -48,6 +48,8 @@ NavierStokesGPU::~NavierStokesGPU ( )
 	freeHostMatrix( _U_host );
 	freeHostMatrix( _V_host );
 	freeHostMatrix( _P_host );
+	free( _FLAG_host[0] );
+	free( _FLAG_host );
 }
 
 // -------------------------------------------------
@@ -175,25 +177,23 @@ bool NavierStokesGPU::setObstacleMap
 	int nx2 = _parameters->nx + 2;
 	int ny2 = _parameters->ny + 2;
 
+	// flag array is computed on CPU and then copied to device memory
+	// the flag array is kept to simplify obstacle drawing at least a bit
+
+	// todo: do it on GPU?
+	// todo: use constant memory
+
+
 	//-----------------------
 	// allocate memory for flag array
 	//-----------------------
 
-	// flag array is computed on CPU and copied to device memory later
-	// todo: do it on GPU?
-	// todo: use constant memory
+	_FLAG_host    = (unsigned char**)malloc( ny2 * sizeof( unsigned char* ) );
+	_FLAG_host[0] = (unsigned char*)malloc( _pitch * ny2 * sizeof( unsigned char ) );
 
-	unsigned char ** flag;
-
-	flag = (unsigned char**)malloc( ny2 * sizeof( unsigned char* ) );
-
-	// the actual data array. allocation for all rows at once to get continuous memory
-	unsigned char* data = (unsigned char*)malloc( _pitch * ny2 * sizeof( unsigned char ) );
-
-	flag[0] = data;
 	for( int i = 1; i < ny2; ++i )
 	{
-		flag[i] = data + i * _pitch;
+		_FLAG_host[i] = *_FLAG_host + i * _pitch;
 	}
 
 
@@ -212,7 +212,7 @@ bool NavierStokesGPU::setObstacleMap
 			{
 				// cell is a fluid cell
 				// neighbour cells do not matter
-				flag[y][x] = C_F;
+				_FLAG_host[y][x] = C_F;
 			}
 			else
 			{
@@ -224,7 +224,7 @@ bool NavierStokesGPU::setObstacleMap
 					return false;
 
 				// look for surrounding cells to get correct flag
-				flag[y][x] = C_B
+				_FLAG_host[y][x] = C_B
 						+ B_N * map[y+1][x]
 						+ B_S * map[y-1][x]
 						+ B_W * map[y][x-1]
@@ -237,14 +237,14 @@ bool NavierStokesGPU::setObstacleMap
 	for( int x = 1; x < nx1; ++x )
 	{
 		// southern boundary
-		flag[0][x]	= C_B
+		_FLAG_host[0][x] = C_B
 					+ B_N * map[1][x]
 					+ B_S
 					+ B_W
 					+ B_E;
 
 		// northern boundary
-		flag[ny1][x] = C_B
+		_FLAG_host[ny1][x] = C_B
 					  + B_N
 					  + B_S * map[_parameters->ny][x]
 					  + B_W
@@ -254,22 +254,22 @@ bool NavierStokesGPU::setObstacleMap
 	for( int y = 1; y < ny1; ++y )
 	{
 		// western boundary
-		flag[y][0]	= C_B
+		_FLAG_host[y][0] = C_B
 					+ B_N
 					+ B_S
 					+ B_W
 					+ B_E * map[y][1];
 
 		// eastern boundary
-		flag[y][nx1] = C_B
+		_FLAG_host[y][nx1] = C_B
 					  + B_N
 					  + B_S
 					  + B_W * map[y][_parameters->nx]
 					  + B_E;
 	}
 
-	// edge cells (not neccessary, but uninitialised cells are ugly)
-	flag[0][0] = flag[0][nx1] = flag[ny1][0] = flag[ny1][nx1] = 0x0F;
+	// edge cells (not neccessary, but uninitialised memory is ugly)
+	_FLAG_host[0][0] = _FLAG_host[0][nx1] = _FLAG_host[ny1][0] = _FLAG_host[ny1][nx1] = 0x0F;
 
 
 	//-----------------------
@@ -282,11 +282,8 @@ bool NavierStokesGPU::setObstacleMap
 					*_clContext,
 					CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
 					_pitch * ny2 * sizeof( unsigned char ),
-					*flag
+					*_FLAG_host
 				);
-
-	free( flag[0] );
-	free( flag );
 
 	return true;
 }
@@ -382,6 +379,191 @@ int NavierStokesGPU::doSimulationStep()
 	adaptUV();
 
 	return sor_iterations;
+}
+
+
+// -------------------------------------------------
+//	interaction
+// -------------------------------------------------
+
+//============================================================================
+void NavierStokesGPU::drawObstacle
+	(
+		int x,
+		int y,
+		bool delete_flag
+	)
+{
+	// TODO: draw 2x2 pixel blocks only
+	// TODO: update solver internal obstacle map
+
+	// guards (should be here, but are in GLViewer)
+	//if( x < 1 || x > _parameters->nx
+	//	|| y < 1 || y > _parameters->ny )
+	//{
+	//	return;
+	//}
+
+
+
+
+	if( delete_flag )
+	{
+		std::cout << "obstacle removing not implemented yet!" << std::endl;
+		//_parameters->obstacleMap[y][x] = true;
+	}
+	else
+	{
+		//std::cout << "obstacle painting on GPU not implemented yet!" << std::endl;
+
+		//-----------------------
+		// update obstacle flags
+		//-----------------------
+
+		// south west corner of painted square
+		_parameters->obstacleMap[y][x] = false;
+		_FLAG_host[y][x] = C_B
+				+ B_N
+				+ B_S * ( y > 1 ? _parameters->obstacleMap[y-1][x] : 1 )
+				+ B_W * ( x > 1 ? _parameters->obstacleMap[y][x-1] : 1 )
+				+ B_E;
+
+		// south east corner
+		_parameters->obstacleMap[y][x+1] = false;
+		_FLAG_host[y][x+1] = C_B
+				+ B_N
+				+ B_S * ( y > 1 ? _parameters->obstacleMap[y-1][x+1] : 1 )
+				+ B_W
+				+ B_E * _parameters->obstacleMap[y][x+2];
+
+		// north west corner
+		_parameters->obstacleMap[y+1][x] = false;
+		_FLAG_host[y+1][x] = C_B
+				+ B_N * _parameters->obstacleMap[y+2][x]
+				+ B_S
+				+ B_W * ( x > 1 ? _parameters->obstacleMap[y+1][x-1] : 1 )
+				+ B_E;
+
+		// north east corner
+		_parameters->obstacleMap[y+1][x+1] = false;
+		_FLAG_host[y+1][x+1] = C_B
+				+ B_N
+				+ B_S * _parameters->obstacleMap[y+2][x+1]
+				+ B_W
+				+ B_E * _parameters->obstacleMap[y+1][x+2];
+
+		//-----------------------
+		// reset velocities
+		//-----------------------
+
+		_U_host[y][x]     = _V_host[y][x]     = 0.0;
+		_U_host[y][x+1]   = _V_host[y][x+1]   = 0.0;
+		_U_host[y+1][x]   = _V_host[y+1][x]   = 0.0;
+		_U_host[y+1][x+1] = _V_host[y+1][x+1] = 0.0;
+
+		// without reseting the results of the surrounding cells
+		// the results are quite unphysical
+		if( y > 1 )
+		{
+			_U_host[y-1][x]   = _V_host[y-1][x]   = 0.0;
+			_U_host[y-1][x+1] = _V_host[y-1][x+1] = 0.0;
+		}
+		_U_host[y+2][x]   = _V_host[y+2][x]   = 0.0;
+		_U_host[y+2][x+1] = _V_host[y+2][x+1] = 0.0;
+
+		if( x > 1 )
+		{
+			_U_host[y][x-1]   = _V_host[y][x-1]   = 0.0;
+			_U_host[y+1][x-1] = _V_host[y+1][x-1] = 0.0;
+		}
+
+		_U_host[y][x+2]   = _V_host[y][x+2]   = 0.0;
+		_U_host[y+1][x+2] = _V_host[y+1][x+2] = 0.0;
+
+		//-----------------------
+		// reset pressure
+		//-----------------------
+
+		_P_host[y][x]     = 0.0;
+		_P_host[y][x+1]   = 0.0;
+		_P_host[y+1][x]   = 0.0;
+		_P_host[y+1][x+1] = 0.0;
+
+
+
+		//-----------------------
+		// copy to device
+		//-----------------------
+
+		// copy flags, velocities and pressure to device memory
+
+		/*cl::size_t<3> origin, region;
+
+		origin[0] = x;
+		origin[1] = y;
+		origin[2] = 0;
+
+		region[0] = 2;
+		region[1] = 2;
+		region[2] = 0;*/
+
+		cl::Event event;
+
+		/*_clQueue->enqueueWriteBufferRect(
+				_FLAG_g,				// target buffer
+				CL_TRUE,					// blocking write
+				origin,					// offset in target buffer
+				origin,					// offset in source buffer
+				region,					// dimensions of region to copy
+				_parameters->nx + 2,	// buffer row pitch
+				0,						// buffer slice pitch (3D)
+				_parameters->nx + 2,	// host row pitch
+				0,						// host slice pitch (3D)
+				*_FLAG_host,				// pointer to host source memory
+				NULL,
+				&event
+			);*/
+
+		// TODO: use writeBufferRect instead of copy whole buffers
+		_clQueue->enqueueWriteBuffer(
+				_FLAG_g,
+				CL_TRUE,
+				0,
+				(_parameters->nx + 2) * (_parameters->ny + 2) * sizeof( unsigned char ),
+				*_FLAG_host,
+				NULL,
+				&event
+			);
+		_clQueue->enqueueWriteBuffer(
+				_U_g,
+				CL_TRUE,
+				0,
+				(_parameters->nx + 2) * (_parameters->ny + 2) * sizeof( CL_REAL ),
+				*_U_host,
+				NULL,
+				&event
+			);
+		_clQueue->enqueueWriteBuffer(
+				_V_g,
+				CL_TRUE,
+				0,
+				(_parameters->nx + 2) * (_parameters->ny + 2) * sizeof( CL_REAL ),
+				*_V_host,
+				NULL,
+				&event
+			);
+		_clQueue->enqueueWriteBuffer(
+				_P_g,
+				CL_TRUE,
+				0,
+				(_parameters->nx + 2) * (_parameters->ny + 2) * sizeof( CL_REAL ),
+				*_P_host,
+				NULL,
+				&event
+			);
+
+		event.wait();
+	}
 }
 
 

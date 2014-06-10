@@ -111,7 +111,7 @@ void CLManager::loadKernels ( )
 	// load kernels
 	//-----------------------
 
-		_clKernels = std::vector<cl::Kernel>( 12 );
+		_clKernels = std::vector<cl::Kernel>( 13 );
 
 	#if VERBOSE
 		std::cout << "Binding kernels..." << std::endl;

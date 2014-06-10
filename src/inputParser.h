@@ -1,6 +1,10 @@
 #ifndef INPUTPARSER_H
 #define INPUTPARSER_H
 
+//********************************************************************
+//**    includes
+//********************************************************************
+
 #include "Definitions.h"
 #include "Parameters.h"
 #include <string>
@@ -15,28 +19,57 @@
 class InputParser
 {
 	public:
+		// -------------------------------------------------
+		//	static parameter handling functions
+		// -------------------------------------------------
+			//! @name static parameter handling functions
+			//! @{
 
-		static void setDefaultParameters (
+			//! \brief sets parameters to a default value
+			//! \param pointer to parameter structure to fill with the default values
+
+		static void setDefaultParameters
+			(
 				Parameters*	parameters
 			);
 
-		static bool readParameters (
+			//! \brief parses the command line parameters and reads
+			//! the parameters from a given config file
+			//! \param number of command line arguments
+			//! \param array of command line arguments
+			//! \param pointer to parameter structure to fill with the imported values
+
+		static bool readParameters
+			(
 				int			argc,
 				char*		argv[],
 				Parameters*	parameters
 			);
 
-		// TODO: move check for valid map here!
-		static bool readObstacleMap (
+			//! \brief creates an obstacle map from a PGM image
+			//! \param obstacle map pointer. The memory will be allocated within the function
+			//! \param width of the simulation domain
+			//! \param height of the simulation domain
+			//! \param file name of the PGM file to read
+
+			//! \todo move check for valid map from solver to here!
+		static bool readObstacleMap
+			(
 				bool***		obstacleMap,
 				int			width,
 				int			height,
 				std::string	fileName
 			);
 
-		static void printParameters (
+			//! \brief prints the parameters to console
+			//! \param pointer to parameter structure
+
+		static void printParameters
+			(
 				Parameters*	parameters
 			);
+
+			//! @}
 };
 
 #endif // INPUTPARSER_H
