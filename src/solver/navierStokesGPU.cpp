@@ -915,9 +915,14 @@ void NavierStokesGPU::setKernelArguments ( )
 	REAL alphaFG = 0.9; // TODO: select
 
 	// constant values for pressure equation
-	float dx2 = _parameters->dx * _parameters->dx;
-	float dy2 = _parameters->dy * _parameters->dy;
-	REAL constant_expr = 1.0 / ( 2.0 / dx2 + 2.0 / dy2 );
+	float dx2 = 1.0 / (_parameters->dx * _parameters->dx);
+	float dy2 =	1.0 / (_parameters->dy * _parameters->dy);
+
+	std::cout << dy2 << std::endl;
+
+	//REAL constant_expr = 1.0 / ( 2.0 * dx2 + 2.0 * dy2 );
+	REAL constant_expr = _parameters->omega / ( 2.0 * dx2 + 2.0 * dy2 );
+	REAL omega = 1.0 - _parameters->omega;
 
 	#if VERBOSE
 		std::cout << "Setting kernel arguments..." << std::endl;
@@ -1013,8 +1018,9 @@ void NavierStokesGPU::setKernelArguments ( )
 		kernel->setArg( 4, sizeof(CL_REAL), &dy2 );
 		// kernel->setArg( 5, sizeof(int), &red ); // red/black flag, set before kernel call
 		kernel->setArg( 6, sizeof(CL_REAL), &constant_expr );
-		kernel->setArg( 7, sizeof(int), &nx );
-		kernel->setArg( 8, sizeof(int), &ny );
+		kernel->setArg( 7, sizeof(CL_REAL), &omega );
+		kernel->setArg( 8, sizeof(int), &nx );
+		kernel->setArg( 9, sizeof(int), &ny );
 
 		// kernel arguments for updating pressure boundary conditions
 		kernel = _clManager->getKernel( kernel::pressureBoundaryConditions );

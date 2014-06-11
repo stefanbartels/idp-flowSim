@@ -30,6 +30,7 @@ __kernel void gaussSeidelRedBlackKernel
 		float					dy2,			// sqare of length delta y of on cell in y-direction
 		int						red,			// 1 for red, 0 for black
 		float					constant_expr,	// constant expression 1.0 / ( 2.0 / dx2 + 2.0 / dy2 )
+		float					omega,			// (1.0 - omega) for SOR
 		int						nx,				// dimension in x direction (including boundaries)
 		int						ny				// dimension in y direction (including boundaries)
 	)
@@ -48,10 +49,11 @@ __kernel void gaussSeidelRedBlackKernel
 		if( flag_g[idx] == C_F )
 		{
 			p_g[idx] =
+				omega * p_g[idx] +
 				constant_expr * (
-					( p_g[idx - 1] + p_g[idx + 1] ) / dx2
+					( p_g[idx - 1] + p_g[idx + 1] ) * dx2
 					+
-					( p_g[idx - nx] + p_g[idx + nx] ) / dy2
+					( p_g[idx - nx] + p_g[idx + nx] ) * dy2
 					-
 					rhs_g[idx]
 				);
@@ -74,16 +76,16 @@ __kernel void gaussSeidelRedBlackKernel
 					p_g[idx] = p_g[idx + 1];
 					break;
 				case B_NW:
-					p_g[idx] = (p_g[idx - nx] + p_g[idx + 1]) / 2;
+					p_g[idx] = (p_g[idx - nx] + p_g[idx + 1]) * 0.5;
 					break;
 				case B_NE:
-					p_g[idx] = (p_g[idx + nx] + p_g[idx + 1]) / 2;
+					p_g[idx] = (p_g[idx + nx] + p_g[idx + 1]) * 0.5;
 					break;
 				case B_SW:
-					p_g[idx] = (p_g[idx - nx] + p_g[idx - 1]) / 2;
+					p_g[idx] = (p_g[idx - nx] + p_g[idx - 1]) * 0.5;
 					break;
 				case B_SE:
-					p_g[idx] = (p_g[idx + nx] + p_g[idx - 1]) / 2;
+					p_g[idx] = (p_g[idx + nx] + p_g[idx - 1]) * 0.5;
 					break;
 			}
 		}
@@ -171,8 +173,8 @@ __kernel void pressureResidualReductionKernel
 				y < ny-1 ) // guards
 			{
 				temp =
-					  ( p_g[i +  1] - 2.0 * p_g[i] + p_g[i -  1] ) / dx2
-					+ ( p_g[i + nx] - 2.0 * p_g[i] + p_g[i - nx] ) / dy2
+					  ( p_g[i +  1] - 2.0 * p_g[i] + p_g[i -  1] ) * dx2
+					+ ( p_g[i + nx] - 2.0 * p_g[i] + p_g[i - nx] ) * dy2
 					- rhs_g[i];
 
 				local_sum += temp * temp;
