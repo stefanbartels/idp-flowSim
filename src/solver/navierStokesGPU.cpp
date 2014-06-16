@@ -872,7 +872,7 @@ REAL NavierStokesGPU::SORPoisson()
 	}
 	catch( cl::Error error )
 	{
-		std::cerr << "CL ERROR while computing Δt: " << error.what() << "(" << error.err() << ")" << std::endl;
+		std::cerr << "CL ERROR during pressure iteration: " << error.what() << "(" << error.err() << ")" << std::endl;
 		throw error;
 	}
 
