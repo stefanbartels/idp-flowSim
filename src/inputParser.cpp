@@ -8,40 +8,11 @@
 #include <fstream>
 #include <cstdlib>
 #include <stdio.h>
+#include <string.h>
 
 //********************************************************************
 //**    implementation
 //********************************************************************
-
-//============================================================================
-void InputParser::setDefaultParameters ( Parameters *parameters)
-{
-	parameters->xlength			= 1.0;
-	parameters->ylength			= 1.0;
-	parameters->nx				= 128;
-	parameters->ny				= 128;
-	parameters->dx				= 1.0 / 128.0;
-	parameters->dy				= 1.0 / 128.0;
-	parameters->dt				= 0.02;
-	parameters->tau				= 0.5;
-	parameters->it_max			= 100;
-	parameters->epsilon			= 0.001;
-	parameters->omega			= 1.7;
-	parameters->gamma			= 0.9;
-	parameters->re				= 1000;
-	parameters->gx				= 0.0;
-	parameters->gy				= 0.0;
-	parameters->ui				= 0.0;
-	parameters->vi				= 0.0;
-	parameters->pi				= 0.0;
-	parameters->wN				= 2;
-	parameters->wS				= 2;
-	parameters->wW				= 2;
-	parameters->wE				= 2;
-	parameters->problem			= "moving_lid";
-	parameters->obstacleFile	= "";
-	parameters->obstacleMap		= 0;
-}
 
 //============================================================================
 bool InputParser::readParameters
@@ -51,19 +22,67 @@ bool InputParser::readParameters
 		Parameters*	parameters
 	)
 {
-	// set default parameters
-	setDefaultParameters( parameters );
-
 	//-------------------------------
 	// parse command line parameters
 	//-------------------------------
 
 	char* parameterFileName;
+	bool  parameterFileNameSet = false;
+
+	int arg = 1;
+
+
+	arg = 0;
+	while( arg < argc )
+	{
+		std::cout << argv[arg] << " ";
+		arg++;
+	}
+	std::cout << std::endl;
+	arg= 1;
+
+
+	while( arg < argc )
+	{
+		if( strcmp( argv[arg], "-vtk" ) == 0 )
+		{
+			if( arg + 2 < argc )
+			{
+				parameters->VTKWriteFiles = true;
+				parameters->VTKInterval   = atoi( argv[++arg] );
+				parameters->VTKIterations = atoi( argv[++arg] );
+				++arg;
+			}
+			else
+			{
+				printUsage( argv[0] );
+				return false;
+			}
+		}
+		else if( !parameterFileNameSet )
+		{
+			parameterFileName = argv[arg];
+			++arg;
+		}
+		else
+		{
+			printUsage( argv[0] );
+			return false;
+		}
+	}
+
+
+
+
+
+
+
+
+
+
 
 	if ( argc > 1 )
 	{
-		parameterFileName = argv[1];
-
 		std::cout << "Problem parameter file: " << parameterFileName << std::endl;
 
 		//-------------------------------
@@ -251,7 +270,7 @@ bool InputParser::readParameters
 			}
 			else // unknown parameter
 			{
-				std::cerr << "Unknown parameter \"" << buffer << "\". Please check yout input file!" << std::endl;
+				std::cerr << "Unknown parameter \"" << buffer << "\". Please check your input file!" << std::endl;
 				file.close();
 				return false;
 			}
@@ -603,4 +622,14 @@ void InputParser::printParameters
 	std::cout << "Problem:\t" << parameters->problem << std::endl;
 	std::cout << "Obstacle map:\t" << parameters->obstacleFile << std::endl;
 	std::cout << "====================" << std::endl;
+}
+
+//============================================================================
+void InputParser::printUsage
+	(
+		char* programName
+	)
+{
+	std::cerr << "Error reading parameters!\n"
+			  << "Usage: " << programName << " [-vtk INTERVAL ITERATIONS] [PARAMETER_FILE]" << std::endl;
 }

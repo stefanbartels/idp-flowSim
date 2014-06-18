@@ -31,7 +31,7 @@ class GLViewer : public QGLWidget, public Viewer
 			//! @{
 
 		bool     _doResize;			//! flag indicating if the window size has changed since the last frame
-		int      _width;				//! width of the GL window, allowing resizing the window inside the thread
+		int      _width;			//! width of the GL window, allowing resizing the window inside the thread
 		int      _height;			//! height of the GL window
 
 		GLubyte* _texture;			//! OpenGL texture that is created out of the results
@@ -93,7 +93,7 @@ class GLViewer : public QGLWidget, public Viewer
                 REAL** U,
                 REAL** V,
                 REAL** P,
-				int it
+				int iteration
 			);
 
 			//! @}
@@ -124,7 +124,12 @@ class GLViewer : public QGLWidget, public Viewer
 			//! \param y offset of the obstacle to draw
 			//! \param drawing mode, true if a wall ist to be teared down instead of created
 
-		void drawObstacle( int x, int y, bool delete_flag );
+		void drawObstacle
+			(
+				int x,
+				int y,
+				bool delete_flag
+			);
 
 			//! @}
 

@@ -63,7 +63,7 @@ void Simulation::run ( )
 
 	emit simulationStarted();
 
-	while( _running )
+	while( _running && ( !_parameters->VTKWriteFiles || _iterations < _parameters->VTKIterations) )
 	{
 		#if VERBOSE
 			std::cout << "Simulating iteration " << _iterations << std::endl;

@@ -16,6 +16,12 @@
 
 class Viewer
 {
+	// Unfortunately, Qt does not support multiple inheritance from QObjects.
+	// So the Viewer base class cannot be a QObject, if a subclass also
+	// inherits from another QObject, as the GLViewer does.
+	// TODO: find a nicer way to solve this issue, like using the GLWidget
+	// as member object of the GLViewer instead of as base class.
+
 	protected:
 		// -------------------------------------------------
 		//	member variables
@@ -72,7 +78,7 @@ class Viewer
                 REAL** U,
                 REAL** V,
                 REAL** P,
-				int it
+				int iteration
 			) = 0;
 
 			//! @}

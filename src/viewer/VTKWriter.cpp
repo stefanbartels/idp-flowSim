@@ -17,10 +17,18 @@ void VTKWriter::renderFrame (
         REAL** U,
         REAL** V,
         REAL** P,
-		int it
+		int iteration
 	)
 {
 	// www.vtk.org/VTK/img/file-formats.pdf‎
+
+	if( iteration % _parameters->VTKInterval != 0 )
+		return;
+
+	std::cout << "Writing vtk file for iteration " << iteration << std::endl;
+
+	// TODO: if a flow field object was used, maintaining the data arrays,
+	// pressure and velocities only had to be copied from the GPU memory if required
 
 	int nx = _parameters->nx;
 	int ny = _parameters->ny;
@@ -30,13 +38,13 @@ void VTKWriter::renderFrame (
 	//-----------------------
 
 	char filename[32];
-	sprintf( filename, "output/it_%05d.vtk", it );
+	sprintf( filename, "output/it_%05d.vtk", iteration );
 
 	std::ofstream vtk ( filename );
 
 	if ( !vtk.is_open() )
 	{
-		std::cerr << "Failed to open vtk file \"" << filename << "\" for writing!" << std::endl;
+		std::cerr << "Failed to open vtk file \"" << filename << "\" for writing! (Does the directory exist?)" << std::endl;
 		return;
 	}
 

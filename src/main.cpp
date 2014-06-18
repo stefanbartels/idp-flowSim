@@ -26,7 +26,7 @@ void cleanup ( );
 
 Parameters  parameters;
 Simulation* simulation = 0;
-//Viewer*	    viewer     = 0;
+Viewer*	    viewer     = 0;
 MainWindow* window     = 0;
 
 //********************************************************************
@@ -69,9 +69,15 @@ int main ( int argc, char* argv[] )
 	// create viewer and gui
 	//-----------------------
 
-	window = new MainWindow( &parameters );
-
-	//viewer = new VTKWriter( &parameters );
+	if( parameters.VTKWriteFiles )
+	{
+		viewer = new VTKWriter( &parameters );
+	}
+	else
+	{
+		window = new MainWindow( &parameters );
+		viewer = window->getViewer();
+	}
 
 	//-----------------------
 	// create simulation
@@ -82,7 +88,7 @@ int main ( int argc, char* argv[] )
 		// TODO: move check for valid obstacle map to inputParser
 		//       and remove this try/catch
 
-		simulation = new Simulation( &parameters, window->getViewer() );
+		simulation = new Simulation( &parameters, viewer );
 	}
 	catch( const char* error_message )
 	{
@@ -96,30 +102,37 @@ int main ( int argc, char* argv[] )
 	// start application
 	//-----------------------
 
-	// TODO: move connectins between gui elements and simulation somewhere else
-	QObject::connect(	window, SIGNAL( simulationTrigger() ),
-						simulation, SLOT( simulationTrigger() ) );
+	if( parameters.VTKWriteFiles )
+	{
+		simulation->simulationTrigger();
 
-	QObject::connect(	simulation, SIGNAL( simulationStarted() ),
-						window, SLOT( simulationStartedSlot() ) );
-	QObject::connect(	simulation, SIGNAL( simulationStopped() ),
-						window, SLOT( simulationStoppedSlot() ) );
-	QObject::connect(	simulation, SIGNAL( simulatedFrame( int ) ),
-						window, SLOT( simulatedFrame( int ) ) );
+		QObject::connect(	simulation, SIGNAL( simulationStopped() ),
+							QApplication::instance(), SLOT( quit() ) );
+	}
+	else
+	{
+		// TODO: move connectins between gui elements and simulation somewhere else
+		QObject::connect(	window, SIGNAL( simulationTrigger() ),
+							simulation, SLOT( simulationTrigger() ) );
 
-	// signal to stop simulation thread if application is stopped
-	QObject::connect(	&application, SIGNAL( aboutToQuit() ),
-						simulation, SLOT( stopSimulation() ) );
+		QObject::connect(	simulation, SIGNAL( simulationStarted() ),
+							window, SLOT( simulationStartedSlot() ) );
+		QObject::connect(	simulation, SIGNAL( simulationStopped() ),
+							window, SLOT( simulationStoppedSlot() ) );
+		QObject::connect(	simulation, SIGNAL( simulatedFrame( int ) ),
+							window, SLOT( simulatedFrame( int ) ) );
 
+		// signal to stop simulation thread if application is stopped
+		QObject::connect(	&application, SIGNAL( aboutToQuit() ),
+							simulation, SLOT( stopSimulation() ) );
 
+		// connect viewer and simulation for interactivity
+		QObject::connect(	window->getViewer(), SIGNAL( drawObstacle( int, int, bool ) ),
+							simulation, SLOT( drawObstacle( int, int, bool ) ) );
 
-	// connect viewer and simulation for interactivity
-	QObject::connect(	window->getViewer(), SIGNAL( drawObstacle( int, int, bool ) ),
-						simulation, SLOT( drawObstacle( int, int, bool ) ) );
-
-
-
-	window->show();
+		// open window
+		window->show();
+	}
 
 
 	//-----------------------
@@ -133,8 +146,6 @@ int main ( int argc, char* argv[] )
 	simulation->wait();
 
 	cleanup();
-
-
 
 	return application_return_value;
 }

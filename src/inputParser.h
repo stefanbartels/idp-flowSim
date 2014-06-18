@@ -25,14 +25,6 @@ class InputParser
 			//! @name static parameter handling functions
 			//! @{
 
-			//! \brief sets parameters to a default value
-			//! \param pointer to parameter structure to fill with the default values
-
-		static void setDefaultParameters
-			(
-				Parameters*	parameters
-			);
-
 			//! \brief parses the command line parameters and reads
 			//! the parameters from a given config file
 			//! \param number of command line arguments
@@ -67,6 +59,13 @@ class InputParser
 		static void printParameters
 			(
 				Parameters*	parameters
+			);
+
+			//! \brief prints the parameter usage to console
+
+		static void printUsage
+			(
+				char* programName
 			);
 
 			//! @}

@@ -6,6 +6,7 @@
 //********************************************************************
 
 #include "Viewer.h"
+#include <QObject>
 
 //====================================================================
 /*! \class VTKWriter
@@ -47,7 +48,7 @@ class VTKWriter : public Viewer
                 REAL** U,
                 REAL** V,
                 REAL** P,
-				int it
+				int    iteration
 			);
 
 			//! @}
