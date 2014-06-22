@@ -9,7 +9,7 @@
 GLViewer::GLViewer
 	(
 		Parameters* parameters,
-		QWidget *parent
+		QWidget*    parent
 	) :
 	QGLWidget( parent ),
 	Viewer( parameters )
@@ -76,7 +76,8 @@ void GLViewer::renderFrame (
         REAL** U,
         REAL** V,
         REAL** P,
-		int iteration
+		double time,
+		int    iteration
 	)
 {
 	if( _doResize )

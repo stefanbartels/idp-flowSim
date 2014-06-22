@@ -78,7 +78,8 @@ class Viewer
                 REAL** U,
                 REAL** V,
                 REAL** P,
-				int iteration
+				double time,
+				int    iteration
 			) = 0;
 
 			//! @}

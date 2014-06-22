@@ -32,9 +32,9 @@ struct Parameters
 		//! @name program parameters
 		//! @{
 
-	bool         VTKWriteFiles;		//! indicates if vtk files should be written
-	unsigned int VTKInterval;		//! interval of vtk outputs
-	unsigned int VTKIterations;		//! number of iterations to simulate if vtk files are written
+	bool		VTKWriteFiles;	//! indicates if vtk files should be written
+	double		VTKInterval;	//! interval of vtk outputs
+	double		VTKTimeLimit;	//! time limit for simulation if vtk files are written
 
 		//! @}
 
@@ -98,8 +98,8 @@ struct Parameters
 	{
 		// program parameters
 		VTKWriteFiles = false;
-		VTKInterval   = 100;
-		VTKIterations = 5000;
+		VTKInterval   = 0.1;
+		VTKTimeLimit  = 10.0;
 
 		// simulation parameters
 		xlength       = 1.0;

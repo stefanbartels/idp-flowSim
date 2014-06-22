@@ -57,7 +57,6 @@ int main ( int argc, char* argv[] )
 	// parse command line arguments and read parameter file
 	if ( !InputParser::readParameters ( argc, argv, &parameters ) )
 	{
-		std::cerr << "Error reading parameter file." << std::endl << "Exiting..." << std:: endl;
 		return 1;
 	}
 

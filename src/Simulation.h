@@ -38,6 +38,7 @@ class Simulation : public QThread
 
 		bool                _running;		//! flag indicating if the simulation is currently running
 		int					_iterations;	//! counter for the total number of simulated timesteps
+		double				_time;			//! simulated time interval
 
 			//! @}
 

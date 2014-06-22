@@ -18,14 +18,15 @@ void SimplePGMWriter::renderFrame (
         REAL** U,
         REAL** V,
         REAL** P,
-		int it
+		double time,
+		int    iteration
 	)
 {
 	int nx = _parameters->nx;
 	int ny = _parameters->ny;
 
 	char img_name[32];
-	sprintf( img_name, "output/it_%05d.pgm", it );
+	sprintf( img_name, "output/it_%05d.pgm", iteration );
 
 	std::ofstream fimg ( img_name );
 

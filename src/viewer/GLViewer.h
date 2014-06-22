@@ -56,7 +56,7 @@ class GLViewer : public QGLWidget, public Viewer
 
 		GLViewer (
 				Parameters* parameters,
-				QWidget* parent = 0
+				QWidget*    parent = 0
 			);
 
 		~GLViewer ( );
@@ -93,7 +93,8 @@ class GLViewer : public QGLWidget, public Viewer
                 REAL** U,
                 REAL** V,
                 REAL** P,
-				int iteration
+				double time,
+				int    iteration
 			);
 
 			//! @}
@@ -126,8 +127,8 @@ class GLViewer : public QGLWidget, public Viewer
 
 		void drawObstacle
 			(
-				int x,
-				int y,
+				int  x,
+				int  y,
 				bool delete_flag
 			);
 

@@ -10,6 +10,7 @@ VTKWriter::VTKWriter
 	) :
 	Viewer( parameters )
 {
+	_nextOutput = 0.0;
 }
 
 //============================================================================
@@ -17,15 +18,20 @@ void VTKWriter::renderFrame (
         REAL** U,
         REAL** V,
         REAL** P,
-		int iteration
+		double time,
+		int    iteration
 	)
 {
 	// www.vtk.org/VTK/img/file-formats.pdf‎
 
-	if( iteration % _parameters->VTKInterval != 0 )
+	if( _nextOutput > time )
 		return;
 
+	// determine next output time
+	_nextOutput = time + _parameters->VTKInterval;
+
 	std::cout << "Writing vtk file for iteration " << iteration << std::endl;
+
 
 	// TODO: if a flow field object was used, maintaining the data arrays,
 	// pressure and velocities only had to be copied from the GPU memory if required

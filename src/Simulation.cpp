@@ -22,6 +22,7 @@ Simulation::Simulation ( Parameters* parameters, Viewer* viewer )
 	_running = false;
 
 	_iterations = 0;
+	_time = 0.0;
 
 
 	// TODO: stop using hardcoded flag
@@ -63,14 +64,16 @@ void Simulation::run ( )
 
 	emit simulationStarted();
 
-	while( _running && ( !_parameters->VTKWriteFiles || _iterations < _parameters->VTKIterations) )
+	while( _running && ( !_parameters->VTKWriteFiles || _time < _parameters->VTKTimeLimit ) )
 	{
 		#if VERBOSE
-			std::cout << "Simulating iteration " << _iterations << std::endl;
+			std::cout << "Simulating iteration " << _iterations << " at time " << _time << std::endl;
 		#endif
 
 		// do simulation step
 		int numPressureIterations = _solver->doSimulationStep( );
+
+		_time += _parameters->dt;
 
 		// update visualisation
 		// todo: use flow field class instead of parameters
@@ -78,6 +81,7 @@ void Simulation::run ( )
 				_solver->getU_CPU(),
 				_solver->getV_CPU(),
 				_solver->getP_CPU(),
+				_time,
 				_iterations
 			);
 
