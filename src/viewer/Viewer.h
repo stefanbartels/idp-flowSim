@@ -75,11 +75,11 @@ class Viewer
 
 		virtual void renderFrame
 			(
-                REAL** U,
-                REAL** V,
-                REAL** P,
+				REAL** U,
+				REAL** V,
+				REAL** P,
 				double time,
-				int    iteration
+				unsigned int iteration
 			) = 0;
 
 			//! @}

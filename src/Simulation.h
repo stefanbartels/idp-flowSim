@@ -37,7 +37,7 @@ class Simulation : public QThread
 		CLManager*			_clManager;		//! the object handling the CL setup if GPU solver is used
 
 		bool                _running;		//! flag indicating if the simulation is currently running
-		int					_iterations;	//! counter for the total number of simulated timesteps
+		unsigned int		_iterations;	//! counter for the total number of simulated timesteps
 		double				_time;			//! simulated time interval
 
 			//! @}
@@ -80,6 +80,11 @@ class Simulation : public QThread
 			//! \returns pointer to pressure array
 
 		REAL** getP_CPU ( );
+
+			//! \brief method to get the number of iterations simulated until now
+			//! \returns current number of iterations
+
+		unsigned int getIterations ( );
 
 			//! @}
 

@@ -77,7 +77,7 @@ void GLViewer::renderFrame (
         REAL** V,
         REAL** P,
 		double time,
-		int    iteration
+		unsigned int iteration
 	)
 {
 	if( _doResize )

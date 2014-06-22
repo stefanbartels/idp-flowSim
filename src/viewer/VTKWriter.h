@@ -60,7 +60,7 @@ class VTKWriter : public Viewer
                 REAL** V,
                 REAL** P,
 				double time,
-				int    iteration
+				unsigned int iteration
 			);
 
 			//! @}

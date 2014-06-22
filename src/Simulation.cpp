@@ -123,20 +123,26 @@ void Simulation::drawObstacle ( int x, int y, bool delete_flag )
 // -------------------------------------------------
 
 //============================================================================
-REAL** Simulation::getU_CPU()
+REAL** Simulation::getU_CPU ( )
 {
 	return _solver->getU_CPU();
 }
 
 //============================================================================
-REAL** Simulation::getV_CPU()
+REAL** Simulation::getV_CPU ( )
 {
 	return _solver->getV_CPU();
 }
 
 //============================================================================
-REAL** Simulation::getP_CPU()
+REAL** Simulation::getP_CPU ( )
 {
 	return _solver->getP_CPU();
+}
+
+//============================================================================
+unsigned int Simulation::getIterations ( )
+{
+	return _iterations;
 }
 

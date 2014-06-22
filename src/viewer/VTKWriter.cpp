@@ -19,7 +19,7 @@ void VTKWriter::renderFrame (
         REAL** V,
         REAL** P,
 		double time,
-		int    iteration
+		unsigned int iteration
 	)
 {
 	// www.vtk.org/VTK/img/file-formats.pdf‎

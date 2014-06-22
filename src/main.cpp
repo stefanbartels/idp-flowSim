@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include <QApplication>
+#include <QElapsedTimer>
 
 //********************************************************************
 //**    forward declarations
@@ -42,9 +43,6 @@ MainWindow* window     = 0;
 
 int main ( int argc, char* argv[] )
 {
-	// support opengl in thread
-	QCoreApplication::setAttribute( Qt::AA_X11InitThreads );
-
 	QApplication application(argc, argv);
 	application.setApplicationName("Interactive Navier Stokes Simulation");
 
@@ -74,6 +72,9 @@ int main ( int argc, char* argv[] )
 	}
 	else
 	{
+		// support opengl in thread
+		QCoreApplication::setAttribute( Qt::AA_X11InitThreads );
+
 		window = new MainWindow( &parameters );
 		viewer = window->getViewer();
 	}
@@ -101,8 +102,14 @@ int main ( int argc, char* argv[] )
 	// start application
 	//-----------------------
 
+	// timer for performance measurement
+	QElapsedTimer timer;
+	qint64 elapsedTime;
+
 	if( parameters.VTKWriteFiles )
 	{
+		timer.start();
+
 		simulation->simulationTrigger();
 
 		QObject::connect(	simulation, SIGNAL( simulationStopped() ),
@@ -141,6 +148,23 @@ int main ( int argc, char* argv[] )
 	// catch return value, but wait for threads to finish
 	int application_return_value = application.exec();
 
+
+	if( timer.isValid() )
+	{
+		// should not be the case if the gui was displayed
+		elapsedTime = timer.elapsed();
+
+		unsigned int numIterations = simulation->getIterations();
+
+		std::cout << "=======================\n"
+				  << ( USE_GPU ? "GPU\n" : "CPU\n" )
+				  << "Iterations:                 " << numIterations << "\n"
+				  << "Elapsed time:               " << ((double)elapsedTime / 1000) << " s\n"
+				  << "Average time per iteration: " << ((double)elapsedTime / numIterations) << " ms\n"
+				  << "Iterations per second:      " << ((double)(numIterations * 1000) / elapsedTime) << "\n"
+				  << "=======================" << std::endl;
+	}
+
 	std::cout << "Waiting for threads..." << std::endl;
 	simulation->wait();
 
@@ -154,5 +178,8 @@ void cleanup ( )
 {
 	SAFE_DELETE( simulation );
 	SAFE_DELETE( window );
-	//SAFE_DELETE( viewer ); // Qt takes care of that already
+	if( parameters.VTKWriteFiles )
+	{
+		SAFE_DELETE( viewer ); // Qt takes care of that already
+	}
 }

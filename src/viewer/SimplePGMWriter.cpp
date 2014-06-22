@@ -19,7 +19,7 @@ void SimplePGMWriter::renderFrame (
         REAL** V,
         REAL** P,
 		double time,
-		int    iteration
+		unsigned int iteration
 	)
 {
 	int nx = _parameters->nx;
