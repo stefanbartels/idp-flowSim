@@ -43,9 +43,6 @@ MainWindow* window     = 0;
 
 int main ( int argc, char* argv[] )
 {
-	QApplication application(argc, argv);
-	application.setApplicationName("Interactive Navier Stokes Simulation");
-
 	//-----------------------
 	// read parameters
 	//-----------------------
@@ -60,6 +57,20 @@ int main ( int argc, char* argv[] )
 
 	// print parameter set to console
 	InputParser::printParameters ( &parameters );
+
+
+	//-----------------------
+	// create Qt application
+	//-----------------------
+
+	if( !parameters.VTKWriteFiles )
+	{
+		// support opengl in thread
+		QCoreApplication::setAttribute( Qt::AA_X11InitThreads );
+	}
+
+	QApplication application( argc, argv );
+	application.setApplicationName( "Interactive Navier Stokes Simulation" );
 
 
 	//-----------------------
