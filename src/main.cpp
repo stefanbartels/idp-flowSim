@@ -72,6 +72,7 @@ int main ( int argc, char* argv[] )
 	QApplication application( argc, argv );
 	application.setApplicationName( "Interactive Navier Stokes Simulation" );
 
+
 	//-----------------------
 	// create viewer and gui
 	//-----------------------
@@ -88,6 +89,7 @@ int main ( int argc, char* argv[] )
 		window = new MainWindow( &parameters );
 		viewer = window->getViewer();
 	}
+
 
 	//-----------------------
 	// create simulation
