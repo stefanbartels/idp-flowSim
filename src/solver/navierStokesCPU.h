@@ -91,16 +91,20 @@ class NavierStokesCPU : public NavierStokesSolver
 			//! @name interaction
 			//! @{
 
-			//! \brief inserts or removes obstacles
+			//! \brief inserts or removes a line of obstacles
 			//! four cells will be marked as obstacles to prevent
 			//! obstacles from lying between two fluid cells
-			//! \param x offset of the obstacle to draw
-			//! \param y offset of the obstacle to draw
+			//! \param first x offset of the obstacle to draw
+			//! \param first y offset of the obstacle to draw
+			//! \param last x offset of the obstacle to draw
+			//! \param last y offset of the obstacle to draw
 			//! \param drawing mode, true if a wall ist to be teared down instead of created
 
-		void drawObstacle (
-				int x,
-				int y,
+		void drawObstacles (
+				int x0,
+				int y0,
+				int x1,
+				int y1,
 				bool delete_flag
 			);
 

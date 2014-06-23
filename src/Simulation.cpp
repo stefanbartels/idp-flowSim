@@ -129,9 +129,16 @@ void Simulation::stopSimulation ( )
 }
 
 //============================================================================
-void Simulation::drawObstacle ( int x, int y, bool delete_flag )
+void Simulation::drawObstacles
+	(
+		int x0,
+		int y0,
+		int x1,
+		int y1,
+		bool delete_flag
+	)
 {
-	_solver->drawObstacle( x, y, delete_flag );
+	_solver->drawObstacles( x0, y0, x1, y1, delete_flag );
 }
 
 // -------------------------------------------------

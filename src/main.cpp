@@ -139,8 +139,8 @@ int main ( int argc, char* argv[] )
 							simulation, SLOT( stopSimulation() ) );
 
 		// connect viewer and simulation for interactivity
-		QObject::connect(	window->getViewer(), SIGNAL( drawObstacle( int, int, bool ) ),
-							simulation, SLOT( drawObstacle( int, int, bool ) ) );
+		QObject::connect(	window->getViewer(), SIGNAL( drawObstacles( int, int, int, int, bool ) ),
+							simulation, SLOT( drawObstacles( int, int, int, int, bool ) ) );
 
 		// open window
 		window->show();

@@ -387,23 +387,15 @@ int NavierStokesGPU::doSimulationStep()
 // -------------------------------------------------
 
 //============================================================================
-void NavierStokesGPU::drawObstacle
+void NavierStokesGPU::drawObstacles
 	(
-		int x,
-		int y,
+		int x0,
+		int y0,
+		int x1,
+		int y1,
 		bool delete_flag
 	)
 {
-	// guards (should be here, but are in GLViewer)
-	//if( x < 1 || x > _parameters->nx
-	//	|| y < 1 || y > _parameters->ny )
-	//{
-	//	return;
-	//}
-
-
-
-
 	if( delete_flag )
 	{
 		std::cout << "obstacle removing not implemented yet!" << std::endl;
@@ -412,83 +404,123 @@ void NavierStokesGPU::drawObstacle
 	else
 	{
 		//-----------------------
-		// update obstacle flags
+		// draw line
 		//-----------------------
 
-		// the host memory arrays can be used, as this drawing takes place
-		// between visualization and simulation and host and device memory
-		// contents are currently identical
+		// using bresenham's algorithm
 
-		// south west corner of painted square
-		_parameters->obstacleMap[y][x] = false;
-		_FLAG_host[y][x] = C_B
-				+ B_N
-				+ B_S * ( y > 1 ? _parameters->obstacleMap[y-1][x] : 1 )
-				+ B_W * ( x > 1 ? _parameters->obstacleMap[y][x-1] : 1 )
-				+ B_E;
+		int dx    = abs( x1 - x0 );		// difference in x direction
+		int dy    = abs( y1 - y0 );		// difference in y direction
+		int sx    = x0 < x1 ? 1 : -1;	// define step direction
+		int sy    = y0 < y1 ? 1 : -1;	// define step direction
+		int error = dx - dy;			// initial error value
+		int e2;
 
-		// south east corner
-		_parameters->obstacleMap[y][x+1] = false;
-		_FLAG_host[y][x+1] = C_B
-				+ B_N
-				+ B_S * ( y > 1 ? _parameters->obstacleMap[y-1][x+1] : 1 )
-				+ B_W
-				+ B_E * _parameters->obstacleMap[y][x+2];
-
-		// north west corner
-		_parameters->obstacleMap[y+1][x] = false;
-		_FLAG_host[y+1][x] = C_B
-				+ B_N * _parameters->obstacleMap[y+2][x]
-				+ B_S
-				+ B_W * ( x > 1 ? _parameters->obstacleMap[y+1][x-1] : 1 )
-				+ B_E;
-
-		// north east corner
-		_parameters->obstacleMap[y+1][x+1] = false;
-		_FLAG_host[y+1][x+1] = C_B
-				+ B_N
-				+ B_S * _parameters->obstacleMap[y+2][x+1]
-				+ B_W
-				+ B_E * _parameters->obstacleMap[y+1][x+2];
-
-
-		//-----------------------
-		// reset velocities
-		//-----------------------
-
-		_U_host[y][x]     = _V_host[y][x]     = 0.0;
-		_U_host[y][x+1]   = _V_host[y][x+1]   = 0.0;
-		_U_host[y+1][x]   = _V_host[y+1][x]   = 0.0;
-		_U_host[y+1][x+1] = _V_host[y+1][x+1] = 0.0;
-
-		// without reseting the results of the surrounding cells
-		// the results are quite unphysical
-		if( y > 1 )
+		while( true )
 		{
-			_U_host[y-1][x]   = _V_host[y-1][x]   = 0.0;
-			_U_host[y-1][x+1] = _V_host[y-1][x+1] = 0.0;
+			//-----------------------
+			// update obstacle flags
+			//-----------------------
+
+			// the host memory arrays can be used, as this drawing takes place
+			// between visualization and simulation and host and device memory
+			// contents are currently identical
+
+			// south west corner of painted square
+			_parameters->obstacleMap[y0][x0] = false;
+			_FLAG_host[y0][x0] = C_B
+					+ B_N
+					+ B_S * ( y0 > 1 ? _parameters->obstacleMap[y0-1][x0] : 1 )
+					+ B_W * ( x0 > 1 ? _parameters->obstacleMap[y0][x0-1] : 1 )
+					+ B_E;
+
+			// south east corner
+			_parameters->obstacleMap[y0][x0+1] = false;
+			_FLAG_host[y0][x0+1] = C_B
+					+ B_N
+					+ B_S * ( y0 > 1 ? _parameters->obstacleMap[y0-1][x0+1] : 1 )
+					+ B_W
+					+ B_E * _parameters->obstacleMap[y0][x0+2];
+
+			// north west corner
+			_parameters->obstacleMap[y0+1][x0] = false;
+			_FLAG_host[y0+1][x0] = C_B
+					+ B_N * _parameters->obstacleMap[y0+2][x0]
+					+ B_S
+					+ B_W * ( x0 > 1 ? _parameters->obstacleMap[y0+1][x0-1] : 1 )
+					+ B_E;
+
+			// north east corner
+			_parameters->obstacleMap[y0+1][x0+1] = false;
+			_FLAG_host[y0+1][x0+1] = C_B
+					+ B_N
+					+ B_S * _parameters->obstacleMap[y0+2][x0+1]
+					+ B_W
+					+ B_E * _parameters->obstacleMap[y0+1][x0+2];
+
+
+			//-----------------------
+			// reset velocities
+			//-----------------------
+
+			_U_host[y0][x0]     = _V_host[y0][x0]     = 0.0;
+			_U_host[y0][x0+1]   = _V_host[y0][x0+1]   = 0.0;
+			_U_host[y0+1][x0]   = _V_host[y0+1][x0]   = 0.0;
+			_U_host[y0+1][x0+1] = _V_host[y0+1][x0+1] = 0.0;
+
+			// without reseting the results of the surrounding cells
+			// the results are quite unphysical
+			if( y0 > 1 )
+			{
+				_U_host[y0-1][x0]   = _V_host[y0-1][x0]   = 0.0;
+				_U_host[y0-1][x0+1] = _V_host[y0-1][x0+1] = 0.0;
+			}
+			_U_host[y0+2][x0]   = _V_host[y0+2][x0]   = 0.0;
+			_U_host[y0+2][x0+1] = _V_host[y0+2][x0+1] = 0.0;
+
+			if( x0 > 1 )
+			{
+				_U_host[y0][x0-1]   = _V_host[y0][x0-1]   = 0.0;
+				_U_host[y0+1][x0-1] = _V_host[y0+1][x0-1] = 0.0;
+			}
+
+			_U_host[y0][x0+2]   = _V_host[y0][x0+2]   = 0.0;
+			_U_host[y0+1][x0+2] = _V_host[y0+1][x0+2] = 0.0;
+
+
+			//-----------------------
+			// reset pressure
+			//-----------------------
+
+			_P_host[y0][x0]     = 0.0;
+			_P_host[y0][x0+1]   = 0.0;
+			_P_host[y0+1][x0]   = 0.0;
+			_P_host[y0+1][x0+1] = 0.0;
+
+
+			//-----------------------
+			// next line step
+			//-----------------------
+
+			if( x0 == x1 && y0 == y1 )
+			{
+				break;
+			}
+
+			e2 = error * 2;
+
+			if( e2 > -dy )
+			{
+				error = error - dy;
+				x0 = x0 + sx;
+			}
+
+			if( e2 < dx )
+			{
+				error = error + dx;
+				y0 = y0 + sy;
+			}
 		}
-		_U_host[y+2][x]   = _V_host[y+2][x]   = 0.0;
-		_U_host[y+2][x+1] = _V_host[y+2][x+1] = 0.0;
-
-		if( x > 1 )
-		{
-			_U_host[y][x-1]   = _V_host[y][x-1]   = 0.0;
-			_U_host[y+1][x-1] = _V_host[y+1][x-1] = 0.0;
-		}
-
-		_U_host[y][x+2]   = _V_host[y][x+2]   = 0.0;
-		_U_host[y+1][x+2] = _V_host[y+1][x+2] = 0.0;
-
-
-		//-----------------------
-		// reset pressure
-		//-----------------------
-
-		_P_host[y][x]     = 0.0;
-		_P_host[y][x+1]   = 0.0;
-		_P_host[y+1][x]   = 0.0;
-		_P_host[y+1][x+1] = 0.0;
 
 
 		//-----------------------

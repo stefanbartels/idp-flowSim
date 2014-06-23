@@ -212,6 +212,10 @@ void GLViewer::toggleRescaling ( )
 //============================================================================
 void GLViewer::mouseMoveEvent ( QMouseEvent *event )
 {
+	//-----------------------
+	// acquire position
+	//-----------------------
+
 	// rescale positions
 	// invert y position: texture is rendered head first
 
@@ -226,19 +230,53 @@ void GLViewer::mouseMoveEvent ( QMouseEvent *event )
 		return;
 	}
 
-	// test for modifier keys
-	if( event->buttons() == Qt::RightButton ) //event->modifiers() & Qt::ShiftModifier
+
+	//-----------------------
+	// emit signal
+	//-----------------------
+
+	// tear down walls if right mouse button is used
+	// paint wall on normal click
+
+	emit drawObstacles(
+				_xLastCursor,
+				_yLastCursor,
+				x,
+				y,
+				event->buttons() == Qt::RightButton	// event->modifiers() & Qt::ShiftModifier
+			);
+
+
+	//-----------------------
+	// update positions
+	//-----------------------
+
+	_xLastCursor = x;
+	_yLastCursor = y;
+}
+
+//============================================================================
+void GLViewer::mousePressEvent ( QMouseEvent *event )
+{
+	int x = (event->x() * _parameters->nx) / _width;
+	int y =  _parameters->ny - ((event->y() * _parameters->ny) / _height) - 1;
+
+	// guards
+	if(    x < 0 || x > _parameters->nx - 1
+		|| y < 0 || y > _parameters->ny - 1)
 	{
-		// tear down walls if right mouse button is used
-		//_parameters->obstacleMap[y+1][x+1] = true;
-		emit drawObstacle( x, y, true );
+		return;
 	}
-	else
-	{
-		// paint wall on normal click
-		//_parameters->obstacleMap[y+1][x+1] = false;
-		emit drawObstacle( x, y, false );
-	}
+
+	_mousePressed = true;
+	_xLastCursor  = x;
+	_yLastCursor  = y;
+}
+
+//============================================================================
+void GLViewer::mouseReleaseEvent ( QMouseEvent *event )
+{
+	_mousePressed = false;
 }
 
 

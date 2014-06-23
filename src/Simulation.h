@@ -122,12 +122,21 @@ class Simulation : public QThread
 
 		void stopSimulation ( );
 
-			//! \brief triggers creation / removal of obstacles
-			//! \param x offset of the obstacle to draw
-			//! \param y offset of the obstacle to draw
+			//! \brief triggers creation / removal of a line of obstacles
+			//! \param first x offset of the obstacle to draw
+			//! \param first y offset of the obstacle to draw
+			//! \param last x offset of the obstacle to draw
+			//! \param last y offset of the obstacle to draw
 			//! \param drawing mode, true if a wall ist to be teared down instead of created
 
-		void drawObstacle ( int x, int y, bool delete_flag );
+		void drawObstacles
+			(
+				int  x0,
+				int  y0,
+				int  x1,
+				int  y1,
+				bool delete_flag
+			);
 
 			//! @}
 

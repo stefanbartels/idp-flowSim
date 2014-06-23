@@ -43,6 +43,10 @@ class GLViewer : public QGLWidget, public Viewer
 
 		bool     _isInitialized;	//! flag for rendering initial screen color
 
+		bool     _mousePressed;		//! true if mouse button is currently pressed
+		int      _xLastCursor;		//! last cursor position
+		int      _yLastCursor;		//! last cursor position
+
 			//! @}
 
 	public:
@@ -122,14 +126,18 @@ class GLViewer : public QGLWidget, public Viewer
 			//! @{
 
 			//! \brief emitted if drawing of obstacles is requested
-			//! \param x offset of the obstacle to draw
-			//! \param y offset of the obstacle to draw
+			//! \param first x offset of the obstacle to draw
+			//! \param first y offset of the obstacle to draw
+			//! \param last x offset of the obstacle to draw
+			//! \param last y offset of the obstacle to draw
 			//! \param drawing mode, true if a wall ist to be teared down instead of created
 
-		void drawObstacle
+		void drawObstacles
 			(
-				int  x,
-				int  y,
+				int  x0,
+				int  y0,
+				int  x1,
+				int  y1,
 				bool delete_flag
 			);
 
@@ -160,6 +168,17 @@ class GLViewer : public QGLWidget, public Viewer
 			//! \param Qt's mouse event
 
 			void mouseMoveEvent ( QMouseEvent* event );
+
+			//! \brief handling mouse clicks for obstacle painting
+			//! Required for line drawing
+			//! \param Qt's mouse event
+
+			void mousePressEvent ( QMouseEvent* event );
+
+			//! \brief handling mouse releases for obstacle painting
+			//! \param Qt's mouse event
+
+			void mouseReleaseEvent ( QMouseEvent* event );
 
 			//! @}
 
