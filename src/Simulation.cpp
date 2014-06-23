@@ -29,7 +29,7 @@ Simulation::Simulation ( Parameters* parameters, Viewer* viewer )
 
 
 	// TODO: stop using hardcoded flag
-	if( USE_GPU )
+	if( parameters->useGPU )
 	{
 		std::cout << "Simulating on GPU" << std::endl;
 
@@ -160,7 +160,7 @@ REAL** Simulation::getP_CPU ( )
 void Simulation::printPerformanceMeasurements ( )
 {
 	std::cout << "=======================\n"
-			  << ( USE_GPU ? "GPU\n" : "CPU\n" )
+			  << ( _parameters->useGPU ? "GPU\n" : "CPU\n" )
 			  << "Iterations:                 " << _iterations << "\n"
 			  << "Simulated time:             " << _time << "\n"
 			  << "Elapsed time:               " << ((double)_elapsedTotalTime      / 1000) << " s\n"

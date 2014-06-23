@@ -32,6 +32,8 @@ struct Parameters
 		//! @name program parameters
 		//! @{
 
+	bool		useGPU;			//! flag indicating wether to use GPU or CPU
+
 	bool		VTKWriteFiles;	//! indicates if vtk files should be written
 	double		VTKInterval;	//! interval of vtk outputs
 	double		VTKTimeLimit;	//! time limit for simulation if vtk files are written
@@ -97,6 +99,7 @@ struct Parameters
 	Parameters ( )
 	{
 		// program parameters
+		useGPU        = true;
 		VTKWriteFiles = false;
 		VTKInterval   = 0.1;
 		VTKTimeLimit  = 10.0;

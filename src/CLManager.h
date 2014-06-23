@@ -17,11 +17,8 @@
 //********************************************************************
 
 // all kernels use float at the moment
-//#if REAL // not working yet!
-//	#define CL_REAL cl_double
-//#else
-	#define CL_REAL cl_float
-//#endif
+typedef cl_float CL_REAL;
+
 
 //====================================================================
 //! Kernel Identifiers

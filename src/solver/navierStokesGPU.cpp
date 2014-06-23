@@ -916,8 +916,6 @@ void NavierStokesGPU::setKernelArguments ( )
 	float dx2 = 1.0 / (_parameters->dx * _parameters->dx);
 	float dy2 =	1.0 / (_parameters->dy * _parameters->dy);
 
-	std::cout << dy2 << std::endl;
-
 	//REAL constant_expr = 1.0 / ( 2.0 * dx2 + 2.0 * dy2 );
 	REAL constant_expr = _parameters->omega / ( 2.0 * dx2 + 2.0 * dy2 );
 	REAL omega = 1.0 - _parameters->omega;

@@ -1,9 +1,6 @@
 #ifndef DEFINITIONS_H
 #define DEFINITIONS_H
 
-// set to true to use OpenCL for the simulation
-#define USE_GPU true
-
 // use verbose setting for debugging
 #define VERBOSE false
 
@@ -11,12 +8,10 @@
 #define BW 16
 #define BH 16
 
-// defining data type, as double is not supported by all GPUs
-#if USE_GPU
-	#define REAL float
-#else
-	#define REAL double
-#endif
+// defining data type as float, as double is not supported by all GPUs
+//#define REAL float
+typedef float REAL;
+
 
 /*
  * obstacle map data values
@@ -45,7 +40,7 @@
 #define FREE_SLIP	1
 #define NO_SLIP		2
 #define OUTFLOW		3
-#define PERIODIC	4
+#define PERIODIC	4	// not supported
 
 
 

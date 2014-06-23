@@ -58,6 +58,11 @@ bool InputParser::readParameters
 				return false;
 			}
 		}
+		else if( strcmp( argv[arg], "-cpu" ) == 0 )
+		{
+			parameters->useGPU = false;
+			++arg;
+		}
 		else if( argv[arg][0] != '-' && !parameterFileNameSet )
 		{
 			parameterFileName = argv[arg];
@@ -634,6 +639,6 @@ void InputParser::printUsage
 		char* programName
 	)
 {
-	std::cout << "Usage: " << programName << " [-vtk interval time_limit] parameter_file"
+	std::cout << "Usage: " << programName << " [-vtk interval time_limit] [-cpu] parameter_file"
 			  << std::endl;
 }
