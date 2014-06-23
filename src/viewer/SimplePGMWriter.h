@@ -47,7 +47,8 @@ class SimplePGMWriter : public Viewer
                 REAL** U,
                 REAL** V,
                 REAL** P,
-				int it
+				double time,
+				unsigned int iteration
 			);
 
 			//! @}

@@ -143,14 +143,15 @@ __kernel void pressureBoundaryConditionsKernel
 
 __kernel void pressureResidualReductionKernel
 	(
-		__global float*	p_g,			// pressure array
-		__global float*	rhs_g,			// storage array for right hand side
-		__global float*	result,			// result buffer for residual
-		__local  float*	residual_s,		// dynamically allocated shared memory for workgroup
-		float			dx2,			// sqare of length delta x of on cell in x-direction
-		float			dy2,			// sqare of length delta y of on cell in y-direction
-		int				nx,				// dimension in x direction (including boundaries)
-		int				ny				// dimension in y direction (including boundaries)
+		__global float*	        p_g,			// pressure array
+		__global float*	        rhs_g,			// storage array for right hand side
+		__global unsigned char*	flag_g,			// boundary cell flags
+		__global float*	        result,			// result buffer for residual
+		__local  float*         residual_s,		// dynamically allocated shared memory for workgroup
+		float                   dx2,			// sqare of length delta x of on cell in x-direction
+		float                   dy2,			// sqare of length delta y of on cell in y-direction
+		int                     nx,				// dimension in x direction (including boundaries)
+		int                     ny				// dimension in y direction (including boundaries)
 	)
 {
 	const unsigned int idx_global	= get_global_id(0);
@@ -164,30 +165,29 @@ __kernel void pressureResidualReductionKernel
 	float temp, temp2;
 	int x, y;
 
-	if( idx_global < limit ) // guard
+	// process simulation area chunkwise in parallel
+
+	while( i < limit )
 	{
-		// process simulation area chunkwise in parallel
+		x = i % nx;
+		y = i / nx;
 
-		while( i < limit )
+		if( x > 0 &&
+			y > 0 &&
+			x < nx-1 &&
+			y < ny-1 &&			// guards
+			flag_g[i] == C_F	// residual for fluid cells only
+			)
 		{
-			x = i % nx;
-			y = i / nx;
+			temp =
+				  ( p_g[i +  1] - 2.0 * p_g[i] + p_g[i -  1] ) * dx2
+				+ ( p_g[i + nx] - 2.0 * p_g[i] + p_g[i - nx] ) * dy2
+				- rhs_g[i];
 
-			if( x > 0 &&
-				y > 0 &&
-				x < nx-1 &&
-				y < ny-1 ) // guards
-			{
-				temp =
-					  ( p_g[i +  1] - 2.0 * p_g[i] + p_g[i -  1] ) * dx2
-					+ ( p_g[i + nx] - 2.0 * p_g[i] + p_g[i - nx] ) * dy2
-					- rhs_g[i];
-
-				local_sum += temp * temp;
-			}
-
-			i += local_size;
+			local_sum += temp * temp;
 		}
+
+		i += local_size;
 	}
 
 	// local result

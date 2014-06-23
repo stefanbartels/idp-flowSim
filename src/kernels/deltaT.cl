@@ -36,25 +36,22 @@ __kernel void getUVMaximumKernel
 	unsigned int i = idx_global;
 	float temp, temp2;
 
-	if( idx_global < limit ) // guard
+	// process simulation area chunkwise in parallel
+
+	while( i < limit )
 	{
-		// process simulation area chunkwise in parallel
+		temp = fabs( u_g[i] );
+		local_max_u = ( temp > local_max_u ) ? temp : local_max_u;	// todo: use fmax
 
-		while( i < limit )
-		{
-			temp = fabs( u_g[i] );
-			local_max_u = ( temp > local_max_u ) ? temp : local_max_u;	// todo: use fmax
+		temp = fabs( v_g[i] );
+		local_max_v = ( temp > local_max_v ) ? temp : local_max_v;	// todo: use fmax
 
-			temp = fabs( v_g[i] );
-			local_max_v = ( temp > local_max_v ) ? temp : local_max_v;	// todo: use fmax
-
-			i += local_size;
-		}
-
-		// local result
-		u_s[idx_local] = local_max_u;
-		v_s[idx_local] = local_max_v;
+		i += local_size;
 	}
+
+	// local result
+	u_s[idx_local] = local_max_u;
+	v_s[idx_local] = local_max_v;
 
 	// all threads must reach barrier
 	barrier( CLK_LOCAL_MEM_FENCE );

@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include <QApplication>
+#include <QElapsedTimer>
 
 //********************************************************************
 //**    forward declarations
@@ -26,7 +27,7 @@ void cleanup ( );
 
 Parameters  parameters;
 Simulation* simulation = 0;
-//Viewer*	    viewer     = 0;
+Viewer*	    viewer     = 0;
 MainWindow* window     = 0;
 
 //********************************************************************
@@ -42,9 +43,6 @@ MainWindow* window     = 0;
 
 int main ( int argc, char* argv[] )
 {
-	// support opengl in thread
-	QCoreApplication::setAttribute( Qt::AA_X11InitThreads );
-
 	QApplication application(argc, argv);
 	application.setApplicationName("Interactive Navier Stokes Simulation");
 
@@ -57,7 +55,6 @@ int main ( int argc, char* argv[] )
 	// parse command line arguments and read parameter file
 	if ( !InputParser::readParameters ( argc, argv, &parameters ) )
 	{
-		std::cerr << "Error reading parameter file." << std::endl << "Exiting..." << std:: endl;
 		return 1;
 	}
 
@@ -69,9 +66,18 @@ int main ( int argc, char* argv[] )
 	// create viewer and gui
 	//-----------------------
 
-	window = new MainWindow( &parameters );
+	if( parameters.VTKWriteFiles )
+	{
+		viewer = new VTKWriter( &parameters );
+	}
+	else
+	{
+		// support opengl in thread
+		QCoreApplication::setAttribute( Qt::AA_X11InitThreads );
 
-	//viewer = new VTKWriter( &parameters );
+		window = new MainWindow( &parameters );
+		viewer = window->getViewer();
+	}
 
 	//-----------------------
 	// create simulation
@@ -82,7 +88,7 @@ int main ( int argc, char* argv[] )
 		// TODO: move check for valid obstacle map to inputParser
 		//       and remove this try/catch
 
-		simulation = new Simulation( &parameters, window->getViewer() );
+		simulation = new Simulation( &parameters, viewer );
 	}
 	catch( const char* error_message )
 	{
@@ -96,30 +102,43 @@ int main ( int argc, char* argv[] )
 	// start application
 	//-----------------------
 
-	// TODO: move connectins between gui elements and simulation somewhere else
-	QObject::connect(	window, SIGNAL( simulationTrigger() ),
-						simulation, SLOT( simulationTrigger() ) );
+	// timer for performance measurement
+	QElapsedTimer timer;
+	qint64 elapsedTime;
 
-	QObject::connect(	simulation, SIGNAL( simulationStarted() ),
-						window, SLOT( simulationStartedSlot() ) );
-	QObject::connect(	simulation, SIGNAL( simulationStopped() ),
-						window, SLOT( simulationStoppedSlot() ) );
-	QObject::connect(	simulation, SIGNAL( simulatedFrame( int ) ),
-						window, SLOT( simulatedFrame( int ) ) );
+	if( parameters.VTKWriteFiles )
+	{
+		timer.start();
 
-	// signal to stop simulation thread if application is stopped
-	QObject::connect(	&application, SIGNAL( aboutToQuit() ),
-						simulation, SLOT( stopSimulation() ) );
+		simulation->simulationTrigger();
 
+		QObject::connect(	simulation, SIGNAL( simulationStopped() ),
+							QApplication::instance(), SLOT( quit() ) );
+	}
+	else
+	{
+		// TODO: move connectins between gui elements and simulation somewhere else
+		QObject::connect(	window, SIGNAL( simulationTrigger() ),
+							simulation, SLOT( simulationTrigger() ) );
 
+		QObject::connect(	simulation, SIGNAL( simulationStarted() ),
+							window, SLOT( simulationStartedSlot() ) );
+		QObject::connect(	simulation, SIGNAL( simulationStopped() ),
+							window, SLOT( simulationStoppedSlot() ) );
+		QObject::connect(	simulation, SIGNAL( simulatedFrame( int ) ),
+							window, SLOT( simulatedFrame( int ) ) );
 
-	// connect viewer and simulation for interactivity
-	QObject::connect(	window->getViewer(), SIGNAL( drawObstacle( int, int, bool ) ),
-						simulation, SLOT( drawObstacle( int, int, bool ) ) );
+		// signal to stop simulation thread if application is stopped
+		QObject::connect(	&application, SIGNAL( aboutToQuit() ),
+							simulation, SLOT( stopSimulation() ) );
 
+		// connect viewer and simulation for interactivity
+		QObject::connect(	window->getViewer(), SIGNAL( drawObstacle( int, int, bool ) ),
+							simulation, SLOT( drawObstacle( int, int, bool ) ) );
 
-
-	window->show();
+		// open window
+		window->show();
+	}
 
 
 	//-----------------------
@@ -129,12 +148,27 @@ int main ( int argc, char* argv[] )
 	// catch return value, but wait for threads to finish
 	int application_return_value = application.exec();
 
+
+	if( timer.isValid() )
+	{
+		// should not be the case if the gui was displayed
+		elapsedTime = timer.elapsed();
+
+		unsigned int numIterations = simulation->getIterations();
+
+		std::cout << "=======================\n"
+				  << ( USE_GPU ? "GPU\n" : "CPU\n" )
+				  << "Iterations:                 " << numIterations << "\n"
+				  << "Elapsed time:               " << ((double)elapsedTime / 1000) << " s\n"
+				  << "Average time per iteration: " << ((double)elapsedTime / numIterations) << " ms\n"
+				  << "Iterations per second:      " << ((double)(numIterations * 1000) / elapsedTime) << "\n"
+				  << "=======================" << std::endl;
+	}
+
 	std::cout << "Waiting for threads..." << std::endl;
 	simulation->wait();
 
 	cleanup();
-
-
 
 	return application_return_value;
 }
@@ -144,5 +178,8 @@ void cleanup ( )
 {
 	SAFE_DELETE( simulation );
 	SAFE_DELETE( window );
-	//SAFE_DELETE( viewer ); // Qt takes care of that already
+	if( parameters.VTKWriteFiles )
+	{
+		SAFE_DELETE( viewer ); // Qt takes care of that already
+	}
 }

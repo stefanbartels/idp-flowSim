@@ -6,42 +6,13 @@
 #include "inputParser.h"
 #include <iostream>
 #include <fstream>
-#include <cstdlib>
-#include <stdio.h>
+#include <string.h>
+#include <sstream>
+#include <locale>
 
 //********************************************************************
 //**    implementation
 //********************************************************************
-
-//============================================================================
-void InputParser::setDefaultParameters ( Parameters *parameters)
-{
-	parameters->xlength			= 1.0;
-	parameters->ylength			= 1.0;
-	parameters->nx				= 128;
-	parameters->ny				= 128;
-	parameters->dx				= 1.0 / 128.0;
-	parameters->dy				= 1.0 / 128.0;
-	parameters->dt				= 0.02;
-	parameters->tau				= 0.5;
-	parameters->it_max			= 100;
-	parameters->epsilon			= 0.001;
-	parameters->omega			= 1.7;
-	parameters->gamma			= 0.9;
-	parameters->re				= 1000;
-	parameters->gx				= 0.0;
-	parameters->gy				= 0.0;
-	parameters->ui				= 0.0;
-	parameters->vi				= 0.0;
-	parameters->pi				= 0.0;
-	parameters->wN				= 2;
-	parameters->wS				= 2;
-	parameters->wW				= 2;
-	parameters->wE				= 2;
-	parameters->problem			= "moving_lid";
-	parameters->obstacleFile	= "";
-	parameters->obstacleMap		= 0;
-}
 
 //============================================================================
 bool InputParser::readParameters
@@ -51,19 +22,63 @@ bool InputParser::readParameters
 		Parameters*	parameters
 	)
 {
-	// set default parameters
-	setDefaultParameters( parameters );
-
 	//-------------------------------
 	// parse command line parameters
 	//-------------------------------
 
 	char* parameterFileName;
+	bool  parameterFileNameSet = false;
+
+	int arg = 1;
+	while( arg < argc )
+	{
+		if( strcmp( argv[arg], "-vtk" ) == 0 )
+		{
+			if( arg + 2 < argc )
+			{
+				parameters->VTKWriteFiles = true;
+
+				// get argument as stream for automatic conversion to double
+				std::istringstream argument_istr( argv[++arg] );
+
+				// set locale to treat . as decimal mark
+				argument_istr.imbue( std::locale("C") );
+
+				argument_istr >> parameters->VTKInterval;
+
+				argument_istr.str( argv[++arg] );
+				argument_istr.clear();
+				argument_istr >> parameters->VTKTimeLimit;
+
+				++arg;
+			}
+			else
+			{
+				printUsage( argv[0] );
+				return false;
+			}
+		}
+		else if( argv[arg][0] != '-' && !parameterFileNameSet )
+		{
+			parameterFileName = argv[arg];
+			parameterFileNameSet = true;
+			++arg;
+		}
+		else
+		{
+			printUsage( argv[0] );
+			return false;
+		}
+	}
+
+
+	//-------------------------------
+	// parse parameter file
+	//-------------------------------
+
 
 	if ( argc > 1 )
 	{
-		parameterFileName = argv[1];
-
 		std::cout << "Problem parameter file: " << parameterFileName << std::endl;
 
 		//-------------------------------
@@ -251,7 +266,7 @@ bool InputParser::readParameters
 			}
 			else // unknown parameter
 			{
-				std::cerr << "Unknown parameter \"" << buffer << "\". Please check yout input file!" << std::endl;
+				std::cerr << "Unknown parameter \"" << buffer << "\". Please check your input file!" << std::endl;
 				file.close();
 				return false;
 			}
@@ -572,35 +587,52 @@ void InputParser::printParameters
 		Parameters *parameters
 	)
 {
-	std::cout << "====================" << std::endl << "Parameter set:" << std::endl;
+	std::cout << "====================" << std::endl << "Parameter set:\n"
 
-	std::cout << "Domain size:\t" << parameters->xlength << " x " << parameters->ylength << std::endl;
-	std::cout << "Grid size:\t" << parameters->nx << " x " << parameters->ny << std::endl;
+			  << "Domain size:\t"	              << parameters->xlength << " x " << parameters->ylength << "\n"
+			  << "Grid size:\t"                   << parameters->nx << " x " << parameters->ny << "\n\n"
 
-	std::cout << "Time step Δt:\t" << parameters->dt << std::endl;
-	std::cout << "Safety factor τ:\t" << parameters->tau << std::endl;
+			  << "Time step Δt:\t"	              << parameters->dt << "\n"
+			  << "Safety factor τ:\t"             << parameters->tau << "\n\n"
 
-	std::cout << "Max. SOR iterations:\t" << parameters->it_max << std::endl;
+			  << "Max. SOR iterations:\t"         << parameters->it_max << "\n\n"
 
-	std::cout << "ε:\t" << parameters->epsilon << std::endl;
-	std::cout << "ω:\t" << parameters->omega << std::endl;
-	std::cout << "γ:\t" << parameters->gamma << std::endl;
+			  << "ε:\t"                           << parameters->epsilon << "\n"
+			  << "ω:\t"                           << parameters->omega << "\n"
+			  << "γ:\t"                           << parameters->gamma << "\n\n"
 
-	std::cout << "Reynolds number:\t" << parameters->re << std::endl;
-	std::cout << "Gravity X:\t" << parameters->gx << std::endl;
-	std::cout << "Gravity Y:\t" << parameters->gy << std::endl;
+			  << "Reynolds number:\t"             << parameters->re << "\n"
+			  << "Gravity X:\t"                   << parameters->gx << "\n"
+			  << "Gravity Y:\t"                   << parameters->gy << "\n\n"
 
-	std::cout << "Initial horizontal velocity:\t" << parameters->ui << std::endl;
-	std::cout << "Initial vertical velocity:\t" << parameters->vi << std::endl;
-	std::cout << "Initial pressure:\t" << parameters->pi << std::endl;
+			  << "Initial horizontal velocity:\t" << parameters->ui << "\n"
+			  << "Initial vertical velocity:\t"   << parameters->vi << "\n"
+			  << "Initial pressure:\t"            << parameters->pi << "\n\n"
 
-	std::cout << "Northern boundary:\t" << parameters->wN << std::endl;
-	std::cout << "Southern boundary:\t" << parameters->wS << std::endl;
-	std::cout << "Western boundary:\t" << parameters->wW << std::endl;
-	std::cout << "Eastern boundary:\t" << parameters->wE << std::endl;
-	std::cout << "(1: free slip, 2: no slip, 3: outflow, 4: periodic)";
+			  << "Northern boundary:\t"           << parameters->wN << "\n"
+			  << "Southern boundary:\t"           << parameters->wS << "\n"
+			  << "Western boundary:\t"	          << parameters->wW << "\n"
+			  << "Eastern boundary:\t"            << parameters->wE << "\n"
+			  << "(1: free slip, 2: no slip, 3: outflow, 4: periodic)\n\n"
 
-	std::cout << "Problem:\t" << parameters->problem << std::endl;
-	std::cout << "Obstacle map:\t" << parameters->obstacleFile << std::endl;
+			  << "Problem:\t"                     << parameters->problem << "\n"
+			  << "Obstacle map:\t"                << parameters->obstacleFile << std::endl;
+
+	if( parameters->VTKWriteFiles )
+	{
+		std::cout << "\nVTK interval:\t" << parameters->VTKInterval << "\n"
+				  << "VTK time limit:\t" << parameters->VTKTimeLimit << std::endl;
+	}
+
 	std::cout << "====================" << std::endl;
+}
+
+//============================================================================
+void InputParser::printUsage
+	(
+		char* programName
+	)
+{
+	std::cout << "Usage: " << programName << " [-vtk interval time_limit] parameter_file"
+			  << std::endl;
 }

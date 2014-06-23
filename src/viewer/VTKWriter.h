@@ -6,6 +6,7 @@
 //********************************************************************
 
 #include "Viewer.h"
+#include <QObject>
 
 //====================================================================
 /*! \class VTKWriter
@@ -16,6 +17,17 @@
 
 class VTKWriter : public Viewer
 {
+	protected:
+		// -------------------------------------------------
+		//	member variables
+		// -------------------------------------------------
+			//! @name member variables
+			//! @{
+
+		double _nextOutput;	//! next point in simulated time to write a vtk file at
+
+			//! @}
+
 	public:
 		// -------------------------------------------------
 		//	constructor / destructor
@@ -47,7 +59,8 @@ class VTKWriter : public Viewer
                 REAL** U,
                 REAL** V,
                 REAL** P,
-				int it
+				double time,
+				unsigned int iteration
 			);
 
 			//! @}

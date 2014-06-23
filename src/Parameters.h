@@ -27,6 +27,18 @@
 struct Parameters
 {
 	// -------------------------------------------------
+	//	program parameters
+	// -------------------------------------------------
+		//! @name program parameters
+		//! @{
+
+	bool		VTKWriteFiles;	//! indicates if vtk files should be written
+	double		VTKInterval;	//! interval of vtk outputs
+	double		VTKTimeLimit;	//! time limit for simulation if vtk files are written
+
+		//! @}
+
+	// -------------------------------------------------
 	//	simulation parameters
 	// -------------------------------------------------
 		//! @name simulation parameters
@@ -84,7 +96,37 @@ struct Parameters
 
 	Parameters ( )
 	{
-		obstacleMap = 0;
+		// program parameters
+		VTKWriteFiles = false;
+		VTKInterval   = 0.1;
+		VTKTimeLimit  = 10.0;
+
+		// simulation parameters
+		xlength       = 1.0;
+		ylength       = 1.0;
+		nx            = 128;
+		ny            = 128;
+		dx            = 1.0 / 128.0;
+		dy            = 1.0 / 128.0;
+		dt            = 0.02;
+		tau			  = 0.5;
+		it_max        = 100;
+		epsilon       = 0.001;
+		omega         = 1.7;
+		gamma         = 0.9;
+		re            = 1000;
+		gx            = 0.0;
+		gy            = 0.0;
+		ui            = 0.0;
+		vi            = 0.0;
+		pi            = 0.0;
+		wN            = 2;
+		wS            = 2;
+		wW            = 2;
+		wE            = 2;
+		problem       = "moving_lid";
+		obstacleFile  = "";
+		obstacleMap   = 0;
 	}
 
 		//! \brief required to free obstacle memory properly

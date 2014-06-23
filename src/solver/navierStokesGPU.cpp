@@ -394,9 +394,6 @@ void NavierStokesGPU::drawObstacle
 		bool delete_flag
 	)
 {
-	// TODO: draw 2x2 pixel blocks only
-	// TODO: update solver internal obstacle map
-
 	// guards (should be here, but are in GLViewer)
 	//if( x < 1 || x > _parameters->nx
 	//	|| y < 1 || y > _parameters->ny )
@@ -414,8 +411,6 @@ void NavierStokesGPU::drawObstacle
 	}
 	else
 	{
-		//std::cout << "obstacle painting on GPU not implemented yet!" << std::endl;
-
 		//-----------------------
 		// update obstacle flags
 		//-----------------------
@@ -848,7 +843,7 @@ REAL NavierStokesGPU::SORPoisson()
 		REAL result = 0.0;
 
 		// set output buffer as kernel argument
-		_clManager->getKernel( kernel::pressureResidualReduction )->setArg( 2, result_g );
+		_clManager->getKernel( kernel::pressureResidualReduction )->setArg( 3, result_g );
 
 		// call pressureResidualReductionKernel
 		// todo: determine optimal work size N: N = x^2, N<=max_work_size, SIZE<=max_work_size ? N>=SIZE
@@ -867,8 +862,6 @@ REAL NavierStokesGPU::SORPoisson()
 
 		// compute residual
 		residual = sqrt( result / (_parameters->nx * _parameters->ny) );
-
-
 	}
 	catch( cl::Error error )
 	{
@@ -1033,12 +1026,13 @@ void NavierStokesGPU::setKernelArguments ( )
 		kernel = _clManager->getKernel( kernel::pressureResidualReduction );
 		kernel->setArg( 0, _P_g );
 		kernel->setArg( 1, _RHS_g );
-		// argument 2: result buffer: REAL sum
-		kernel->setArg( 3, sizeof(CL_REAL) * _clWorkgroupSize, NULL); // dynamically allocated local shared memory for reduction
-		kernel->setArg( 4, sizeof(CL_REAL), &dx2 );
-		kernel->setArg( 5, sizeof(CL_REAL), &dy2 );
-		kernel->setArg( 6, sizeof(int), &nx );
-		kernel->setArg( 7, sizeof(int), &ny );
+		kernel->setArg( 2, _FLAG_g );
+		// argument 3: result buffer: REAL sum
+		kernel->setArg( 4, sizeof(CL_REAL) * _clWorkgroupSize, NULL); // dynamically allocated local shared memory for reduction
+		kernel->setArg( 5, sizeof(CL_REAL), &dx2 );
+		kernel->setArg( 6, sizeof(CL_REAL), &dy2 );
+		kernel->setArg( 7, sizeof(int), &nx );
+		kernel->setArg( 8, sizeof(int), &ny );
 
 		// kernel arguments for UV update
 		kernel = _clManager->getKernel( kernel::updateUV );
