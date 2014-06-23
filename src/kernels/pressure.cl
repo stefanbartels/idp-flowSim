@@ -39,55 +39,54 @@ __kernel void gaussSeidelRedBlackKernel
 	const unsigned int y   = get_global_id( 1 );
 	const unsigned int idx = y * nx + x;
 
-	if( ((x + y) & 1) == red &&			// = ( (x + y) % 2 ) == red, but faster
+	if( ((x + y) & 1) == red &&			// = ( (x + y) % 2 ) == red
 		x > 0 &&
 		y > 0 &&
 		x < nx - 1 &&
 		y < ny - 1 )
 	{
-		// calculate pressure in fluid cells
-		if( flag_g[idx] == C_F )
+		switch ( flag_g[idx] )
 		{
-			p_g[idx] =
-				omega * p_g[idx] +
-				constant_expr * (
-					( p_g[idx - 1] + p_g[idx + 1] ) * dx2
-					+
-					( p_g[idx - nx] + p_g[idx + nx] ) * dy2
-					-
-					rhs_g[idx]
-				);
-		}
-		else
-		{
-			// set boundary pressure value for obstacle cells
-			switch ( flag_g[idx] )
-			{
-				case B_N:
-					p_g[idx] = p_g[idx + nx];
-					break;
-				case B_S:
-					p_g[idx] = p_g[idx - nx];
-					break;
-				case B_W:
-					p_g[idx] = p_g[idx - 1];
-					break;
-				case B_E:
-					p_g[idx] = p_g[idx + 1];
-					break;
-				case B_NW:
-					p_g[idx] = (p_g[idx - nx] + p_g[idx + 1]) * 0.5;
-					break;
-				case B_NE:
-					p_g[idx] = (p_g[idx + nx] + p_g[idx + 1]) * 0.5;
-					break;
-				case B_SW:
-					p_g[idx] = (p_g[idx - nx] + p_g[idx - 1]) * 0.5;
-					break;
-				case B_SE:
-					p_g[idx] = (p_g[idx + nx] + p_g[idx - 1]) * 0.5;
-					break;
-			}
+			case C_F:
+
+				// calculate pressure in fluid cells
+				p_g[idx] =
+					omega * p_g[idx] +
+					constant_expr * (
+						( p_g[idx - 1] + p_g[idx + 1] ) * dx2
+						+
+						( p_g[idx - nx] + p_g[idx + nx] ) * dy2
+						-
+						rhs_g[idx]
+					);
+				break;
+
+				// set boundary pressure value for obstacle cells
+
+			case B_N:
+				p_g[idx] = p_g[idx + nx];
+				break;
+			case B_S:
+				p_g[idx] = p_g[idx - nx];
+				break;
+			case B_W:
+				p_g[idx] = p_g[idx - 1];
+				break;
+			case B_E:
+				p_g[idx] = p_g[idx + 1];
+				break;
+			case B_NW:
+				p_g[idx] = (p_g[idx - nx] + p_g[idx + 1]) * 0.5;
+				break;
+			case B_NE:
+				p_g[idx] = (p_g[idx + nx] + p_g[idx + 1]) * 0.5;
+				break;
+			case B_SW:
+				p_g[idx] = (p_g[idx - nx] + p_g[idx - 1]) * 0.5;
+				break;
+			case B_SE:
+				p_g[idx] = (p_g[idx + nx] + p_g[idx - 1]) * 0.5;
+				break;
 		}
 	}
 }
@@ -109,15 +108,22 @@ __kernel void pressureBoundaryConditionsKernel
 	const unsigned int y   = get_global_id( 1 );
 	const unsigned int idx = y * nx + x;
 
-	if(	x == 0 && y > 0 && y < ny-1 )
+	if( x == 1 && y > 0 && y < ny-1 )
 	{
-		p_g[y*nx]			= p_g[1 + y*nx];
-		p_g[nx-1 + y*nx]	= p_g[nx-2 + y*nx];
+		p_g[idx] = p_g[idx + 1];
 	}
-	if(	y == 0 && x > 0 && x < nx-1 )
+	else if( x == nx-2 && y > 0 && y < ny-1 )
 	{
-		p_g[x]				= p_g[x + nx];
-		p_g[x + (ny-1)*nx]	= p_g[x + (ny-2)*nx];
+		p_g[idx] = p_g[idx - 1];
+	}
+
+	if( y == 1 && x > 0 && x < nx-1 )
+	{
+		p_g[idx] = p_g[idx + nx];
+	}
+	else if( y == ny-2 && x > 0 && x < nx-1 )
+	{
+		p_g[idx] = p_g[idx - nx];
 	}
 }
 
