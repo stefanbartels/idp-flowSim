@@ -108,20 +108,20 @@ __kernel void pressureBoundaryConditionsKernel
 	const unsigned int y   = get_global_id( 1 );
 	const unsigned int idx = y * nx + x;
 
-	if( x == 1 && y > 0 && y < ny-1 )
+	if( x == 0 && y > 0 && y < ny-1 )
 	{
 		p_g[idx] = p_g[idx + 1];
 	}
-	else if( x == nx-2 && y > 0 && y < ny-1 )
+	else if( x == nx-1 && y > 0 && y < ny-1 )
 	{
 		p_g[idx] = p_g[idx - 1];
 	}
 
-	if( y == 1 && x > 0 && x < nx-1 )
+	if( y == 0 && x > 0 && x < nx-1 )
 	{
 		p_g[idx] = p_g[idx + nx];
 	}
-	else if( y == ny-2 && x > 0 && x < nx-1 )
+	else if( y == ny-1 && x > 0 && x < nx-1 )
 	{
 		p_g[idx] = p_g[idx - nx];
 	}

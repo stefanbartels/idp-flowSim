@@ -43,9 +43,6 @@ MainWindow* window     = 0;
 
 int main ( int argc, char* argv[] )
 {
-	QApplication application(argc, argv);
-	application.setApplicationName("Interactive Navier Stokes Simulation");
-
 	//-----------------------
 	// read parameters
 	//-----------------------
@@ -61,6 +58,19 @@ int main ( int argc, char* argv[] )
 	// print parameter set to console
 	InputParser::printParameters ( &parameters );
 
+
+	//-----------------------
+	// create Qt application
+	//-----------------------
+
+	if( !parameters.VTKWriteFiles )
+	{
+		// support opengl in thread
+		QCoreApplication::setAttribute( Qt::AA_X11InitThreads );
+	}
+
+	QApplication application( argc, argv );
+	application.setApplicationName( "Interactive Navier Stokes Simulation" );
 
 	//-----------------------
 	// create viewer and gui
@@ -102,14 +112,8 @@ int main ( int argc, char* argv[] )
 	// start application
 	//-----------------------
 
-	// timer for performance measurement
-	QElapsedTimer timer;
-	qint64 elapsedTime;
-
 	if( parameters.VTKWriteFiles )
 	{
-		timer.start();
-
 		simulation->simulationTrigger();
 
 		QObject::connect(	simulation, SIGNAL( simulationStopped() ),
@@ -149,24 +153,14 @@ int main ( int argc, char* argv[] )
 	int application_return_value = application.exec();
 
 
-	if( timer.isValid() )
-	{
-		// should not be the case if the gui was displayed
-		elapsedTime = timer.elapsed();
+	#if VERBOSE
+		std::cout << "Waiting for threads..." << std::endl;
+	#endif
 
-		unsigned int numIterations = simulation->getIterations();
-
-		std::cout << "=======================\n"
-				  << ( USE_GPU ? "GPU\n" : "CPU\n" )
-				  << "Iterations:                 " << numIterations << "\n"
-				  << "Elapsed time:               " << ((double)elapsedTime / 1000) << " s\n"
-				  << "Average time per iteration: " << ((double)elapsedTime / numIterations) << " ms\n"
-				  << "Iterations per second:      " << ((double)(numIterations * 1000) / elapsedTime) << "\n"
-				  << "=======================" << std::endl;
-	}
-
-	std::cout << "Waiting for threads..." << std::endl;
+	// wait for simulation thread to finish properly
 	simulation->wait();
+
+	simulation->printPerformanceMeasurements();
 
 	cleanup();
 

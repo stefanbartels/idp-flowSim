@@ -15,14 +15,17 @@
 Simulation::Simulation ( Parameters* parameters, Viewer* viewer )
 {
 	_parameters = parameters;
-	_viewer = viewer;
+	_viewer     = viewer;
 
-	_clManager = 0;
+	_clManager  = 0;
 
-	_running = false;
+	_running    = false;
 
 	_iterations = 0;
-	_time = 0.0;
+	_time       = 0.0;
+
+	_elapsedSimulationTime = 0;
+	_elapsedTotalTime      = 0;
 
 
 	// TODO: stop using hardcoded flag
@@ -60,9 +63,13 @@ Simulation::~Simulation ( )
 //============================================================================
 void Simulation::run ( )
 {
+	// let the viewer prepare something for visualization, if applicable
 	_viewer->initialze();
 
 	emit simulationStarted();
+
+	// start performance measurement
+	_totalTimer.start();
 
 	while( _running && ( !_parameters->VTKWriteFiles || _time < _parameters->VTKTimeLimit ) )
 	{
@@ -70,9 +77,15 @@ void Simulation::run ( )
 			std::cout << "Simulating iteration " << _iterations << " at time " << _time << std::endl;
 		#endif
 
+		_simulationTimer.start();
+
 		// do simulation step
 		int numPressureIterations = _solver->doSimulationStep( );
 
+		// update simulation measurement
+		_elapsedSimulationTime += _simulationTimer.elapsed();
+
+		// update simulated time
 		_time += _parameters->dt;
 
 		// update visualisation
@@ -89,6 +102,9 @@ void Simulation::run ( )
 
 		++_iterations;
 	}
+
+	// update total time measurement
+	_elapsedTotalTime += _totalTimer.elapsed();
 
 	emit simulationStopped();
 }
@@ -141,8 +157,16 @@ REAL** Simulation::getP_CPU ( )
 }
 
 //============================================================================
-unsigned int Simulation::getIterations ( )
+void Simulation::printPerformanceMeasurements ( )
 {
-	return _iterations;
+	std::cout << "=======================\n"
+			  << ( USE_GPU ? "GPU\n" : "CPU\n" )
+			  << "Iterations:                 " << _iterations << "\n"
+			  << "Simulated time:             " << _time << "\n"
+			  << "Elapsed time:               " << ((double)_elapsedTotalTime      / 1000) << " s\n"
+			  << "    Simulation only:        " << ((double)_elapsedSimulationTime / 1000) << " s\n"
+			  << "Avg. time per iteration:    " << ((double)_elapsedTotalTime      / _iterations) << " ms\n"
+			  << "    Simulation only (avg):  " << ((double)_elapsedSimulationTime / _iterations) << " ms\n"
+			  << "Iterations per second:      " << ((double)(_iterations * 1000)   / _elapsedTotalTime) << "\n"
+			  << "=======================" << std::endl;
 }
-

@@ -11,6 +11,7 @@
 #include "viewer/Viewer.h"
 #include "CLManager.h"
 #include <QThread>
+#include <QElapsedTimer>
 
 //====================================================================
 /*! \class Simulation
@@ -29,16 +30,21 @@ class Simulation : public QThread
 			//! @name member variables
 			//! @{
 
-		Parameters*			_parameters;	//! pointer to the set of simulation parameters
-		NavierStokesSolver*	_solver;		//! pointer to the solver
+		Parameters*			_parameters;			//! pointer to the set of simulation parameters
+		NavierStokesSolver*	_solver;				//! pointer to the solver
 
-		Viewer*				_viewer;		//! pointer to the viewer
+		Viewer*				_viewer;				//! pointer to the viewer
 
-		CLManager*			_clManager;		//! the object handling the CL setup if GPU solver is used
+		CLManager*			_clManager;				//! the object handling the CL setup if GPU solver is used
 
-		bool                _running;		//! flag indicating if the simulation is currently running
-		unsigned int		_iterations;	//! counter for the total number of simulated timesteps
-		double				_time;			//! simulated time interval
+		bool                _running;				//! flag indicating if the simulation is currently running
+		unsigned int		_iterations;			//! counter for the total number of simulated timesteps
+		double				_time;					//! simulated time interval
+
+		QElapsedTimer		_totalTimer;			//! timer for performance measurements
+		QElapsedTimer		_simulationTimer;		//! timer for performance measurements
+		qint64				_elapsedTotalTime;		//! time spent for simulation and visualization
+		qint64				_elapsedSimulationTime;	//! time spent for simulation only
 
 			//! @}
 
@@ -81,10 +87,9 @@ class Simulation : public QThread
 
 		REAL** getP_CPU ( );
 
-			//! \brief method to get the number of iterations simulated until now
-			//! \returns current number of iterations
+			//! \brief prints the results of the performance measurements to console
 
-		unsigned int getIterations ( );
+		void printPerformanceMeasurements ( );
 
 			//! @}
 
