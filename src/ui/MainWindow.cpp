@@ -3,6 +3,7 @@
 
 #include <QApplication>
 #include <QDesktopWidget>
+#include <QCheckBox>
 
 #include <iostream>
 
@@ -39,25 +40,36 @@ GLViewer* MainWindow::getViewer()
 //============================================================================
 void MainWindow::createUI ( )
 {
-	//------------------------
-	// create UI
-	//------------------------
-
 	_ui = new QWidget( this );
 	setCentralWidget( _ui );
 
-	// create buttons
-	_button_run   = new QPushButton( "Start Simulation" );
+	//------------------------
+	// create layout items required later
+	//------------------------
+	_button_run   = new QPushButton( "Start" );
 	_label_info   = new QLabel( "<table><tr><td width=\"60\"></td><td>ms / frame</td></tr>" \
 								"<tr><td></td><td>FPS</td></tr>" \
 								"<tr><td></td><td>Iterations per timestep</td></tr></table>" );
 	_label_info->setSizePolicy( QSizePolicy::Minimum, QSizePolicy::Fixed );
 
 
+	//------------------------
 	// create window layout
+	//------------------------
+
 	_layout = new QVBoxLayout();
 	_layout->addWidget( _viewer );
-	_layout->addWidget( _button_run );
+
+	// buttons
+	QHBoxLayout* buttonLayout = new QHBoxLayout();
+		// add start/pause button
+		buttonLayout->addWidget( _button_run, 2 );
+		// create and add checkbox to toggle rescaling
+		QCheckBox* autoScaleCheckbox = new QCheckBox( "Rescale", this );
+		autoScaleCheckbox->setChecked( true );
+		buttonLayout->addWidget( autoScaleCheckbox );
+	_layout->addLayout( buttonLayout );
+
 	_layout->addWidget( _label_info );
 
 	_ui->setLayout( _layout );
@@ -69,6 +81,9 @@ void MainWindow::createUI ( )
 
 	QObject::connect(	_button_run, SIGNAL( clicked() ),
 						this, SLOT( simulationTriggerSlot() ) );
+
+	QObject::connect(	autoScaleCheckbox, SIGNAL( clicked() ),
+						_viewer, SLOT( toggleRescaling() ) );
 }
 
 //============================================================================
@@ -83,13 +98,13 @@ void MainWindow::simulationTriggerSlot ( )
 //============================================================================
 void MainWindow::simulationStartedSlot ( )
 {
-	_button_run->setText( "Pause Simulation" );
+	_button_run->setText( "Pause" );
 }
 
 //============================================================================
 void MainWindow::simulationStoppedSlot ( )
 {
-	_button_run->setText( "Start Simulation" );
+	_button_run->setText( "Start" );
 }
 
 //============================================================================

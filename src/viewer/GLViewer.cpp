@@ -5,6 +5,11 @@
 #include <QDesktopWidget>
 #include <cmath>
 
+
+// ---------------------------------------------------------------------------
+//	constructor / destructor
+// ---------------------------------------------------------------------------
+
 //============================================================================
 GLViewer::GLViewer
 	(
@@ -14,8 +19,10 @@ GLViewer::GLViewer
 	QGLWidget( parent ),
 	Viewer( parameters )
 {
-	_doResize = false;
-	_width = _height = 0;
+	_doResize  = false;
+	_width     = 0;
+	_height    = 0;
+	_doRescale = true;
 
 	_isInitialized = 0;
 
@@ -35,6 +42,9 @@ GLViewer::~GLViewer()
 }
 
 
+// ---------------------------------------------------------------------------
+//	initialization
+// ---------------------------------------------------------------------------
 
 //============================================================================
 void GLViewer::initialze ( )
@@ -71,6 +81,11 @@ void GLViewer::initialze ( )
 	swapBuffers();
 }
 
+
+// ---------------------------------------------------------------------------
+//	visualization
+// ---------------------------------------------------------------------------
+
 //============================================================================
 void GLViewer::renderFrame (
         REAL** U,
@@ -86,10 +101,14 @@ void GLViewer::renderFrame (
 		_doResize = false;
 	}
 
-	//rescaleColors ( P );
-	rescaleColors ( U, V );
+	if( _doRescale )
+	{
+		//rescaleColors ( P );
+		rescaleColors ( U, V );
+	}
 
 	unsigned int idx;
+	double tmpColor;
 	GLubyte color;
 
 
@@ -98,7 +117,7 @@ void GLViewer::renderFrame (
 	{
 		idx = (y * _parameters->nx + x) * 3;
 
-		 if( !_parameters->obstacleMap[y+1][x+1] )
+		if( !_parameters->obstacleMap[y+1][x+1] )
 		{
 			_texture[idx]     = 0;
 			_texture[idx + 1] = 0;
@@ -107,19 +126,24 @@ void GLViewer::renderFrame (
 		else
 		{
 
-			color = (GLubyte)(
-					  (
+			tmpColor = _factor * (
 						  sqrt(
 							  U[y+1][x+1] * U[y+1][x+1]	// +1 for boundaries
 							+ V[y+1][x+1] * V[y+1][x+1]
 						  )
-						- _minValue )
-					* _factor );
+						- _minValue );
+
 			// color = (GLubyte)( (P[y+1][x+1] - _minValue ) * _factor ); // pressure
 
-			_texture[idx]     = color;
-			_texture[idx + 1] = color;
-			_texture[idx + 2] = color;
+			// clamp value to range [0, 255]
+			tmpColor = tmpColor > 255.0 ? 255.0 : tmpColor;
+			color = tmpColor < 0.0 ? 0 : (GLubyte)tmpColor;
+
+
+
+			_texture[idx]     = color;		// red
+			_texture[idx + 1] = color;		// green
+			_texture[idx + 2] = color;		// blue
 		}
 	}
 
@@ -152,52 +176,10 @@ void GLViewer::renderFrame (
 	swapBuffers();
 }
 
-//============================================================================
-void GLViewer::rescaleColors ( REAL** P )
-{
-	// calculate factors to scale pressure values to 0-255
-	int size = (_parameters->nx + 2) * (_parameters->ny + 2);
-	REAL max = 0.0;
-	_minValue = 0.0;
 
-	for ( int i = 0; i < size; ++i )
-	{
-		if ( (*P)[i] > max )
-			max = (*P)[i];
-		if ( (*P)[i] < _minValue )
-			_minValue = (*P)[i];
-	}
-
-	if ( max - _minValue != 0.0 )
-		_factor = 255.0 / ( max - _minValue );
-}
-
-//============================================================================
-void GLViewer::rescaleColors ( REAL** U, REAL** V )
-{
-	// calculate factors to scale pressure values to 0-255
-	int size = (_parameters->nx + 2) * (_parameters->ny + 2);
-
-	REAL max = -INFINITY;
-	_minValue = 0.0;
-
-	REAL value;
-
-	for ( int i = 0; i < size; ++i )
-	{
-		value = (*U)[i] * (*U)[i] + (*V)[i] * (*V)[i];
-		if ( value > max )
-			max = value;
-		if ( value < _minValue )
-			_minValue = value;
-	}
-
-	max = sqrt( max );
-	_minValue = sqrt( _minValue );
-
-	if ( max - _minValue != 0.0 )
-		_factor = 255.0 / ( max - _minValue );
-}
+// ---------------------------------------------------------------------------
+//	inherited Qt methods
+// ---------------------------------------------------------------------------
 
 //============================================================================
 QSize GLViewer::sizeHint ( ) const
@@ -211,33 +193,21 @@ QSize GLViewer::sizeHint ( ) const
 	return QSize( _parameters->nx, _parameters->ny );
 }
 
-//============================================================================
-void GLViewer::resizeEvent ( QResizeEvent *event )
-{
-	// prevent Qt from calling resizeGL, so no makeCurrent() is called
 
-	_width  = event->size().width();
-	_height = event->size().height();
-	_doResize = true;
-}
+// ---------------------------------------------------------------------------
+//	slots
+// ---------------------------------------------------------------------------
 
 //============================================================================
-void GLViewer::paintEvent ( QPaintEvent* )
+void GLViewer::toggleRescaling ( )
 {
-	// prevent main thread from updating the GL context.
-	// rendering is done in the method renderFrame,
-	// called from the simulation thread
-
-	if( !_isInitialized )
-	{
-		// display black area at startup :)
-		_isInitialized = true;
-		makeCurrent();
-		glClearColor( 0.0, 0.0, 0.0, 1.0 );
-		swapBuffers();
-		doneCurrent();
-	}
+	_doRescale = !_doRescale;
 }
+
+
+// ---------------------------------------------------------------------------
+//	interaction methods
+// ---------------------------------------------------------------------------
 
 //============================================================================
 void GLViewer::mouseMoveEvent ( QMouseEvent *event )
@@ -270,3 +240,97 @@ void GLViewer::mouseMoveEvent ( QMouseEvent *event )
 		emit drawObstacle( x, y, false );
 	}
 }
+
+
+// ---------------------------------------------------------------------------
+//	auxiliary functions
+// ---------------------------------------------------------------------------
+
+//============================================================================
+void GLViewer::rescaleColors ( REAL** P )
+{
+	// calculate factors to scale pressure values to 0-255
+	int size  = (_parameters->nx + 2) * (_parameters->ny + 2);
+	REAL max  = -INFINITY;
+	_minValue =  INFINITY;
+
+	for( int y = 1; y < _parameters->ny + 2; ++y )
+	for( int x = 1; x < _parameters->nx + 2; ++x )
+	{
+		if( _parameters->obstacleMap[y][x] )
+		{
+			if ( P[y][x] > max )
+				max = P[y][x];
+			if ( P[y][x] < _minValue )
+				_minValue = P[y][x];
+		}
+	}
+
+	if ( max - _minValue != 0.0 )
+		_factor = 255.0 / ( max - _minValue );
+}
+
+//============================================================================
+void GLViewer::rescaleColors ( REAL** U, REAL** V )
+{
+	// calculate factors to scale pressure values to 0-255
+	int size = (_parameters->nx + 2) * (_parameters->ny + 2);
+
+	REAL max  = -INFINITY;
+	_minValue =  INFINITY;
+
+	REAL value;
+
+	for( int y = 1; y < _parameters->ny + 2; ++y )
+	for( int x = 1; x < _parameters->nx + 2; ++x )
+	{
+		if( _parameters->obstacleMap[y][x] )
+		{
+			value = U[y][x] * U[y][x] + V[y][x] * V[y][x];
+			if ( value > max )
+				max = value;
+			if ( value < _minValue )
+				_minValue = value;
+		}
+	}
+
+	max = sqrt( max );
+	_minValue = sqrt( _minValue );
+
+	if ( max - _minValue != 0.0 )
+		_factor = 255.0 / ( max - _minValue );
+}
+
+
+// ---------------------------------------------------------------------------
+//	OpenGL functions
+// ---------------------------------------------------------------------------
+
+//============================================================================
+void GLViewer::resizeEvent ( QResizeEvent *event )
+{
+	// prevent Qt from calling resizeGL, so no makeCurrent() is called
+
+	_width  = event->size().width();
+	_height = event->size().height();
+	_doResize = true;
+}
+
+//============================================================================
+void GLViewer::paintEvent ( QPaintEvent* )
+{
+	// prevent main thread from updating the GL context.
+	// rendering is done in the method renderFrame,
+	// called from the simulation thread
+
+	if( !_isInitialized )
+	{
+		// display black area at startup :)
+		_isInitialized = true;
+		makeCurrent();
+		glClearColor( 0.0, 0.0, 0.0, 1.0 );
+		swapBuffers();
+		doneCurrent();
+	}
+}
+

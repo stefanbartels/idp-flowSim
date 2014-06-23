@@ -33,6 +33,7 @@ class GLViewer : public QGLWidget, public Viewer
 		bool     _doResize;			//! flag indicating if the window size has changed since the last frame
 		int      _width;			//! width of the GL window, allowing resizing the window inside the thread
 		int      _height;			//! height of the GL window
+		bool     _doRescale;		//! flag indicating if colors should be rescaled
 
 		GLubyte* _texture;			//! OpenGL texture that is created out of the results
 		GLuint   _textureID;		//! id of the OpenGL texture
@@ -131,6 +132,19 @@ class GLViewer : public QGLWidget, public Viewer
 				int  y,
 				bool delete_flag
 			);
+
+			//! @}
+
+	public slots:
+		// -------------------------------------------------
+		//	slots
+		// -------------------------------------------------
+			//! @name slots
+			//! @{
+
+			//! \brief rescales the colors before for next iteration
+
+		void toggleRescaling( );
 
 			//! @}
 
