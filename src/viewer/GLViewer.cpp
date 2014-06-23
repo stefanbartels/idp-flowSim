@@ -112,12 +112,12 @@ void GLViewer::renderFrame (
 	GLubyte color;
 
 
-	for( int y = 0; y < _parameters->ny; ++y )
-	for( int x = 0; x < _parameters->nx; ++x )
+	for( int y = 1; y < _parameters->ny + 1; ++y )
+	for( int x = 1; x < _parameters->nx + 1; ++x )
 	{
-		idx = (y * _parameters->nx + x) * 3;
+		idx = ((y-1) * _parameters->nx + x - 1) * 3;
 
-		if( !_parameters->obstacleMap[y+1][x+1] )
+		if( !_parameters->obstacleMap[y][x] )
 		{
 			_texture[idx]     = 0;
 			_texture[idx + 1] = 0;
@@ -128,8 +128,8 @@ void GLViewer::renderFrame (
 
 			tmpColor = _factor * (
 						  sqrt(
-							  U[y+1][x+1] * U[y+1][x+1]	// +1 for boundaries
-							+ V[y+1][x+1] * V[y+1][x+1]
+							  U[y][x] * U[y][x]	// +1 for boundaries
+							+ V[y][x] * V[y][x]
 						  )
 						- _minValue );
 

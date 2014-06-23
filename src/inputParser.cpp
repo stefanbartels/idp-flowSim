@@ -142,12 +142,13 @@ bool InputParser::readParameters
 			//=================================
 			// time stepping data
 			//=================================
-			else if ( buffer == "delta_t" )
-			{
-				file >> d_buffer;
-				parameters->dt = d_buffer;
-				++numReadValues;
-			}
+			// delta t is computed dynamically
+			//else if ( buffer == "delta_t" )
+			//{
+			//	file >> d_buffer;
+			//	parameters->dt = d_buffer;
+			//	++numReadValues;
+			//}
 			else if ( buffer == "tau" )
 			{
 				file >> d_buffer;
@@ -301,7 +302,7 @@ bool InputParser::readParameters
 			return false;
 		}
 		// not all values given? =>	using standard values for missing parameters
-		else if ( numReadValues < 22 )
+		else if ( numReadValues < 21 )
 		{
 			std::cerr << "Using standard values for missing parameters. Please check yout input file!" << std::endl;
 		}

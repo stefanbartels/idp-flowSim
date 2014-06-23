@@ -31,7 +31,7 @@ __kernel void rightHandSideKernel
 		x < nx - 1 &&
 		y < ny - 1 )
 	{
-		// todo: only for fluid cells?
+		// todo: only for fluid cells? => should not make huge differences on GPU
 		rhs_g[idx] = ( 1.0 / dt ) *
 			(
 				( f_g[idx] - f_g[idx - 1 ] ) / dx +

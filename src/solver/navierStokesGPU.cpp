@@ -415,6 +415,10 @@ void NavierStokesGPU::drawObstacle
 		// update obstacle flags
 		//-----------------------
 
+		// the host memory arrays can be used, as this drawing takes place
+		// between visualization and simulation and host and device memory
+		// contents are currently identical
+
 		// south west corner of painted square
 		_parameters->obstacleMap[y][x] = false;
 		_FLAG_host[y][x] = C_B
@@ -447,6 +451,7 @@ void NavierStokesGPU::drawObstacle
 				+ B_W
 				+ B_E * _parameters->obstacleMap[y+1][x+2];
 
+
 		//-----------------------
 		// reset velocities
 		//-----------------------
@@ -475,6 +480,7 @@ void NavierStokesGPU::drawObstacle
 		_U_host[y][x+2]   = _V_host[y][x+2]   = 0.0;
 		_U_host[y+1][x+2] = _V_host[y+1][x+2] = 0.0;
 
+
 		//-----------------------
 		// reset pressure
 		//-----------------------
@@ -483,7 +489,6 @@ void NavierStokesGPU::drawObstacle
 		_P_host[y][x+1]   = 0.0;
 		_P_host[y+1][x]   = 0.0;
 		_P_host[y+1][x+1] = 0.0;
-
 
 
 		//-----------------------
