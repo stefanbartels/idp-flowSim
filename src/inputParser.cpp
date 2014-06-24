@@ -533,7 +533,9 @@ bool InputParser::readObstacleMap
 			// two bytes are enough as the max. number
 			// of grey values allowed for PGM is 65535
 
-			for( int y = 1; y < ny1; ++y )
+			// reversed loop for height, as rendering is done head-first
+			// TODO: this could be an issue for vertical gravity as well
+			for( int y = height; y > 0; --y )
 			for( int x = 1; x < nx1; ++x )
 			{
 				byte2 = file.get();
@@ -548,7 +550,9 @@ bool InputParser::readObstacleMap
 
 			file.ignore(); // ignore new line after header
 
-			for( int y = 1; y < ny1; ++y )
+			// reversed loop for height, as rendering is done head-first
+			// TODO: this could be an issue for vertical gravity as well
+			for( int y = height; y > 0; --y )
 			for( int x = 1; x < nx1; ++x )
 			{
 				byte = file.get();
@@ -560,7 +564,9 @@ bool InputParser::readObstacleMap
 	{
 		std::cout << "################# ASCII" << std::endl;
 
-		for( int y = 1; y < ny1; ++y )
+		// reversed loop for height, as rendering is done head-first
+		// TODO: this could be an issue for vertical gravity as well
+		for( int y = height; y > 0; --y )
 		for( int x = 1; x < nx1; ++x )
 		{
 			file >> i_buffer;
