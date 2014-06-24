@@ -526,7 +526,9 @@ bool InputParser::readObstacleMap
 		// binary PGM file with two bytes per pixel
 		if( moreThanOneByte )
 		{
-			unsigned char byte1,byte2;
+			unsigned char byte1, byte2;
+
+			file.ignore(); // ignore new line after header
 
 			// two bytes are enough as the max. number
 			// of grey values allowed for PGM is 65535
@@ -544,6 +546,8 @@ bool InputParser::readObstacleMap
 		{
 			unsigned char byte;
 
+			file.ignore(); // ignore new line after header
+
 			for( int y = 1; y < ny1; ++y )
 			for( int x = 1; x < nx1; ++x )
 			{
@@ -554,6 +558,8 @@ bool InputParser::readObstacleMap
 	}
 	else // ASCII PGM file
 	{
+		std::cout << "################# ASCII" << std::endl;
+
 		for( int y = 1; y < ny1; ++y )
 		for( int x = 1; x < nx1; ++x )
 		{
