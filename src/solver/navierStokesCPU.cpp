@@ -654,7 +654,7 @@ void NavierStokesCPU::setSpecificBoundaryConditions ( )
 			_U[0][x] = 2.0 - _U[1][x];
 		}
 	}
-	else if ( _parameters->problem == "left_inflow" )
+	else if ( _parameters->problem == "channel" )
 	{
 		for ( int y = 1; y < _parameters->ny + 1; ++y )
 		{

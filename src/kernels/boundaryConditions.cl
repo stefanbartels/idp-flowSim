@@ -274,7 +274,7 @@ __kernel void setMovingLidBoundaryConditionsKernel
 //============================================================================
 // todo: call only for one column
 
-__kernel void setLeftInflowBoundaryConditionsKernel
+__kernel void setChannelBoundaryConditionsKernel
 	(
 		__global float*	u_g,
 		int				nx,

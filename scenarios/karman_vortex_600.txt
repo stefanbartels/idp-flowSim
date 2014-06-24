@@ -75,7 +75,7 @@ boundary_E		3
 
 
 # problem type
-problem		left_inflow
+problem		channel
 
 # obstacle map file
 map		karman_vortex_600.pgm

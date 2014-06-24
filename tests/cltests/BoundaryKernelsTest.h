@@ -60,7 +60,7 @@ class BoundaryKernelsTest : public CLTest
 				"setArbitraryBoundaryConditionsKernel",
 				// Problem specific boundary conditions
 				"setMovingLidBoundaryConditionsKernel",
-				"setLeftInflowBoundaryConditionsKernel"
+				"setChannelBoundaryConditionsKernel"
 			};
 			loadKernels( "boundaryConditions.cl", std::vector<std::string>(begin(kernelNames), end(kernelNames)) );
 
@@ -314,17 +314,17 @@ class BoundaryKernelsTest : public CLTest
 
 
 			//-----------------------
-			// setLeftInflowBoundaryConditionsKernel
+			// setChannelBoundaryConditionsKernel
 			//-----------------------
 
 			// set kernel arguments
-			_clKernels["setLeftInflowBoundaryConditionsKernel"].setArg( 0, U_g );
-			_clKernels["setLeftInflowBoundaryConditionsKernel"].setArg( 1, sizeof(int), &nx );
-			_clKernels["setLeftInflowBoundaryConditionsKernel"].setArg( 2, sizeof(int), &ny );
+			_clKernels["setChannelBoundaryConditionsKernel"].setArg( 0, U_g );
+			_clKernels["setChannelBoundaryConditionsKernel"].setArg( 1, sizeof(int), &nx );
+			_clKernels["setChannelBoundaryConditionsKernel"].setArg( 2, sizeof(int), &ny );
 
 			// call kernel
 			_clQueue.enqueueNDRangeKernel (
-					_clKernels["setLeftInflowBoundaryConditionsKernel"],
+					_clKernels["setChannelBoundaryConditionsKernel"],
 					cl::NullRange,			// offset
 					cl::NDRange( 1, ny ),	// global,
 					cl::NullRange			// local,
@@ -350,7 +350,7 @@ class BoundaryKernelsTest : public CLTest
 							(REAL)_U_h[y][x] != (REAL)_U_buffer[y][x]
 						)
 					{
-						std::cout << " Kernel \"setLeftInflowBoundaryConditionsKernel\"" << std::endl;
+						std::cout << " Kernel \"setChannelBoundaryConditionsKernel\"" << std::endl;
 						// debug output:
 						//printHostMatrix( "CPU U:", _U_h, nx, ny );
 						//printHostMatrix( "GPU U:", _U_buffer, nx, ny );

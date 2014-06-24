@@ -136,10 +136,10 @@ void CLManager::loadKernels ( )
 			_clKernels[kernel::problemSpecific] =
 					cl::Kernel( _clProgram, "setMovingLidBoundaryConditionsKernel" );
 		}
-		else if ( _parameters->problem == "left_inflow" )
+		else if ( _parameters->problem == "channel" )
 		{
 			_clKernels[kernel::problemSpecific] =
-					cl::Kernel( _clProgram, "setLeftInflowBoundaryConditionsKernel" );
+					cl::Kernel( _clProgram, "setChannelBoundaryConditionsKernel" );
 		}
 		/*else
 		{
