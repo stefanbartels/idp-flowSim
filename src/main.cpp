@@ -13,7 +13,6 @@
 #include <stdlib.h>
 #include <iostream>
 #include <QApplication>
-#include <QElapsedTimer>
 
 //********************************************************************
 //**    forward declarations
@@ -69,7 +68,7 @@ int main ( int argc, char* argv[] )
 		QCoreApplication::setAttribute( Qt::AA_X11InitThreads );
 	}
 
-	QApplication application( argc, argv );
+	QApplication application( argc, argv, !parameters.VTKWriteFiles ); // third parameter: false => start without gui, so no x server is required
 	application.setApplicationName( "Interactive Navier Stokes Simulation" );
 
 

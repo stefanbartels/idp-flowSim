@@ -691,19 +691,21 @@ void NavierStokesGPU::setBoundaryConditions ( )
 //============================================================================
 void NavierStokesGPU::setSpecificBoundaryConditions ( )
 {
-	// TODO: skip if not problem specific boundary conditions given
-	try
+	if ( _parameters->problem == "moving_lid" || _parameters->problem == "channel" )
 	{
-		// the problem specific kernel is determined during kernel compilation
-		_clManager->runRangeKernel ( kernel::problemSpecific, cl::NullRange, _clRange, cl::NullRange );
+		try
+		{
+			// the problem specific kernel is determined during kernel compilation
+			_clManager->runRangeKernel ( kernel::problemSpecific, cl::NullRange, _clRange, cl::NullRange );
 
-		// wait for completion
-		_clQueue->finish();
-	}
-	catch( cl::Error error )
-	{
-		std::cerr << "CL ERROR while applying problem specific boundary conditions: " << error.what() << "(" << error.err() << ")" << std::endl;
-		throw error;
+			// wait for completion
+			_clQueue->finish();
+		}
+		catch( cl::Error error )
+		{
+			std::cerr << "CL ERROR while applying problem specific boundary conditions: " << error.what() << "(" << error.err() << ")" << std::endl;
+			throw error;
+		}
 	}
 }
 
@@ -980,11 +982,13 @@ void NavierStokesGPU::setKernelArguments ( )
 		kernel->setArg( 4, sizeof(int), &ny );
 
 		// set kernel arguments for the problem specific boundary condition kernel
-		// TODO: skip this if no problem dependent kernel is specified
-		kernel = _clManager->getKernel( kernel::problemSpecific );
-		kernel->setArg( 0, _U_g );
-		kernel->setArg( 1, sizeof(int), &nx );
-		kernel->setArg( 2, sizeof(int), &ny );
+		if ( _parameters->problem == "moving_lid" || _parameters->problem == "channel" )
+		{
+			kernel = _clManager->getKernel( kernel::problemSpecific );
+			kernel->setArg( 0, _U_g );
+			kernel->setArg( 1, sizeof(int), &nx );
+			kernel->setArg( 2, sizeof(int), &ny );
+		}
 
 		// kernel arguments for delta t computation (UV maximum)
 		kernel = _clManager->getKernel( kernel::getUVMaximum );
@@ -1003,7 +1007,6 @@ void NavierStokesGPU::setKernelArguments ( )
 		kernel->setArg( 2,  _FLAG_g );
 		kernel->setArg( 3,  _F_g );
 		kernel->setArg( 4,  sizeof(CL_REAL), &(_parameters->gx) );
-		// todo: copied to device memory now or at kernel call time?
 		// kernel->setArg( 5, sizeof(CL_REAL), &_dt ); // set before kernel call
 		kernel->setArg( 6,  sizeof(CL_REAL), &(_parameters->re) );
 		kernel->setArg( 7,  sizeof(CL_REAL), &alphaFG );
