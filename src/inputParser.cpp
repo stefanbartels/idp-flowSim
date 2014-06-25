@@ -268,7 +268,6 @@ bool InputParser::readParameters
 				std::string s_buffer;
 				file >> s_buffer;
 				parameters->obstacleFile = s_buffer;
-				++numReadValues;
 			}
 			else // unknown parameter
 			{
@@ -307,7 +306,7 @@ bool InputParser::readParameters
 			return false;
 		}
 		// not all values given? =>	using standard values for missing parameters
-		else if ( numReadValues < 21 )
+		else if ( numReadValues < 20 )
 		{
 			std::cerr << "Using standard values for missing parameters. Please check yout input file!" << std::endl;
 		}
