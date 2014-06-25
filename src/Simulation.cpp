@@ -84,6 +84,7 @@ void Simulation::run ( )
 
 		// update simulation measurement
 		_elapsedSimulationTime += _simulationTimer.elapsed();
+		_pressureIterations    += numPressureIterations;
 
 		// update simulated time
 		_time += _parameters->dt;
@@ -168,12 +169,15 @@ void Simulation::printPerformanceMeasurements ( )
 {
 	std::cout << "=======================\n"
 			  << ( _parameters->useGPU ? "GPU\n" : "CPU\n" )
-			  << "Iterations:                 " << _iterations << "\n"
-			  << "Simulated time:             " << _time << "\n"
-			  << "Elapsed time:               " << ((double)_elapsedTotalTime      / 1000) << " s\n"
-			  << "    Simulation only:        " << ((double)_elapsedSimulationTime / 1000) << " s\n"
-			  << "Avg. time per iteration:    " << ((double)_elapsedTotalTime      / _iterations) << " ms\n"
-			  << "    Simulation only (avg):  " << ((double)_elapsedSimulationTime / _iterations) << " ms\n"
-			  << "Iterations per second:      " << ((double)(_iterations * 1000)   / _elapsedTotalTime) << "\n"
+			  << "Iterations:                   " << _iterations << "\n"
+			  << "Simulated time:               " << _time << "\n"
+			  << "Elapsed time:                 " << ((double)_elapsedTotalTime      / 1000) << " s\n"
+			  << "    Simulation only:          " << ((double)_elapsedSimulationTime / 1000) << " s\n"
+			  << "Pressure iterations:          " << _pressureIterations << "\n"	
+			  << "    Avg. pressure iterations: " << ((double)_pressureIterations    / _iterations) << "\n"
+			  << "Avg. time per iteration:      " << ((double)_elapsedTotalTime      / _iterations) << " ms\n"
+			  << "    Simulation only (avg):    " << ((double)_elapsedSimulationTime / _iterations) << " ms\n"
+			  << "Iterations / s:               " << ((double)(_iterations * 1000)   / _elapsedTotalTime) << "\n"
+			  << "Pressure iterations / s:      " << ((double)(_pressureIterations * 1000)   / _elapsedTotalTime) << "\n"
 			  << "=======================" << std::endl;
 }

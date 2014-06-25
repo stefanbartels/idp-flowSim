@@ -39,6 +39,7 @@ class Simulation : public QThread
 
 		bool                _running;				//! flag indicating if the simulation is currently running
 		unsigned int		_iterations;			//! counter for the total number of simulated timesteps
+		long unsigned int	_pressureIterations;	//! counter for total number of pressure iterations
 		double				_time;					//! simulated time interval
 
 		QElapsedTimer		_totalTimer;			//! timer for performance measurements
