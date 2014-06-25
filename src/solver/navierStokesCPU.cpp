@@ -656,9 +656,19 @@ void NavierStokesCPU::setSpecificBoundaryConditions ( )
 	}
 	else if ( _parameters->problem == "channel" )
 	{
+		const int inlet_size = _parameters->ny - _parameters->step_height;
+
+		REAL yy;
+
 		for ( int y = 1; y < _parameters->ny + 1; ++y )
 		{
-			_U[y][0] = 1.0;
+			//_U[y][0] = 1.0;
+
+			yy =  (double)y - 1.5 - (double)_parameters->step_height;
+
+			_U[y][0] = 6.0 * 1.0 / //parameters.walls.vectorLeft[0] /
+						  (inlet_size * inlet_size) * yy * (inlet_size - yy);
+
 		}
 	}
 }

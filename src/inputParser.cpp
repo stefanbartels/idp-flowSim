@@ -81,7 +81,6 @@ bool InputParser::readParameters
 	// parse parameter file
 	//-------------------------------
 
-
 	if ( argc > 1 )
 	{
 		std::cout << "Problem parameter file: " << parameterFileName << std::endl;
@@ -141,6 +140,9 @@ bool InputParser::readParameters
 			{
 				file >> i_buffer;
 				parameters->ny = i_buffer;
+
+				std::cout << "NY: " << parameters->ny << std::endl;
+
 				++numReadValues;
 			}
 
@@ -227,6 +229,11 @@ bool InputParser::readParameters
 				file >> d_buffer;
 				parameters->pi = d_buffer;
 				++numReadValues;
+			}
+			else if ( buffer == "step_height" )
+			{
+				file >> i_buffer;
+				parameters->step_height = i_buffer;
 			}
 
 			//=================================

@@ -72,6 +72,8 @@ struct Parameters
 				gx,				//! body force gx (e.g. gravity)
 				gy;				//! body force gy (e.g. gravity)
 
+	REAL		step_height;	//! size of a backwards facing step, applies to channel scenarios only
+
 	// TODO: use better names
 	REAL		ui,				//! initial velocity in x-direction
 				vi,				//! initial velocity in y-direction
@@ -120,6 +122,7 @@ struct Parameters
 		re            = 1000;
 		gx            = 0.0;
 		gy            = 0.0;
+		step_height   = -ny;
 		ui            = 0.0;
 		vi            = 0.0;
 		pi            = 0.0;
