@@ -24,6 +24,8 @@ Simulation::Simulation ( Parameters* parameters, Viewer* viewer )
 	_iterations = 0;
 	_time       = 0.0;
 
+	_pressureIterations    = 0;
+
 	_elapsedSimulationTime = 0;
 	_elapsedTotalTime      = 0;
 
