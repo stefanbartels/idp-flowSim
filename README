@@ -90,8 +90,8 @@ pi			[float]
 #---------------------------------
 
 # Reynolds number
-# (default: 1000)
-re			[int]
+# (default: 1000.0)
+re			[float]
 
 # body forces (e.g. gravity)
 # (default: 0.0)
