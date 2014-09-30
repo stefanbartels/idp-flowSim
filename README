@@ -1,5 +1,123 @@
-Use:
+=================================
+Usage
+=================================
 
-NavierStokesGPU [input file]
+NavierStokesGPU [-vtk interval time_limit] [-cpu] parameter_file"
 
-See karman_vortex.txt for example input file
+Options:
+
+	-vtk interval time_limit		disables gui and enables vtk file output
+									a time interval (simulation time) for the
+									output generation and a time limit must be
+									specified.
+
+	-cpu							The CPU solver is used instead of the GPU
+									solver.
+
+
+=================================
+Parameter files
+=================================
+
+Parameter files can contain parameters of fluid and simulation.
+karman_vortex.txt is an example containing all possible options.
+
+Parameters are provided as one key-value pair per line, separated by whitespaces.
+Comment lines are started with #.
+Values missing in the configuration file are set to default values.
+
+Possible options are:
+
+#---------------------------------
+# geometry data
+#---------------------------------
+
+# Domain size
+# (default: 1.0)
+xlength		[float]
+ylength		[float]
+
+# Grid size (number of grid cells)
+# (default: 128)
+grid_x		[int]
+grid_y		[int]
+
+#---------------------------------
+# time stepping data
+
+# safety factor for time step size control
+# (default: 0.5)
+tau			]0,1]
+
+#---------------------------------
+# poisson SOR iterations
+#---------------------------------
+
+# max. number of SOR iterations per time step
+# (default: 100)
+it_max		[int]
+
+# threshold for residual
+# (default: 0.001)
+epsilon		[float]
+
+# relaxation parameter for SOR iteration
+# (default: 1.7)
+omega		[float]
+
+# upwind differencing factor
+# (default: 0.9)
+gamma		[float]
+
+#---------------------------------
+# initial values
+#---------------------------------
+
+# initial velocity in x-direction
+# (default: 0.0)
+ui			[float]
+# initial velocity in y-direction
+# (default: 0.0)
+vi			[float]
+# initial pressure
+# (default: 0.0)
+pi			[float]
+
+#---------------------------------
+# problem specific options
+#---------------------------------
+
+# Reynolds number
+# (default: 1000)
+re			[int]
+
+# body forces (e.g. gravity)
+# (default: 0.0)
+gravity_x	[float]
+gravity_y	[float]
+
+# boundary conditions for northern, southern, eastern and western boundaries
+# 1: free-slip
+# 2: no-slip
+# 3: outflow
+# (default: no-slip)
+boundary_N		[1,2,3]
+boundary_S		[1,2,3]
+boundary_W		[1,2,3]
+boundary_E		[1,2,3]
+
+
+# problem type
+# supported scenarios are:
+#   moving_lid  (fixed velocity at boundary y=0 parallel to the boundary)
+#   channel     (fixed velocity at boundary x=0 pointing into the domain)
+# (default: moving_lid)
+problem			[scenario]					
+
+# obstacle map file
+# supported are PGM grayscale images, which are loaded as initial obstacles
+# (white for fluid cells, black for obstacle cells)
+# If missing, no obstacles are present at simulation start.
+# (default: none)
+map				[obstacle_map_image]
+
