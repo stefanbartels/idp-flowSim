@@ -6,10 +6,12 @@ NavierStokesGPU [-vtk interval time_limit] [-cpu] parameter_file"
 
 Options:
 
-	-vtk interval time_limit		disables gui and enables vtk file output
+	-vtk interval time_limit		disables gui and enables VTK file output
 									a time interval (simulation time) for the
 									output generation and a time limit must be
 									specified.
+									Legacy VTK files are written to the sub-
+									directory "./output".
 
 	-cpu							The CPU solver is used instead of the GPU
 									solver.
