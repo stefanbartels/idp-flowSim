@@ -18,7 +18,7 @@
  */
 
 //====================================================================
-/*! \struct VTKWriter
+/*! \struct Parameters
 	\brief Structure containing all parameters required for the
 	simulation
 */

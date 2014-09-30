@@ -9,7 +9,7 @@
 #include "../CLManager.h"
 
 //====================================================================
-/*! \class NavierStokesGpu
+/*! \class NavierStokesGPU
 	\brief Class for solving the Navier Stokes equations on GPU
 	\todo optimize device memory, for example u,v and flag as constant memory
 */

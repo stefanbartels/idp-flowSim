@@ -8,7 +8,7 @@
 #include "navierStokesSolver.h"
 
 //====================================================================
-/*! \class NavierStokesCpu
+/*! \class NavierStokesCPU
 	\brief Class for solving the Navier Stokes equations on CPU
 */
 //====================================================================

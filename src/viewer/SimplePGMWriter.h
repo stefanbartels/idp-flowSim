@@ -8,9 +8,8 @@
 #include "Viewer.h"
 
 //====================================================================
-/*! \class VTKWriter
-	\brief Class for writing the pressure as a greyscale image
-	to file
+/*! \class SimplePGMWriter
+	\brief Class for writing the pressure as a greyscale image to file
 */
 //====================================================================
 
