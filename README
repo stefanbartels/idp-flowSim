@@ -1,3 +1,17 @@
+Interactive Simulations with Navier-Stokes Equations on many-core Architectures
+
+=================================
+Compilation
+=================================
+
+Requires Qt and OpenCL libraries.
+Developed and tested with Qt 4.8.0 and Nvidia OpenCl drivers.
+
+To compile the sources, a makefile can be generated from the Qt project file.
+
+>qmake NavierStokesGPU.pro
+>make
+
 =================================
 Usage
 =================================
@@ -122,4 +136,5 @@ problem			[scenario]
 # If missing, no obstacles are present at simulation start.
 # (default: none)
 map				[obstacle_map_image]
+
 
